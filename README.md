@@ -64,10 +64,12 @@ python test_chatbot.py
 
 ## Exemples de requêtes supportées
 
-- factures entre 2026-01-01 et 2026-01-07  
-- factures pour le client Mickael  
-- total ventes janvier 2026  
-- factures avec montants négatifs  
+- factures entre 2026-01-01 et 2026-01-07
+- factures pour le client Mickael
+- total ventes janvier 2026
+- factures avec montants négatifs
+- clients ayant plus de 2 commandes
+- produits avec stock faible (<5)
 
 ---
 
