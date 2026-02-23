@@ -7,6 +7,8 @@ import re
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL non définie dans .env")
 
 engine = create_engine(
     DATABASE_URL,
