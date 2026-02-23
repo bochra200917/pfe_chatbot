@@ -10,10 +10,12 @@ La Version 1 (V1) implémente les fonctionnalités principales d’interrogation
 
 ## Fonctionnalités implémentées (V1)
 
-- Extraction des factures entre deux dates
-- Extraction des factures pour un client spécifique
-- Calcul du total des ventes par période (mois/année)
-- Détection des factures avec montants négatifs (avoirs)
+- Extraction des factures entre deux dates (ex: factures entre 2026-01-01 et 2026-01-07)
+- Extraction des factures pour un client spécifique (ex: factures pour le client Mickael)
+- Calcul du total des ventes par période (mois/année) (ex: total ventes janvier 2026)
+- Détection des factures avec montants négatifs (avoirs) (ex: factures avec montants négatifs)
+- Liste des clients ayant plus de N commandes (ex: clients ayant plus de 2 commandes)
+- Liste des produits avec stock faible (ex: produits avec stock faible (<5))
 - Journalisation des requêtes exécutées (logs JSON)
 - Mesure du temps d’exécution des requêtes
 
