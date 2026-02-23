@@ -31,11 +31,6 @@ La Version 1 (V1) implémente les fonctionnalités principales d’interrogation
 
 ## Installation
 
-### Cloner le projet
-
-git clone <url_du_projet>
-cd <nom_du_projet>
-
 ### Créer un environnement virtuel
 
 python -m venv venv
@@ -54,10 +49,10 @@ pip install -r requirements.txt
 
 Créer un fichier `.env` à la racine du projet avec :
 
-DB_HOST=localhost  
-DB_USER=votre_user  
-DB_PASSWORD=votre_mot_de_passe  
-DB_NAME=votre_base_dolibarr  
+DB_HOST=host  
+DB_USER=user  
+DB_PASSWORD=mot_de_passe  
+DB_NAME=base_dolibarr  
 
 ---
 
