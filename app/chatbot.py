@@ -1,5 +1,3 @@
-# chatbot.py
-
 from app.db import execute_query
 from app.templates_sql import (
     get_factures_between,
@@ -29,6 +27,7 @@ FR_MONTHS = {
     "décembre": 12
 }
 
+
 def execute_and_log(question, sql, params):
     start_time = time.time()
     try:
@@ -44,18 +43,20 @@ def execute_and_log(question, sql, params):
         )
 
         table = [dict(zip(columns, row)) for row in rows]
-
         return table, len(rows)
 
     except Exception as e:
         execution_time = round(time.time() - start_time, 4)
+
         log_query(
             question=question,
             sql_query=sql,
             execution_time=execution_time,
             row_count=0,
-            status="error"
+            status="error",
+            error=str(e)
         )
+
         return None, str(e)
 
 
@@ -67,56 +68,71 @@ def get_response(question, params={}):
     if match_dates:
         start_date = match_dates.group(1)
         end_date = match_dates.group(2)
+
         sql = get_factures_between()
-        columns, rows = execute_query(sql, {"start_date": start_date, "end_date": end_date})
-        response_table = [dict(zip(columns, row)) for row in rows]
-        return {"table": response_table, "summary": f"{len(rows)} factures entre {start_date} et {end_date}"}
+        table, count = execute_and_log(question, sql, {"start_date": start_date, "end_date": end_date})
+
+        return {"table": table, "summary": f"{count} factures entre {start_date} et {end_date}"}
+
 
     # Factures pour un client spécifique
     match_client = re.search(r"factures pour le client (.+)", question_lower)
     if match_client:
         client_name = match_client.group(1).strip()
+
         sql = get_factures_par_client()
-        columns, rows = execute_query(sql, {"client": client_name})
-        response_table = [dict(zip(columns, row)) for row in rows]
-        return {"table": response_table, "summary": f"{len(rows)} factures pour le client {client_name}"}
+        table, count = execute_and_log(question, sql, {"client": client_name})
+
+        return {"table": table, "summary": f"{count} factures pour le client {client_name}"}
+
 
     # Factures avec total_ht négatif
     if "total_ht négatif" in question_lower:
         sql = get_factures_negatives()
-        columns, rows = execute_query(sql, {})
-        response_table = [dict(zip(columns, row)) for row in rows]
-        return {"table": response_table, "summary": f"{len(rows)} factures avec total_ht négatif"}
+        table, count = execute_and_log(question, sql, {})
+
+        return {"table": table, "summary": f"{count} factures avec total_ht négatif"}
+
 
     # Clients ayant plus de N commandes
     if "clients ayant plus" in question_lower:
+        match = re.search(r"plus de (\d+)", question_lower)
+        n = int(match.group(1)) if match else 1
+
         sql = get_clients_multiple_commandes()
-        columns, rows = execute_query(sql, {"min_commandes": params.get("min_commandes", 1)})
-        response_table = [dict(zip(columns, row)) for row in rows]
-        return {"table": response_table, "summary": f"{len(rows)} clients trouvés"}
+        table, count = execute_and_log(question, sql, {"min_commandes": n})
+
+        return {"table": table, "summary": f"{count} clients avec plus de {n} commandes"}
+
 
     # Produits avec stock faible
     if "produits stock faible" in question_lower:
+        match = re.search(r"(\d+)", question_lower)
+        stock_min = int(match.group(1)) if match else 5
+
         sql = get_produits_stock_faible()
-        columns, rows = execute_query(sql, {"stock_min": params.get("stock_min", 5)})
-        response_table = [dict(zip(columns, row)) for row in rows]
-        return {"table": response_table, "summary": f"{len(rows)} produits avec stock faible"}
+        table, count = execute_and_log(question, sql, {"stock_min": stock_min})
+
+        return {"table": table, "summary": f"{count} produits avec stock < {stock_min}"}
+
 
     # Chiffre d’affaires d’un mois
     match_ca = re.search(r"total ventes (\w+) (\d{4})", question_lower)
     if match_ca:
         month_str, year = match_ca.groups()
         year = int(year)
+
         month = FR_MONTHS.get(month_str.lower())
         if month is None:
             return {"error": f"Mois inconnu : {month_str}"}
 
         sql = get_chiffre_affaires_mois()
-        columns, rows = execute_query(sql, {"month": month, "year": year})
-        if not rows:
-            return {"table": [], "summary": f"Aucune vente pour {month_str} {year}"}
-        response_table = [dict(zip(columns, row)) for row in rows]
-        return {"table": response_table, "summary": f"Total ventes pour {month_str} {year}"}
+        table, count = execute_and_log(question, sql, {"month": month, "year": year})
 
-    # Facture non reconnue
+        if count == 0:
+            return {"table": [], "summary": f"Aucune vente pour {month_str} {year}"}
+
+        return {"table": table, "summary": f"Total ventes pour {month_str} {year}"}
+
+
     return {"error": "Question non reconnue"}

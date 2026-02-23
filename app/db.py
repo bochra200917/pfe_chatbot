@@ -1,13 +1,12 @@
-# db.py
-
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 import os
+import re
 
 load_dotenv()
 
-DATABASE_URL = "mysql+pymysql://c137d_bochra:Bochra%40123@c137d.myd.infomaniak.com/c137d_app_dolibarr_42"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_engine(
     DATABASE_URL,
@@ -21,14 +20,14 @@ FORBIDDEN = ["insert", "update", "delete", "drop", "alter", "create", "truncate"
 
 def validate_query(sql_query: str):
     lower = sql_query.lower()
-    for word in FORBIDDEN:
-        if word in lower:
-            raise Exception(f"Requête interdite détectée: {word}")
+    pattern = r"\b(" + "|".join(FORBIDDEN) + r")\b"
+    if re.search(pattern, lower):
+        raise Exception("Requête interdite détectée (mot clé SQL interdit).")
+
 
 def execute_query(sql_query: str, params: dict = {}, limit: int = 200):
     validate_query(sql_query)
 
-    # Ajout LIMIT automatique si absent
     if "limit" not in sql_query.lower():
         sql_query += f"\nLIMIT {limit}"
 

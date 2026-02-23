@@ -1,5 +1,3 @@
-# templates_sql.py
-
 def get_factures_between():
     return """
     SELECT
@@ -11,8 +9,10 @@ def get_factures_between():
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     WHERE f.datef BETWEEN :start_date AND :end_date
+      AND f.entity = 1
     ORDER BY f.datef ASC
     """
+
 
 def get_factures_par_client():
     return """
@@ -24,8 +24,10 @@ def get_factures_par_client():
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     WHERE s.nom = :client
+      AND f.entity = 1
     ORDER BY f.datef ASC
     """
+
 
 def get_factures_negatives():
     return """
@@ -38,8 +40,10 @@ def get_factures_negatives():
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     WHERE f.total_ht < 0
+      AND f.entity = 1
     ORDER BY f.datef ASC
     """
+
 
 def get_clients_multiple_commandes():
     return """
@@ -48,10 +52,12 @@ def get_clients_multiple_commandes():
            COUNT(co.rowid) AS nb_commandes
     FROM m38h_societe c
     JOIN m38h_commande co ON co.fk_soc = c.rowid
+    WHERE c.entity = 1
     GROUP BY c.rowid, c.nom
     HAVING nb_commandes > :min_commandes
     ORDER BY nb_commandes DESC
     """
+
 
 def get_produits_stock_faible():
     return """
@@ -60,8 +66,10 @@ def get_produits_stock_faible():
            p.stock AS stock_disponible 
     FROM m38h_product p 
     WHERE p.stock < :stock_min
+      AND p.entity = 1
     ORDER BY p.stock ASC
     """
+
 
 def get_chiffre_affaires_mois():
     return """
@@ -72,5 +80,6 @@ def get_chiffre_affaires_mois():
     FROM m38h_facture f
     WHERE YEAR(f.datef) = :year 
       AND MONTH(f.datef) = :month
+      AND f.entity = 1
     GROUP BY mois
     """
