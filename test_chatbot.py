@@ -46,13 +46,13 @@ def test_factures_negatives():
 def test_clients_plusieurs_commandes():
     print("\n=== Test : Clients ayant plus de 2 commandes ===")
     query = "clients ayant plus de 2 commandes"
-    result = get_response(query, params={"min_commandes": 2})
+    result = get_response(query)
     print_limited(result)
 
 def test_produits_stock_faible():
     print("\n=== Test : Produits avec stock faible (<5) ===")
-    query = "produits stock faible"
-    result = get_response(query, params={"stock_min": 5})
+    query = "produits stock inférieur à 5"
+    result = get_response(query)
     print_limited(result)
 
 if __name__ == "__main__":

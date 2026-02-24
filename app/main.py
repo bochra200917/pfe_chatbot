@@ -1,126 +1,93 @@
-from fastapi import FastAPI, HTTPException
+# app/main.py
+from fastapi import FastAPI
 from pydantic import BaseModel
-import json
-import os
-
+from app.chatbot import match_question
 from app.db import execute_query
-from app.chatbot import get_response
-from app.templates_sql import get_factures_between
+from app.logger import log_query
+import time
 
-app = FastAPI(title="Chatbot SQL API", version="1.0")
-
-# -----------------------------
-# MODELS
-# -----------------------------
+app = FastAPI()
 
 class QuestionRequest(BaseModel):
     question: str
-    # params retiré pour simplifier Swagger et UX
-    # params: dict = {}  # plus nécessaire
 
-class SQLRequest(BaseModel):
-    sql: str
-    params: dict = {}  # nécessaire pour debug SQL
 
-# -----------------------------
-# ROOT
-# -----------------------------
+@app.post("/ask")
+def ask(request: QuestionRequest):
 
-@app.get("/")
-def root():
-    return {"message": "Chatbot API is running"}
+    start_time = time.time()
 
-# -----------------------------
-# HEALTH CHECK
-# -----------------------------
+    template_function, params = match_question(request.question)
 
-@app.get("/health")
-def health_check():
-    """
-    Vérifie la connexion à la base de données.
-    """
+    if not template_function:
+        return {
+            "table": [],
+            "summary": "Question non reconnue. Exemples supportés : factures entre dates, total ventes mois, factures non payées...",
+            "metadata": {
+                "template": None,
+                "duration_ms": 0,
+                "row_count": 0,
+                "params": {},
+                "logs_id": None
+            }
+        }
+
+    sql_query = template_function()
+
     try:
-        execute_query("SELECT 1")
-        return {"status": "ok", "database": "connected"}
-    except Exception as e:
-        return {"status": "error", "details": str(e)}
+        columns, rows = execute_query(sql_query, params)
 
-# -----------------------------
-# CHATBOT ROUTE
-# -----------------------------
+        duration = round((time.time() - start_time) * 1000, 2)
 
-@app.post("/chat")
-def chat(request: QuestionRequest):
-    """
-    Exécute une question via le chatbot.
-    """
-    result = get_response(request.question)
+        result_rows = [dict(zip(columns, row)) for row in rows]
 
-    if "error" in result:
-        raise HTTPException(status_code=400, detail=result["error"])
-
-    return result
-
-# -----------------------------
-# FACTURES ROUTE
-# -----------------------------
-
-@app.get("/factures")
-def get_factures(start_date: str, end_date: str):
-    """
-    Récupère les factures entre deux dates.
-    """
-    try:
-        sql = get_factures_between()
-        columns, rows = execute_query(sql, {"start_date": start_date, "end_date": end_date})
-        results = [dict(zip(columns, row)) for row in rows]
+        log_id = log_query(
+            question=request.question,
+            sql_query=sql_query,
+            execution_time=duration,
+            row_count=len(result_rows),
+            template_name=template_function.__name__,
+            params=params,
+            status="success",
+            error=None
+        )
 
         return {
-            "count": len(results),
-            "data": results
+            "table": result_rows,
+            "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
+            "metadata": {
+                "template": template_function.__name__,
+                "duration_ms": duration,
+                "row_count": len(result_rows),
+                "params": params,
+                "logs_id": log_id
+            }
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
-# -----------------------------
-# DEBUG SQL ROUTE
-# -----------------------------
+        duration = round((time.time() - start_time) * 1000, 2)
 
-@app.post("/debug-sql")
-def debug_sql(request: SQLRequest):
-    """
-    Exécute une requête SQL brute (lecture uniquement).
-    """
-    try:
-        columns, rows = execute_query(request.sql, request.params)
-        results = [dict(zip(columns, row)) for row in rows]
+        log_id = log_query(
+            question=request.question,
+            sql_query=sql_query,
+            execution_time=duration,
+            row_count=0,
+            template_name=template_function.__name__,
+            params=params,
+            status="error",
+            error=str(e)
+        )
 
         return {
-            "count": len(results),
-            "data": results
+            "table": [],
+            "summary": "Erreur lors de l'exécution.",
+            "metadata": {
+                "template": template_function.__name__,
+                "duration_ms": duration,
+                "row_count": 0,
+                "params": params,
+                "error": str(e),
+                "logs_id": log_id
+            }
         }
-
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-# -----------------------------
-# LOG VIEWER
-# -----------------------------
-
-@app.get("/logs")
-def get_logs(limit: int = 50):
-    """
-    Retourne les dernières entrées du fichier de logs.
-    """
-    log_file = "chatbot_logs.json"
-
-    if not os.path.exists(log_file):
-        return {"count": 0, "logs": []}
-
-    with open(log_file, "r") as f:
-        lines = f.readlines()
-
-    logs = [json.loads(line) for line in lines[-limit:]]
-
-    return {"count": len(logs), "logs": logs}

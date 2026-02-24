@@ -1,102 +1,172 @@
-# Chatbot Intelligent connecté à Dolibarr – Version 1
+# PFE Chatbot – V1 Baseline (Sans LLM)
 
-## Description
+## 📌 Objectif
 
-Ce projet consiste à développer un chatbot intelligent capable d’interroger la base de données Dolibarr afin d’extraire des informations comptables et commerciales de manière automatisée.
+Cette V1 implémente un chatbot SQL sécurisé sans génération libre de requêtes.  
+Le système route des questions en langage naturel vers des templates SQL prédéfinis.
 
-La Version 1 (V1) implémente les fonctionnalités principales d’interrogation SQL dynamique avec journalisation complète des requêtes.
-
----
-
-## Fonctionnalités implémentées (V1)
-
-- Extraction des factures entre deux dates (ex: factures entre 2026-01-01 et 2026-01-07)
-- Extraction des factures pour un client spécifique (ex: factures pour le client Mickael)
-- Calcul du total des ventes par période (mois/année) (ex: total ventes janvier 2026)
-- Détection des factures avec montants négatifs (avoirs) (ex: factures avec montants négatifs)
-- Liste des clients ayant plus de N commandes (ex: clients ayant plus de 2 commandes)
-- Liste des produits avec stock faible (ex: produits avec stock faible (<5))
-- Journalisation des requêtes exécutées (logs JSON)
-- Mesure du temps d’exécution des requêtes
+L’objectif est de garantir :
+- Sécurité (anti-injection, SELECT only)
+- Robustesse
+- Auditabilité
+- Mesurabilité
 
 ---
 
-## Technologies utilisées
+## 🏗️ Architecture
 
-- Python 3.13.7
-- MySQL (Base Dolibarr)
-- PyMySQL
-- python-dotenv
-- JSON (logging)
+- FastAPI (API REST)
+- Templates SQL prédéfinis
+- Routing NLP léger (regex + règles)
+- Exécution SQL read-only
+- Logs JSON
+- Golden set de tests
 
 ---
 
-## Installation
+## 🚀 Lancer le projet
 
-### Créer un environnement virtuel
+### 1️⃣ Activer l’environnement virtuel
 
-python -m venv venv
-
-### Activer l’environnement (Windows)
-
+```bash
 venv\Scripts\activate
+```
 
-### Installer les dépendances
+### 2️⃣ Lancer l’API
 
-pip install -r requirements.txt
+```bash
+uvicorn app.main:app --reload
+```
 
----
+API disponible sur :
 
-## Configuration
-
-Créer un fichier `.env` à la racine du projet avec :
-
-DB_HOST=host  
-DB_USER=user  
-DB_PASSWORD=mot_de_passe  
-DB_NAME=base_dolibarr  
+```
+http://127.0.0.1:8000/docs
+```
 
 ---
 
-## Lancer les tests
+## 📡 Endpoint principal
 
-python test_chatbot.py
+### POST `/ask`
 
----
+### Input :
 
-## Exemples de requêtes supportées
+```json
+{
+  "question": "factures entre 2026-01-01 et 2026-01-31"
+}
+```
 
-- factures entre 2026-01-01 et 2026-01-07
-- factures pour le client Mickael
-- total ventes janvier 2026
-- factures avec montants négatifs
-- clients ayant plus de 2 commandes
-- produits avec stock faible (<5)
+### Output :
 
----
-
-## Journalisation
-
-Chaque requête exécutée est enregistrée avec :
-
-- Timestamp  
-- Question utilisateur  
-- Requête SQL générée  
-- Temps d’exécution  
-- Nombre de lignes retournées  
-- Statut d’exécution  
-
----
-
-## Évolutions prévues (V2)
-
-- Intégration d’un module NLP  
-- Interface graphique  
-- Visualisation des données  
-- Gestion des rôles utilisateurs  
+```json
+{
+  "table": [...],
+  "summary": "5 résultat(s) trouvé(s).",
+  "metadata": {
+    "template": "get_factures_between",
+    "duration_ms": 12.4,
+    "row_count": 5,
+    "params": {
+      "start_date": "2026-01-01",
+      "end_date": "2026-01-31"
+    }
+  }
+}
+```
 
 ---
 
-## Contexte académique
+## 🧪 Lancer les tests (Golden Set)
 
-Projet réalisé dans le cadre d’un Projet de Fin d’Études (PFE).
+```bash
+python test/test_golden_set.py
+```
+
+Le golden set permet de vérifier :
+
+- Exactitude du template choisi
+- Extraction correcte des paramètres
+- Robustesse aux variantes de formulation
+
+---
+
+## 🔒 Sécurité
+
+### 1️⃣ Requêtes paramétrées
+Toutes les requêtes utilisent des paramètres SQLAlchemy (`:param`).
+
+### 2️⃣ Whitelist SELECT uniquement
+Seules les requêtes `SELECT` sont autorisées.
+
+### 3️⃣ Blocage DDL / DML
+Les mots-clés suivants sont interdits :
+
+- INSERT
+- UPDATE
+- DELETE
+- DROP
+- ALTER
+- CREATE
+- TRUNCATE
+
+### 4️⃣ Limitation du nombre de lignes
+Un `LIMIT 200` est ajouté automatiquement si absent.
+
+### 5️⃣ Utilisateur base de données en lecture seule (recommandé)
+
+---
+
+## 📊 Logs & Audit
+
+Chaque requête est enregistrée dans :
+
+```
+chatbot_logs.json
+```
+
+Informations loguées :
+
+- timestamp
+- question
+- sql_query
+- execution_time
+- row_count
+- status
+- error
+
+Cela permet :
+- Audit
+- Monitoring
+- Analyse des performances
+
+---
+
+## 📦 Templates disponibles
+
+- Factures entre deux dates
+- Factures par client
+- Factures non payées
+- Factures partiellement payées
+- Clients avec plusieurs commandes
+- Produits en stock faible
+- Total ventes par mois
+
+---
+
+## 🧭 Roadmap
+
+### ✅ V1
+- Templates SQL sécurisés
+- Endpoint `/ask`
+- Golden set
+- Logs
+- Sécurité
+
+### 🔜 V2
+- Amélioration NLP
+- Extraction mois texte (ex: "janvier 2026")
+- Gestion erreurs améliorée
+- Authentification
+- Dashboard audit

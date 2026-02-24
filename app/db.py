@@ -1,3 +1,4 @@
+#db.py
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
@@ -21,11 +22,16 @@ SessionLocal = sessionmaker(bind=engine)
 FORBIDDEN = ["insert", "update", "delete", "drop", "alter", "create", "truncate"]
 
 def validate_query(sql_query: str):
-    lower = sql_query.lower()
+    lower = sql_query.lower().strip()
+
+    # Autoriser uniquement SELECT
+    if not lower.startswith("select"):
+        raise Exception("Seules les requêtes SELECT sont autorisées.")
+
+    # Bloquer DDL/DML
     pattern = r"\b(" + "|".join(FORBIDDEN) + r")\b"
     if re.search(pattern, lower):
         raise Exception("Requête interdite détectée (mot clé SQL interdit).")
-
 
 def execute_query(sql_query: str, params: dict = {}, limit: int = 200):
     validate_query(sql_query)

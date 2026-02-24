@@ -71,7 +71,7 @@ def get_produits_stock_faible():
     """
 
 
-def get_chiffre_affaires_mois():
+def get_total_ventes_mois():    
     return """
     SELECT 
         DATE_FORMAT(f.datef, '%Y-%m') AS mois, 
@@ -82,4 +82,35 @@ def get_chiffre_affaires_mois():
       AND MONTH(f.datef) = :month
       AND f.entity = 1
     GROUP BY mois
+    """
+
+def get_factures_non_payees():
+    return """
+    SELECT 
+        f.ref AS facture_ref,
+        s.nom AS client,
+        f.total_ht,
+        f.total_ttc,
+        f.datef AS date_facture
+    FROM m38h_facture f
+    LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
+    WHERE f.paye = 0
+      AND f.entity = 1
+    ORDER BY f.datef ASC
+    """
+
+def get_factures_partiellement_payees():
+    return """
+    SELECT 
+        f.ref AS facture_ref,
+        s.nom AS client,
+        f.total_ht,
+        f.total_ttc,
+        f.datef AS date_facture
+    FROM m38h_facture f
+    LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
+    WHERE f.paye = 1
+      AND f.total_ht > f.total_ttc
+      AND f.entity = 1
+    ORDER BY f.datef ASC
     """

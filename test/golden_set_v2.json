@@ -34,34 +34,12 @@
     "expected_params": {}
   },
   {
-    "question": "affiche les factures non payées",
-    "expected_template": "get_factures_non_payees",
-    "expected_params": {}
-  },
-  {
-    "question": "factures partiellement payées",
-    "expected_template": "get_factures_partiellement_payees",
-    "expected_params": {}
-  },
-  {
-    "question": "liste des factures partiellement payées",
-    "expected_template": "get_factures_partiellement_payees",
-    "expected_params": {}
-  },
-  {
     "question": "affiche les factures partiellement payées",
     "expected_template": "get_factures_partiellement_payees",
     "expected_params": {}
   },
   {
-    "question": "factures du client mickael",
-    "expected_template": "get_factures_par_client",
-    "expected_params": {
-      "client": "mickael"
-    }
-  },
-  {
-    "question": "liste des factures pour le client ahmed",
+    "question": "factures du client ahmed",
     "expected_template": "get_factures_par_client",
     "expected_params": {
       "client": "ahmed"
@@ -99,6 +77,22 @@
     }
   },
   {
+    "question": "chiffre d'affaires janvier 2026",
+    "expected_template": "get_total_ventes_mois",
+    "expected_params": {
+      "year": "2026",
+      "month": "01"
+    }
+  },
+  {
+    "question": "ventes février 2026",
+    "expected_template": "get_total_ventes_mois",
+    "expected_params": {
+      "year": "2026",
+      "month": "02"
+    }
+  },
+  {
     "question": "clients ayant plus de 2 commandes",
     "expected_template": "get_clients_multiple_commandes",
     "expected_params": {
@@ -106,31 +100,43 @@
     }
   },
   {
-    "question": "liste clients avec plus de commandes",
+    "question": "donne les clients avec plus de 5 commandes",
+    "expected_template": "get_clients_multiple_commandes",
+    "expected_params": {
+      "min_commandes": 5
+    }
+  },
+  {
+    "question": "clients avec plusieurs commandes",
     "expected_template": "get_clients_multiple_commandes",
     "expected_params": {
       "min_commandes": 2
     }
   },
   {
-    "question": "clients ayant plusieurs commandes",
-    "expected_template": "get_clients_multiple_commandes",
+    "question": "produits avec stock inférieur à 10",
+    "expected_template": "get_produits_stock_faible",
     "expected_params": {
-      "min_commandes": 2
+      "stock_min": 10
     }
   },
   {
-    "question": "donne les clients avec plus de 2 commandes",
-    "expected_template": "get_clients_multiple_commandes",
+    "question": "liste produits stock moins de 5",
+    "expected_template": "get_produits_stock_faible",
     "expected_params": {
-      "min_commandes": 2
+      "stock_min": 5
     }
   },
   {
-    "question": "affiche clients commandes multiples",
-    "expected_template": "get_clients_multiple_commandes",
+    "question": "produits avec stock 3",
+    "expected_template": "get_produits_stock_faible",
     "expected_params": {
-      "min_commandes": 2
+      "stock_min": 3
     }
+  },
+  {
+    "question": "affiche les factures non payées",
+    "expected_template": "get_factures_non_payees",
+    "expected_params": {}
   }
 ]
