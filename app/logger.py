@@ -1,5 +1,4 @@
 # app/logger.py
-
 import json
 import time
 import uuid

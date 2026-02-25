@@ -1,3 +1,4 @@
+#app/templates_sql.py
 def get_factures_between():
     return """
     SELECT
@@ -13,7 +14,6 @@ def get_factures_between():
     ORDER BY f.datef ASC
     """
 
-
 def get_factures_par_client():
     return """
     SELECT 
@@ -27,7 +27,6 @@ def get_factures_par_client():
       AND f.entity = 1
     ORDER BY f.datef ASC
     """
-
 
 def get_factures_negatives():
     return """
@@ -44,7 +43,6 @@ def get_factures_negatives():
     ORDER BY f.datef ASC
     """
 
-
 def get_clients_multiple_commandes():
     return """
     SELECT c.rowid AS client_id,
@@ -58,7 +56,6 @@ def get_clients_multiple_commandes():
     ORDER BY nb_commandes DESC
     """
 
-
 def get_produits_stock_faible():
     return """
     SELECT p.ref AS produit_ref, 
@@ -69,7 +66,6 @@ def get_produits_stock_faible():
       AND p.entity = 1
     ORDER BY p.stock ASC
     """
-
 
 def get_total_ventes_mois():    
     return """
@@ -109,8 +105,8 @@ def get_factures_partiellement_payees():
         f.datef AS date_facture
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
-    WHERE f.paye = 1
-      AND f.total_ht > f.total_ttc
+    WHERE f.paye = 0
+      AND f.total_ht > 0
       AND f.entity = 1
     ORDER BY f.datef ASC
     """
