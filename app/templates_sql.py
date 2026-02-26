@@ -82,31 +82,51 @@ def get_total_ventes_mois():
 
 def get_factures_non_payees():
     return """
-    SELECT 
+    SELECT
         f.ref AS facture_ref,
         s.nom AS client,
         f.total_ht,
         f.total_ttc,
-        f.datef AS date_facture
+        f.datef AS date_facture,
+        COALESCE(SUM(pf.amount), 0) AS montant_paye,
+        (f.total_ttc - COALESCE(SUM(pf.amount), 0)) AS montant_restant
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
-    WHERE f.paye = 0
-      AND f.entity = 1
-    ORDER BY f.datef ASC
+    LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
+    WHERE f.entity = 1
+    GROUP BY f.rowid
+    HAVING (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
+    ORDER BY f.datef ASC;
     """
 
 def get_factures_partiellement_payees():
     return """
-    SELECT 
+    SELECT
         f.ref AS facture_ref,
         s.nom AS client,
         f.total_ht,
         f.total_ttc,
-        f.datef AS date_facture
+        f.datef AS date_facture,
+        COALESCE(SUM(pf.amount), 0) AS montant_paye,
+        (f.total_ttc - COALESCE(SUM(pf.amount), 0)) AS montant_restant
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
-    WHERE f.paye = 0
-      AND f.total_ht > 0
-      AND f.entity = 1
-    ORDER BY f.datef ASC
+    LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
+    WHERE f.entity = 1
+    GROUP BY f.rowid
+    HAVING 
+        COALESCE(SUM(pf.amount), 0) > 0
+        AND (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
+    ORDER BY f.datef ASC;
     """
+
+TEMPLATE_MAPPING = {
+    "get_factures_between": get_factures_between,
+    "get_factures_par_client": get_factures_par_client,
+    "get_factures_negatives": get_factures_negatives,
+    "get_clients_multiple_commandes": get_clients_multiple_commandes,
+    "get_produits_stock_faible": get_produits_stock_faible,
+    "get_total_ventes_mois": get_total_ventes_mois,
+    "get_factures_non_payees": get_factures_non_payees,
+    "get_factures_partiellement_payees": get_factures_partiellement_payees
+}

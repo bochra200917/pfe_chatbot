@@ -19,12 +19,14 @@ engine = create_engine(
 
 SessionLocal = sessionmaker(bind=engine)
 
+# 🔒 Mots interdits (écriture/modification)
 FORBIDDEN_KEYWORDS = [
     "insert", "update", "delete", "drop",
     "alter", "create", "truncate",
     "grant", "revoke"
 ]
 
+# 🔒 Patterns dangereux
 FORBIDDEN_PATTERNS = [
     ";",          # multi-queries
     "--",         # SQL comments
@@ -33,38 +35,35 @@ FORBIDDEN_PATTERNS = [
 
 
 def validate_query(sql_query: str):
-
     lower = sql_query.lower().strip()
 
-    # 1️⃣ Only SELECT allowed
+    # 1️⃣ Autoriser uniquement SELECT
     if not lower.startswith("select"):
         raise Exception("Seules les requêtes SELECT sont autorisées.")
 
-    # 2️⃣ No forbidden keywords
-    pattern = r"\b(" + "|".join(FORBIDDEN_KEYWORDS) + r")\b"
-    if re.search(pattern, lower):
+    # 2️⃣ Bloquer mots dangereux
+    keyword_pattern = r"\b(" + "|".join(FORBIDDEN_KEYWORDS) + r")\b"
+    if re.search(keyword_pattern, lower):
         raise Exception("Mot-clé SQL interdit détecté.")
 
-    # 3️⃣ No suspicious patterns
+    # 3️⃣ Bloquer patterns suspects
     for pattern in FORBIDDEN_PATTERNS:
         if pattern in lower:
             raise Exception("Pattern SQL suspect détecté.")
 
-    # 4️⃣ Only one SELECT
-    if lower.count("select") > 1:
-        raise Exception("Sous-requêtes non autorisées.")
+    # ❌ SUPPRESSION DU BLOCAGE DES SOUS-REQUÊTES
+    # On autorise les sous-SELECT car nécessaires en analyse BI
 
     return True
 
 
 def execute_query(sql_query: str, params: dict = None, limit: int = 200):
-
     if params is None:
         params = {}
 
     validate_query(sql_query)
 
-    # 5️⃣ Force LIMIT if missing
+    # 4️⃣ Ajouter LIMIT si absent
     if "limit" not in sql_query.lower():
         sql_query += f"\nLIMIT {limit}"
 

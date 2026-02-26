@@ -1,42 +1,49 @@
-#test/test_golden_set.py
 import json
-import os
-import sys
-
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(0, ROOT_DIR)
-
 from app.chatbot import match_question
+import sys
+import os
 
-#golden_path = os.path.join(ROOT_DIR, "test", "golden_set.json")
-golden_path = os.path.join(ROOT_DIR, "test", "golden_set_v2.json")
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+def run_tests(golden_file):
+    with open(golden_file, "r", encoding="utf-8") as f:
+        tests = json.load(f)
 
-with open(golden_path, "r", encoding="utf-8") as f:
-    data = json.load(f)
+    total = len(tests)
+    success = 0
 
-success = 0
+    for i, test in enumerate(tests, 1):
+        question = test["question"]
+        expected_template = test["expected_template"]
+        expected_params = test["expected_params"]
 
-print("=== TEST GOLDEN SET ===\n")
+        try:
+            template, params = match_question(question)
 
-for item in data:
-    question = item["question"]
-    expected_template = item["expected_template"]
-    expected_params = item["expected_params"]
+            template_ok = template == expected_template
+            params_ok = params == expected_params
 
-    template_function, params = match_question(question)
+            if template_ok and params_ok:
+                print(f"✅ Test {i} OK")
+                success += 1
+            else:
+                print(f"❌ Test {i} FAILED")
+                print(f"   Question: {question}")
+                print(f"   Expected: {expected_template} {expected_params}")
+                print(f"   Got: {template} {params}")
 
-    if template_function and \
-       template_function.__name__ == expected_template and \
-       params == expected_params:
+        except Exception as e:
+            print(f"❌ Test {i} ERROR: {str(e)}")
 
-        print(f"✅ OK : {question}")
-        success += 1
-    else:
-        print(f"❌ ERREUR : {question}")
-        if template_function:
-            print("   → Template reçu :", template_function.__name__)
-            print("   → Params reçus :", params)
-        else:
-            print("   → Question non reconnue")
+    accuracy = (success / total) * 100
+    print("\n==========================")
+    print(f"Total tests: {total}")
+    print(f"Passed: {success}")
+    print(f"Accuracy: {accuracy:.2f}%")
+    print("==========================")
 
-print(f"\nRésultat final : {success}/{len(data)} correct")
+if __name__ == "__main__":
+    print("Running V1 Golden Set")
+    run_tests("test/golden_set.json")
+
+    print("\nRunning V2 Golden Set")
+    run_tests("test/golden_set_v2.json")
