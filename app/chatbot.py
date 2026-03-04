@@ -153,15 +153,16 @@ def get_response(question: str):
     if template_name is None:
         return {
             "table": [],
-            "summary": "Question non reconnue.",
+            "summary": "Votre question est ambiguë ou incomplète. Pouvez-vous préciser la période, le client ou la métrique souhaitée ?",
             "metadata": {
                 "template": None,
                 "duration_ms": 0,
                 "row_count": 0,
                 "params": {},
-                "logs_id": None
-            }
+                "logs_id": None,
+                "status": "clarification_required"
         }
+    }
 
     # 🔥 récupérer vraie fonction via mapping
     template_function = TEMPLATE_MAPPING.get(template_name)
@@ -221,13 +222,13 @@ def get_response(question: str):
             row_count=0,
             template_name=template_name,
             params=params,
-            status="error",
+            status="rejected",
             error=str(e)
         )
 
         return {
             "table": [],
-            "summary": "Erreur lors de l'exécution.",
+            "summary": "Je ne peux pas répondre à cette requête. Veuillez reformuler votre question.",
             "metadata": {
                 "template": template_name,
                 "duration_ms": duration,
