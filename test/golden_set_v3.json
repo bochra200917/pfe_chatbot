@@ -1,0 +1,125 @@
+[
+  {
+    "question": "factures entre 2026-01-01 et 2026-01-07",
+    "expected_intent": "get_factures_between",
+    "expected_params": {
+      "start_date": "2026-01-01",
+      "end_date": "2026-01-07"
+    }
+  },
+  {
+    "question": "donne moi les factures entre 2026-02-01 et 2026-02-28",
+    "expected_intent": "get_factures_between",
+    "expected_params": {
+      "start_date": "2026-02-01",
+      "end_date": "2026-02-28"
+    }
+  },
+  {
+    "question": "factures non payées",
+    "expected_intent": "get_factures_non_payees",
+    "expected_params": {}
+  },
+  {
+    "question": "montre moi les factures impayées",
+    "expected_intent": "get_factures_non_payees",
+    "expected_params": {}
+  },
+  {
+    "question": "factures partiellement payées",
+    "expected_intent": "get_factures_partiellement_payees",
+    "expected_params": {}
+  },
+  {
+    "question": "factures du client ahmed",
+    "expected_intent": "get_factures_par_client",
+    "expected_params": {
+      "client": "ahmed"
+    }
+  },
+  {
+    "question": "donne moi les factures client ali",
+    "expected_intent": "get_factures_par_client",
+    "expected_params": {
+      "client": "ali"
+    }
+  },
+  {
+    "question": "total ventes 2026-01",
+    "expected_intent": "get_total_ventes_mois",
+    "expected_params": {
+      "year": "2026",
+      "month": "01"
+    }
+  },
+  {
+    "question": "chiffre d'affaires février 2026",
+    "expected_intent": "get_total_ventes_mois",
+    "expected_params": {
+      "year": "2026",
+      "month": "02"
+    }
+  },
+  {
+    "question": "donne le chiffre d'affaires janvier 2026",
+    "expected_intent": "get_total_ventes_mois",
+    "expected_params": {
+      "year": "2026",
+      "month": "01"
+    }
+  },
+  {
+    "question": "clients ayant plus de 2 commandes",
+    "expected_intent": "get_clients_multiple_commandes",
+    "expected_params": {
+      "min_commandes": 2
+    }
+  },
+  {
+    "question": "clients ayant plus de 5 commandes",
+    "expected_intent": "get_clients_multiple_commandes",
+    "expected_params": {
+      "min_commandes": 5
+    }
+  },
+  {
+    "question": "produits avec stock inférieur à 10",
+    "expected_intent": "get_produits_stock_faible",
+    "expected_params": {
+      "stock_min": 10
+    }
+  },
+  {
+    "question": "donne les produits avec stock inférieur à 15",
+    "expected_intent": "get_produits_stock_faible",
+    "expected_params": {
+      "stock_min": 15
+    }
+  },
+
+  {
+    "question": "factures du mois dernier",
+    "expected_clarification": true
+  },
+  {
+    "question": "factures du client",
+    "expected_clarification": true
+  },
+  {
+    "question": "ventes du mois",
+    "expected_clarification": true
+  },
+
+  {
+    "question": "factures 2026-01-01; DROP TABLE m38h_facture",
+    "expected_reject": true
+  },
+  {
+    "question": "SELECT * FROM m38h_facture",
+    "expected_reject": true
+  },
+  {
+    "question": "DELETE FROM m38h_societe",
+    "expected_reject": true
+  }
+]
