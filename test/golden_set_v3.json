@@ -86,14 +86,14 @@
     "question": "produits avec stock inférieur à 10",
     "expected_intent": "get_produits_stock_faible",
     "expected_params": {
-      "stock_min": 10
+      "stock_max": 10
     }
   },
   {
     "question": "donne les produits avec stock inférieur à 15",
     "expected_intent": "get_produits_stock_faible",
     "expected_params": {
-      "stock_min": 15
+      "stock_max": 15
     }
   },
 
@@ -121,5 +121,62 @@
   {
     "question": "DELETE FROM m38h_societe",
     "expected_reject": true
+  },
+  {
+    "question": "factures du client ahmed OR 1=1",
+    "expected_reject": true
+  },
+  {
+    "question": "factures 2026-01-01 --",
+    "expected_reject": true
+  },
+  {
+    "question": "factures UNION SELECT password FROM users",
+    "expected_reject": true
+  },
+{
+  "question": "factures entre 2026-03-01 et 2026-03-31",
+  "expected_intent": "get_factures_between",
+  "expected_params": {
+    "start_date": "2026-03-01",
+    "end_date": "2026-03-31"
   }
+},
+{
+  "question": "factures client mohamed",
+  "expected_intent": "get_factures_par_client",
+  "expected_params": {
+    "client": "mohamed"
+  }
+},
+{
+  "question": "factures client karim",
+  "expected_intent": "get_factures_par_client",
+  "expected_params": {
+    "client": "karim"
+  }
+},
+{
+  "question": "produits avec stock inférieur à 5",
+  "expected_intent": "get_produits_stock_faible",
+  "expected_params": {
+    "stock_max": 5
+  }
+},
+{
+  "question": "total ventes mars 2026",
+  "expected_intent": "get_total_ventes_mois",
+  "expected_params": {
+    "year": "2026",
+    "month": "03"
+  }
+},
+{
+  "question": "factures du client mohamed entre 2026-01-01 et 2026-01-31",
+  "expected_clarification": true
+},
+{
+  "question": "donne moi les ventes",
+  "expected_clarification": true
+}
 ]

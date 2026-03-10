@@ -1,5 +1,5 @@
 # app/db_whitelist.py
-# Versionnée explicitement
+
 WHITELIST_VERSION = "v1.0"
 
 ALLOWED_TABLES = {

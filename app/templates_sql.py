@@ -94,9 +94,15 @@ def get_factures_non_payees():
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
     WHERE f.entity = 1
-    GROUP BY f.rowid
+    GROUP BY 
+    f.rowid,
+    f.ref,
+    s.nom,
+    f.total_ht,
+    f.total_ttc,
+    f.datef
     HAVING (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
-    ORDER BY f.datef ASC;
+    ORDER BY f.datef ASC
     """
 
 def get_factures_partiellement_payees():
@@ -113,11 +119,17 @@ def get_factures_partiellement_payees():
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
     WHERE f.entity = 1
-    GROUP BY f.rowid
+    GROUP BY 
+    f.rowid,
+    f.ref,
+    s.nom,
+    f.total_ht,
+    f.total_ttc,
+    f.datef
     HAVING 
         COALESCE(SUM(pf.amount), 0) > 0
         AND (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
-    ORDER BY f.datef ASC;
+    ORDER BY f.datef ASC
     """
 
 TEMPLATE_MAPPING = {

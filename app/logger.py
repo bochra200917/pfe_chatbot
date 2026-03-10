@@ -1,9 +1,14 @@
 # app/logger.py
+
 import json
 import time
 import uuid
+from threading import Lock
 
 LOG_FILE = "chatbot_logs.json"
+
+log_lock = Lock()
+
 
 def log_query(question, sql_query, execution_time, row_count,
               template_name, params,
@@ -24,7 +29,8 @@ def log_query(question, sql_query, execution_time, row_count,
         "error": error
     }
 
-    with open(LOG_FILE, "a", encoding="utf-8") as f:
-        f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
+    with log_lock:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps(log_entry, ensure_ascii=False) + "\n")
 
     return log_id

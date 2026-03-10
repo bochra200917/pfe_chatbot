@@ -3,9 +3,12 @@
 import re
 import unicodedata
 import time
+
 from app.templates_sql import TEMPLATE_MAPPING
 from app.db import execute_query
 from app.logger import log_query
+from app.sql_security import detect_injection
+from app.chatbot_v3 import run_llm_pipeline
 
 
 MONTHS = {
@@ -28,114 +31,109 @@ MONTHS = {
 # NORMALISATION TEXTE
 # ---------------------------
 def normalize(text: str):
+
     text = text.lower().strip()
     text = unicodedata.normalize("NFD", text)
     text = text.encode("ascii", "ignore").decode("utf-8")
+
     return text
 
 
 # ---------------------------
-# ROUTING NLP → TEMPLATE NAME
+# ROUTING NLP → TEMPLATE
 # ---------------------------
 def match_question(question: str):
 
     q = normalize(question)
 
-    # ===============================
-    # FACTURES ENTRE DATES
-    # ===============================
+    # factures entre dates
     match = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+
     if "facture" in q and match:
+
         return "get_factures_between", {
             "start_date": match.group(1),
             "end_date": match.group(2)
         }
 
-    # ===============================
-    # FACTURES PARTIELLEMENT PAYEES
-    # ===============================
+    # factures partiellement payées
     if "partiellement pay" in q:
+
         return "get_factures_partiellement_payees", {}
 
-    # ===============================
-    # FACTURES NON PAYEES
-    # ===============================
-    if "non pay" in q:
+    # factures non payées
+    if "non pay" in q or "impaye" in q:
+
         return "get_factures_non_payees", {}
 
-    # ===============================
-    # FACTURES PAR CLIENT
-    # ===============================
+    # factures par client
     match = re.search(r'client\s+(.+)', q)
+
     if "facture" in q and match:
+
         client_name = match.group(1).strip()
+
         return "get_factures_par_client", {
             "client": client_name
         }
 
-    # ===============================
-    # TOTAL VENTES MOIS TEXTE
-    # ===============================
+    # ventes par mois texte
     for month_name, month_num in MONTHS.items():
+
         if month_name in q:
+
             match_year = re.search(r'\b(20\d{2})\b', q)
+
             if match_year:
+
                 return "get_total_ventes_mois", {
                     "year": match_year.group(1),
                     "month": month_num
                 }
 
-    # ===============================
-    # TOTAL VENTES YYYY-MM
-    # ===============================
+    # ventes YYYY-MM
     match = re.search(r'(\d{4})-(\d{2})', q)
+
     if match and any(word in q for word in ["total", "ventes", "chiffre"]):
+
         return "get_total_ventes_mois", {
             "year": match.group(1),
             "month": match.group(2)
         }
 
-    # ===============================
-    # CLIENTS PLUSIEURS COMMANDES
-    # ===============================
-
-    # cas : "plus de 3 commandes"
+    # clients plusieurs commandes
     match = re.search(r'plus de (\d+) commandes', q)
+
     if match:
+
         return "get_clients_multiple_commandes", {
             "min_commandes": int(match.group(1))
         }
 
-    # cas : "plus de commandes" sans nombre
-    if "plus de commandes" in q:
+    if "plusieurs commandes" in q:
+
         return "get_clients_multiple_commandes", {
             "min_commandes": 2
         }
 
-    # cas : formulations générales
-    if "plusieurs commandes" in q or "commandes multiples" in q:
-        return "get_clients_multiple_commandes", {
-            "min_commandes": 2
-        }
-
-    # ===============================
-    # STOCK FAIBLE
-    # ===============================
+    # stock faible
     if "stock" in q:
+
         match = re.search(r'\d+', q)
+
         if match:
+
             return "get_produits_stock_faible", {
                 "stock_min": int(match.group())
             }
-        else:
-            return "get_produits_stock_faible", {
-                "stock_min": 5
-            }
 
-    # ===============================
-    # FACTURES NEGATIVES
-    # ===============================
+        return "get_produits_stock_faible", {
+            "stock_min": 5
+        }
+
+    # factures négatives
     if "negatif" in q:
+
         return "get_factures_negatives", {}
 
     return None, None
@@ -148,55 +146,98 @@ def get_response(question: str):
 
     start_time = time.time()
 
-    template_name, params = match_question(question)
+    # sécurité SQL
+    try:
+        detect_injection(question)
 
-    if template_name is None:
+    except Exception:
+
         return {
             "table": [],
-            "summary": "Votre question est ambiguë ou incomplète. Pouvez-vous préciser la période, le client ou la métrique souhaitée ?",
+            "summary": "Requête rejetée pour des raisons de sécurité.",
             "metadata": {
-                "template": None,
-                "duration_ms": 0,
-                "row_count": 0,
-                "params": {},
-                "logs_id": None,
-                "status": "clarification_required"
+                "status": "rejected"
+            }
         }
-    }
 
-    # 🔥 récupérer vraie fonction via mapping
+    template_name, params = match_question(question)
+
+    # gestion ambiguïtés
+    ambiguous_patterns = [
+        "factures du client",
+        "ventes du mois",
+        "donne moi les ventes",
+        "factures du mois dernier"
+    ]
+
+    if template_name is None:
+
+        if any(p in question.lower() for p in ambiguous_patterns):
+
+            return {
+                "table": [],
+                "summary": "Veuillez préciser votre demande.",
+                "metadata": {
+                    "status": "clarification_required"
+                }
+            }
+
+        # fallback LLM
+        try:
+
+            result = run_llm_pipeline(question)
+
+            return {
+                "table": result,
+                "summary": f"{len(result)} résultat(s) trouvé(s).",
+                "metadata": {
+                    "template": "llm_generated",
+                    "row_count": len(result),
+                    "status": "success_llm"
+                }
+            }
+
+        except Exception:
+
+            return {
+                "table": [],
+                "summary": "Je ne peux pas répondre à cette question.",
+                "metadata": {
+                    "status": "rejected"
+                }
+            }
+
+    # récupération fonction SQL
     template_function = TEMPLATE_MAPPING.get(template_name)
 
     if template_function is None:
+
         return {
             "table": [],
             "summary": "Template non trouvé.",
             "metadata": {
-                "template": template_name,
-                "duration_ms": 0,
-                "row_count": 0,
-                "params": params,
-                "logs_id": None
+                "template": template_name
             }
         }
 
     sql_query = template_function()
 
     try:
-        columns, rows = execute_query(sql_query, params)
+
+        columns, rows, execution_time = execute_query(sql_query, params)
         duration = round((time.time() - start_time) * 1000, 2)
 
         result_rows = [dict(zip(columns, row)) for row in rows]
 
         log_id = log_query(
-            question=question,
-            sql_query=sql_query,
-            execution_time=duration,
-            row_count=len(result_rows),
-            template_name=template_name,
-            params=params,
-            status="success",
-            error=None
+            question,
+            sql_query,
+            duration,
+            len(result_rows),
+            template_name,
+            params,
+            "success",
+            None
         )
 
         return {
@@ -213,22 +254,21 @@ def get_response(question: str):
 
     except Exception as e:
 
-        duration = round((time.time() - start_time) * 1000, 2)
-
+        duration = execution_time
         log_id = log_query(
-            question=question,
-            sql_query=sql_query,
-            execution_time=duration,
-            row_count=0,
-            template_name=template_name,
-            params=params,
-            status="rejected",
-            error=str(e)
+            question,
+            sql_query,
+            duration,
+            0,
+            template_name,
+            params,
+            "error",
+            str(e)
         )
 
         return {
             "table": [],
-            "summary": "Je ne peux pas répondre à cette requête. Veuillez reformuler votre question.",
+            "summary": "Erreur lors de l'exécution.",
             "metadata": {
                 "template": template_name,
                 "duration_ms": duration,
