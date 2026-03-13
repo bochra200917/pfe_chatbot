@@ -1,88 +1,60 @@
 # app/llm_prompt.py
-SCHEMA = """
-Tu es un assistant qui transforme une question utilisateur en JSON structuré
-pour générer une requête SQL.
 
-Tu dois répondre UNIQUEMENT avec un JSON valide.
-Ne retourne AUCUN texte avant ou après le JSON.
+def build_prompt(question: str):
 
-========================
-SCHEMA BASE DE DONNEES
-========================
-
-Table m38h_facture
-colonnes :
-- rowid
-- ref
-- total_ht
-- total_ttc
-- datef
-- fk_soc
-- entity
-
-Table m38h_societe
-colonnes :
-- rowid
-- nom
-- entity
-
-Table m38h_commande
-colonnes :
-- rowid
-- fk_soc
-
-Table m38h_product
-colonnes :
-- ref
-- label
-- stock
-- entity
-
-Table m38h_paiement_facture
-colonnes :
-- fk_facture
-- amount
+    prompt = f"""
+Tu es un assistant qui analyse une question métier et retourne UNIQUEMENT un JSON valide.
+Ne retourne AUCUN texte avant ou après le JSON. Pas de markdown, pas d'explication.
 
 ========================
-RELATIONS
+INTENTS DISPONIBLES
 ========================
 
-m38h_facture.fk_soc → m38h_societe.rowid
-m38h_commande.fk_soc → m38h_societe.rowid
-m38h_paiement_facture.fk_facture → m38h_facture.rowid
+Choisis EXACTEMENT un intent parmi cette liste :
 
-========================
-REGLES DE SECURITE
-========================
+1. get_factures_between
+   → factures entre deux dates
+   → filters requis : {{"start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD"}}
 
-- uniquement SELECT
-- pas de INSERT
-- pas de UPDATE
-- pas de DELETE
-- pas de DROP
-- maximum 2 tables
-- colonnes doivent exister dans le schema
-- toujours inclure LIMIT
+2. get_factures_par_client
+   → factures d'un client spécifique
+   → filters requis : {{"client": "nom_du_client"}}
+
+3. get_factures_non_payees
+   → factures non payées ou avec montant restant
+   → filters : {{}}
+
+4. get_factures_partiellement_payees
+   → factures partiellement payées
+   → filters : {{}}
+
+5. get_factures_negatives
+   → factures avec montant négatif
+   → filters : {{}}
+
+6. get_clients_multiple_commandes
+   → clients avec plusieurs commandes
+   → filters requis : {{"min_commandes": nombre_entier}}
+
+7. get_produits_stock_faible
+   → produits avec stock insuffisant
+   → filters requis : {{"stock_min": nombre_entier}}
+
+8. get_total_ventes_mois
+   → chiffre d'affaires pour un mois donné
+   → filters requis : {{"year": "YYYY", "month": "MM"}}
 
 ========================
 FORMAT JSON OBLIGATOIRE
 ========================
 
-{
- "intent": "nom_du_template",
- "tables": [],
- "columns": [],
- "filters": {},
- "limit": 100
-}
-
-Ne retourne STRICTEMENT RIEN d'autre que ce JSON.
-"""
-
-def build_prompt(question: str):
-
-    prompt = f"""
-{SCHEMA}
+{{
+  "intent": "nom_exact_du_template",
+  "tables": ["table_principale"],
+  "columns": ["col1", "col2"],
+  "filters": {{}},
+  "limit": 100
+}}
 
 ========================
 QUESTION UTILISATEUR

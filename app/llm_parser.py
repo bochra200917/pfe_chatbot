@@ -1,11 +1,18 @@
-# app/llm_parser.py
+#app/llm_parser.py
 import json
+import re
 from app.models_v3 import LLMQuery
 
 def parse_llm_json(response: str) -> LLMQuery:
 
     try:
-        data = json.loads(response)
+        # Nettoyer les balises markdown si présentes
+        clean = re.sub(r"```(?:json)?\s*|\s*```", "", response).strip()
+
+        if not clean:
+            raise ValueError("Réponse LLM vide")
+
+        data = json.loads(clean)
 
         parsed = LLMQuery(**data)
 

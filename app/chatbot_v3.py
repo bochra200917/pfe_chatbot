@@ -2,84 +2,49 @@
 from app.llm_client import call_llm
 from app.llm_prompt import build_prompt
 from app.llm_parser import parse_llm_json
-from app.sql_builder import build_sql
 from app.db import execute_query
 from app.sql_security import validate_sql_query, detect_injection, enforce_limit
 from app.logger import log_query
-from app.db_whitelist import ALLOWED_COLUMNS
+from app.templates_sql import TEMPLATE_MAPPING
 import time
-
-def validate_filters(filters):
-
-    if not isinstance(filters, dict):
-        raise ValueError("Invalid filters format")
-
-    clean = {}
-
-    for key, value in filters.items():
-
-        if not isinstance(key, str):
-            raise ValueError("Invalid filter key")
-
-        # vérifier que la colonne existe dans la whitelist
-        column_allowed = False
-
-        for table_columns in ALLOWED_COLUMNS.values():
-            if key in table_columns:
-                column_allowed = True
-                break
-
-        if not column_allowed:
-            raise ValueError(f"Unauthorized filter column: {key}")
-
-        if isinstance(value, str):
-
-            if len(value) > 100:
-                raise ValueError("Filter value too long")
-
-            clean[key] = value
-
-        elif isinstance(value, (int, float)):
-            clean[key] = value
-
-        else:
-            raise ValueError("Invalid filter value")
-
-    return clean
 
 def run_llm_pipeline(question: str):
 
     start = time.time()
 
-    # détection injection dans question
+    # détection injection dans la question
     detect_injection(question)
 
+    # appel LLM → identification de l'intent et extraction des paramètres
     prompt = build_prompt(question)
-
     llm_response = call_llm(prompt)
-
     parsed = parse_llm_json(llm_response)
 
-    filters = parsed.filters if parsed.filters else {}
+    # routing vers le template existant (pas de SQL libre)
+    template_function = TEMPLATE_MAPPING.get(parsed.intent)
 
-    params = validate_filters(filters)
+    if template_function is None:
+        raise ValueError(f"Intent '{parsed.intent}' ne correspond à aucun template connu")
 
-    sql = build_sql(parsed)
+    # récupération du SQL depuis le template (sécurisé)
+    sql = template_function()
 
-    # validation SQL AST
+    # validation SQL + enforcement LIMIT
     validate_sql_query(sql)
-
-    # enforcement LIMIT
     sql = enforce_limit(sql)
 
+    # exécution avec les paramètres extraits par le LLM
+    params = parsed.filters if parsed.filters else {}
     columns, rows, execution_time = execute_query(sql, params)
 
     result = [dict(zip(columns, r)) for r in rows]
 
+    duration = round((time.time() - start) * 1000, 2)
+
     log_query(
         question=question,
         sql_query=sql,
-        execution_time=execution_time,
+        execution_time=duration,
         row_count=len(rows),
         template_name=parsed.intent,
         params=params,
@@ -91,7 +56,7 @@ def run_llm_pipeline(question: str):
         "metadata": {
             "template": parsed.intent,
             "row_count": len(rows),
-            "duration_ms": execution_time,
+            "duration_ms": duration,
             "params": params
         }
     }

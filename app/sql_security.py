@@ -1,4 +1,6 @@
 # app/sql_security.py
+import re
+
 import sqlglot
 from sqlglot import exp
 from app.db_whitelist import ALLOWED_TABLES, ALLOWED_COLUMNS, ALLOWED_JOINS
@@ -135,6 +137,8 @@ def detect_injection(text: str):
     lower = text.lower()
 
     for keyword in FORBIDDEN_KEYWORDS:
+        if re.search(r'^\s*SELECT\b', text.strip(), re.IGNORECASE):
+            raise ValueError("Raw SQL query detected")
 
         if keyword in lower:
             raise SQLSecurityError("Potential SQL injection detected")

@@ -1,3 +1,4 @@
+# app/chatbot.py
 import re
 import unicodedata
 import time
@@ -93,7 +94,6 @@ def match_question(question: str):
     match = re.search(r'(\d{4})-(\d{2})', q)
 
     if match and any(word in q for word in ["total", "ventes", "chiffre"]):
-
         return "get_total_ventes_mois", {
             "year": match.group(1),
             "month": match.group(2)
@@ -151,41 +151,50 @@ def get_response(question: str):
 
     try:
         detect_injection(question)
-
     except Exception:
-
         return {
             "table": [],
             "summary": "Requête rejetée pour des raisons de sécurité.",
-            "metadata": {
-                "status": "rejected"
-            }
+            "metadata": {"status": "rejected"}
         }
 
-    template_name, params = match_question(question)
+    q_lower = question.lower()
+
+    # factures "du client" / "client" = ambigu SEULEMENT si pas de nom après
+    if re.search(r'factures?\s+(du\s+)?client\s*$', q_lower):
+        return {
+            "table": [],
+            "summary": "Veuillez préciser votre demande.",
+            "metadata": {"status": "clarification_required"}
+        }
+
+    # client + deux dates = ambigu (combine deux templates)
+    if "client" in q_lower and re.search(r'\d{4}-\d{2}-\d{2}.*\d{4}-\d{2}-\d{2}', q_lower):
+        return {
+            "table": [],
+            "summary": "Veuillez préciser votre demande : souhaitez-vous filtrer par client ou par période ?",
+            "metadata": {"status": "clarification_required"}
+        }
 
     ambiguous_patterns = [
-        "factures client",
-        "factures du client",
         "ventes du mois",
         "donne moi les ventes",
         "factures du mois dernier",
         "factures janvier",
         "factures fevrier",
-        "factures mars"
+        "factures mars",
     ]
 
+    if any(p in q_lower for p in ambiguous_patterns):
+        return {
+            "table": [],
+            "summary": "Veuillez préciser votre demande.",
+            "metadata": {"status": "clarification_required"}
+        }
+
+    template_name, params = match_question(question)
+
     if template_name is None:
-
-        if any(p in question.lower() for p in ambiguous_patterns):
-
-            return {
-                "table": [],
-                "summary": "Veuillez préciser votre demande.",
-                "metadata": {
-                    "status": "clarification_required"
-                }
-            }
 
         try:
 
@@ -212,7 +221,6 @@ def get_response(question: str):
     template_function = TEMPLATE_MAPPING.get(template_name)
 
     if template_function is None:
-
         return {
             "table": [],
             "summary": "Template non trouvé.",

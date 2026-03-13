@@ -237,7 +237,7 @@ produits avec stock inférieur à 5
 
 # 🤖 Version 3 – Pipeline LLM
 
-La V3 utilise un **LLM via OpenRouter**.
+La V3 utilise un **LLM via OPENROUTER**.
 
 Pipeline :
 
