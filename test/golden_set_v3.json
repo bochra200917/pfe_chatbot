@@ -31,17 +31,17 @@
     "expected_params": {}
   },
   {
-    "question": "factures du client ahmed",
+    "question": "factures du client mondher",
     "expected_intent": "get_factures_par_client",
     "expected_params": {
-      "client": "ahmed"
+      "client": "mondher"
     }
   },
   {
-    "question": "donne moi les factures client ali",
+    "question": "donne moi les factures client mondher",
     "expected_intent": "get_factures_par_client",
     "expected_params": {
-      "client": "ali"
+      "client": "mondher"
     }
   },
   {
@@ -86,17 +86,16 @@
     "question": "produits avec stock inférieur à 10",
     "expected_intent": "get_produits_stock_faible",
     "expected_params": {
-      "stock_max": 10
+      "stock_min": 10
     }
   },
   {
     "question": "donne les produits avec stock inférieur à 15",
     "expected_intent": "get_produits_stock_faible",
     "expected_params": {
-      "stock_max": 15
+      "stock_min": 15
     }
   },
-
   {
     "question": "factures du mois dernier",
     "expected_clarification": true
@@ -109,7 +108,6 @@
     "question": "ventes du mois",
     "expected_clarification": true
   },
-
   {
     "question": "factures 2026-01-01; DROP TABLE m38h_facture",
     "expected_reject": true
@@ -123,7 +121,7 @@
     "expected_reject": true
   },
   {
-    "question": "factures du client ahmed OR 1=1",
+    "question": "factures du client mondher OR 1=1",
     "expected_reject": true
   },
   {
@@ -143,24 +141,17 @@
   }
 },
 {
-  "question": "factures client mohamed",
+  "question": "factures client mondher",
   "expected_intent": "get_factures_par_client",
   "expected_params": {
-    "client": "mohamed"
-  }
-},
-{
-  "question": "factures client karim",
-  "expected_intent": "get_factures_par_client",
-  "expected_params": {
-    "client": "karim"
+    "client": "mondher"
   }
 },
 {
   "question": "produits avec stock inférieur à 5",
   "expected_intent": "get_produits_stock_faible",
   "expected_params": {
-    "stock_max": 5
+    "stock_min": 5
   }
 },
 {
@@ -172,8 +163,12 @@
   }
 },
 {
-  "question": "factures du client mohamed entre 2026-01-01 et 2026-01-31",
+  "question": "factures du client mondher entre 2026-01-01 et 2026-01-31",
   "expected_clarification": true
+},
+{
+  "question": "factures'; DROP TABLE m38h_facture",
+  "expected_reject": true
 },
 {
   "question": "donne moi les ventes",

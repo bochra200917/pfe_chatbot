@@ -1,5 +1,4 @@
 # test/test_sql_validation.py
-
 from app.sql_security import validate_sql_query, SQLSecurityError
 
 tests = [

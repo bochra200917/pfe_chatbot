@@ -1,1 +1,2 @@
-MAX_ROWS = 200
+# app/config.py
+MAX_ROWS = 100

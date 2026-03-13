@@ -1,5 +1,4 @@
 # test/test_golden_set.py
-
 import json
 import sys
 import os
@@ -7,7 +6,6 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.chatbot import match_question, get_response
-
 
 def run_tests(golden_file):
 
@@ -23,9 +21,6 @@ def run_tests(golden_file):
 
         try:
 
-            # =========================
-            # V1 / V2 TESTS
-            # =========================
             if "expected_template" in test:
 
                 template, params = match_question(question)
@@ -42,9 +37,6 @@ def run_tests(golden_file):
                     print(f"   Expected: {test['expected_template']} {test['expected_params']}")
                     print(f"   Got: {template} {params}")
 
-            # =========================
-            # V3 TESTS
-            # =========================
             else:
 
                 result = get_response(question)
@@ -53,7 +45,6 @@ def run_tests(golden_file):
                 status = metadata.get("status")
                 template = metadata.get("template")
 
-                # Reject attendu
                 if test.get("expected_reject"):
 
                     if status == "rejected":
@@ -65,7 +56,6 @@ def run_tests(golden_file):
                         print(f"   Expected: rejected")
                         print(f"   Got: {status}")
 
-                # Clarification attendue
                 elif test.get("expected_clarification"):
 
                     if status == "clarification_required":
@@ -77,7 +67,6 @@ def run_tests(golden_file):
                         print(f"   Expected: clarification_required")
                         print(f"   Got: {status}")
 
-                # Intent attendu
                 else:
 
                     if template == test["expected_intent"]:
@@ -99,7 +88,6 @@ def run_tests(golden_file):
     print(f"Passed: {success}")
     print(f"Accuracy: {accuracy:.2f}%")
     print("==========================")
-
 
 if __name__ == "__main__":
 

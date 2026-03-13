@@ -1,9 +1,9 @@
-pymysql
-python-dotenv
 fastapi
 uvicorn
+pymysql
+python-dotenv
 pydantic
 sqlalchemy
 sqlglot
-openai 
-httpx 
+requests
+python-multipart

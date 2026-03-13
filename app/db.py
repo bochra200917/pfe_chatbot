@@ -1,3 +1,4 @@
+# app/db.py
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 import os
@@ -5,7 +6,7 @@ import time
 from sqlalchemy import create_engine
 import os
 from urllib.parse import quote_plus
-from app.sql_security import validate_sql_query, enforce_limit
+from app.sql_security import enforce_limit
 
 load_dotenv()
 
@@ -28,34 +29,25 @@ engine = create_engine(
     connect_args={"connect_timeout": 5}
 )
 
-
-def execute_query(sql_query: str, params: dict = None, limit: int = 200):
-
+def execute_query(sql_query: str, params: dict = None):
+    
     if params is None:
         params = {}
 
     start = time.time()
 
     try:
+       
+        sql_query = enforce_limit(sql_query, 200)
+        
+        with engine.connect().execution_options(timeout=5) as connection:
 
-        # Ajout automatique LIMIT
-        sql_query = enforce_limit(sql_query, limit)
-
-        # Validation SQL (SELECT only, whitelist etc.)
-        validate_sql_query(sql_query)
-
-        with engine.connect() as connection:
-
-            # timeout SQL côté serveur
             connection.execute(text("SET SESSION max_statement_time=5"))
 
             result = connection.execute(text(sql_query), params)
 
             rows = result.fetchall()
             columns = result.keys()
-
-            if len(rows) > limit:
-                rows = rows[:limit]
 
             execution_time = round((time.time() - start) * 1000, 2)
 

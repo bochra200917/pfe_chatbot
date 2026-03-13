@@ -39,17 +39,17 @@
     "expected_params": {}
   },
   {
-    "question": "factures du client ahmed",
+    "question": "factures du client mondher",
     "expected_template": "get_factures_par_client",
     "expected_params": {
-      "client": "ahmed"
+      "client": "mondher"
     }
   },
   {
-    "question": "donne moi les factures client ali",
+    "question": "donne moi les factures client mondher",
     "expected_template": "get_factures_par_client",
     "expected_params": {
-      "client": "ali"
+      "client": "mondher"
     }
   },
   {

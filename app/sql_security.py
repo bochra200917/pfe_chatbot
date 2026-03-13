@@ -1,11 +1,10 @@
+# app/sql_security.py
 import sqlglot
 from sqlglot import exp
 from app.db_whitelist import ALLOWED_TABLES, ALLOWED_COLUMNS, ALLOWED_JOINS
 
-
 class SQLSecurityError(Exception):
     pass
-
 
 def validate_sql_query(sql: str):
 
@@ -14,21 +13,27 @@ def validate_sql_query(sql: str):
     except Exception:
         raise SQLSecurityError("Invalid SQL syntax")
 
+    # autoriser uniquement SELECT
     if not isinstance(parsed, exp.Select):
         raise SQLSecurityError("Only SELECT allowed")
 
-    # blocage subqueries
+    # blocage sous-requêtes
     for sub in parsed.find_all(exp.Subquery):
         raise SQLSecurityError("Subqueries not allowed")
 
-    # blocage union
+    # blocage UNION
     if parsed.find(exp.Union):
         raise SQLSecurityError("UNION not allowed")
+
+    # LIMIT obligatoire
+    if parsed.args.get("limit") is None:
+        raise SQLSecurityError("LIMIT clause required")
 
     table_alias_map = {}
 
     tables = list(parsed.find_all(exp.Table))
 
+    # limiter nombre tables
     if len(tables) > 3:
         raise SQLSecurityError("Too many tables")
 
@@ -43,6 +48,7 @@ def validate_sql_query(sql: str):
         if alias:
             table_alias_map[alias] = table_name
 
+    # validation colonnes
     for column in parsed.find_all(exp.Column):
 
         col = column.name
@@ -51,11 +57,17 @@ def validate_sql_query(sql: str):
         if table in table_alias_map:
             table = table_alias_map[table]
 
-        if table and table in ALLOWED_COLUMNS:
+        if table:
+
+            if table not in ALLOWED_COLUMNS:
+                raise SQLSecurityError(f"Unauthorized table reference: {table}")
 
             if col not in ALLOWED_COLUMNS[table]:
-                raise SQLSecurityError(f"Unauthorized column {col}")
+                raise SQLSecurityError(
+                    f"Unauthorized column {col} in table {table}"
+                )
 
+    # validation JOIN
     for join in parsed.find_all(exp.Join):
 
         left = join.this
@@ -68,25 +80,32 @@ def validate_sql_query(sql: str):
             if pair not in ALLOWED_JOINS and pair[::-1] not in ALLOWED_JOINS:
                 raise SQLSecurityError(f"Unauthorized join {pair}")
 
+def enforce_limit(sql: str, max_limit: int = 100):
 
-def enforce_limit(sql: str, max_limit: int = 200):
-
-    sql_lower = sql.lower()
+    sql_clean = sql.strip().rstrip(";")
+    sql_lower = sql_clean.lower()
 
     if "limit" in sql_lower:
 
         try:
-            limit_value = int(sql_lower.split("limit")[1].strip().split()[0])
+
+            limit_part = sql_lower.split("limit")[1].strip()
+            limit_value = int(limit_part.split()[0])
 
             if limit_value > max_limit:
-                sql = sql_lower.split("limit")[0] + f" LIMIT {max_limit}"
 
-        except:
-            sql = sql_lower.split("limit")[0] + f" LIMIT {max_limit}"
+                sql_clean = sql_clean.split("LIMIT")[0]
+                sql_clean += f" LIMIT {max_limit}"
 
-        return sql
+        except Exception:
 
-    return sql.strip().rstrip(";") + f" LIMIT {max_limit}"
+            sql_clean = sql_clean.split("LIMIT")[0]
+            sql_clean += f" LIMIT {max_limit}"
+
+        return sql_clean
+
+    # ajouter LIMIT si absent
+    return sql_clean + f" LIMIT {max_limit}"
 
 
 FORBIDDEN_KEYWORDS = [
@@ -102,9 +121,14 @@ FORBIDDEN_KEYWORDS = [
     " truncate ",
     " union ",
     " union select ",
-    " or 1=1"
+    " or 1=1",
+    " or '1'='1'",
+    " or \"1\"=\"1\"",
+    " sleep(",
+    " benchmark(",
+    " information_schema",
+    " load_file(",
 ]
-
 
 def detect_injection(text: str):
 

@@ -1,12 +1,12 @@
-# PFE Chatbot – SQL Sécurisé (V1 + V2 + V3 LLM)
+# PFE Chatbot – SQL Sécurisé (V1 + V2 + V3)
 
 ---
 
 # 📌 Objectif
 
-Ce projet implémente un **chatbot SQL sécurisé** capable de répondre à des questions en **langage naturel** sur une base de données.
+Ce projet implémente un **chatbot sécurisé permettant d’interroger une base SQL en langage naturel**.
 
-Le système évolue en **trois versions successives** :
+Le système est conçu comme une **évolution progressive en trois versions** :
 
 | Version | Description |
 |------|------|
@@ -14,21 +14,18 @@ Le système évolue en **trois versions successives** :
 | **V2** | NLP sans LLM (regex + extraction entités) |
 | **V3** | Pipeline LLM sécurisé avec validation SQL |
 
-Le système garantit :
+L'objectif est de construire un système :
 
-- ✅ Sécurité SQL forte (anti-injection)
-- ✅ Architecture modulaire propre
-- ✅ Audit complet des requêtes
-- ✅ Mesurabilité (Golden Set ≥ 20 tests)
-- ✅ Robustesse NLP sans LLM
-- ✅ Pipeline LLM sécurisé
-- ✅ Dashboard d’analyse des performances
+- 🔐 **hautement sécurisé**
+- 🧠 **capable de comprendre le langage naturel**
+- 📊 **mesurable via Golden Set**
+- 🧱 **modulaire et maintenable**
 
 ---
 
 # 🏗️ Architecture
 
-Structure modulaire claire :
+Structure du projet :
 
 ```
 app/
@@ -36,70 +33,53 @@ app/
 main.py
 chatbot.py
 chatbot_v3.py
+
 templates_sql.py
 sql_builder.py
 sql_security.py
-db.py
 db_whitelist.py
+
+db.py
 logger.py
 audit.py
 summarizer.py
+
 llm_prompt.py
 llm_parser.py
-
-test/
-golden_set_v1.py
-golden_set_v2.py
-golden_set_v3.py
+llm_client.py
 ```
 
-Responsabilités :
+Tests :
 
-| Fichier | Rôle |
-|------|------|
-| `main.py` | API FastAPI |
-| `chatbot.py` | NLP + routing templates |
-| `chatbot_v3.py` | Pipeline LLM |
-| `templates_sql.py` | Templates SQL paramétrés |
-| `sql_builder.py` | Construction SQL depuis JSON |
-| `sql_security.py` | Validation SQL AST |
-| `db.py` | Exécution requêtes |
-| `logger.py` | Logging structuré |
-| `audit.py` | Dashboard statistiques |
-| `summarizer.py` | Génération résumé réponse |
+```
+test/
 
-Architecture **fortement découplée et maintenable**.
+golden_set.json
+golden_set_v2.json
+golden_set_v3.json
+```
 
 ---
 
 # 🚀 Lancer le projet
 
-## 1️⃣ Activer l’environnement
+## 1️⃣ Activer l'environnement
 
 ```bash
 venv\Scripts\activate
 ```
 
-## 2️⃣ Installer les dépendances
+---
+
+## 2️⃣ Installer dépendances
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Le fichier `requirements.txt` doit contenir :
+---
 
-```
-pymysql
-python-dotenv
-fastapi
-uvicorn
-pydantic
-sqlalchemy
-sqlglot
-requests
-```
-
-## 3️⃣ Lancer l’API
+## 3️⃣ Lancer API
 
 ```bash
 uvicorn app.main:app --reload
@@ -117,7 +97,7 @@ http://127.0.0.1:8000/docs
 
 ### POST `/ask`
 
-## Input
+Input :
 
 ```json
 {
@@ -125,67 +105,54 @@ http://127.0.0.1:8000/docs
 }
 ```
 
-## Output
+Output :
 
 ```json
 {
  "table": [...],
- "summary": "5 résultat(s) trouvé(s).",
+ "summary": "5 résultat(s)",
  "metadata": {
    "template": "get_factures_between",
-   "duration_ms": 12.4,
+   "duration_ms": 15,
    "row_count": 5,
-   "params": {
-     "start_date": "2026-01-01",
-     "end_date": "2026-01-31"
-   },
-   "logs_id": "uuid"
+   "params": {}
  }
 }
 ```
 
 ---
 
-# 🔐 Sécurité SQL
+# 🔐 Architecture de Sécurité
 
-Le système applique plusieurs niveaux de protection.
+Le système applique **plusieurs couches de sécurité**.
 
-### 1️⃣ SELECT uniquement
+## 1️⃣ Validation entrée utilisateur
 
-Toute requête non SELECT est rejetée.
-
----
-
-### 2️⃣ Blocage DDL / DML
-
-Commandes interdites :
-
-```
-INSERT
-UPDATE
-DELETE
-DROP
-ALTER
-CREATE
-TRUNCATE
-```
-
----
-
-### 3️⃣ Blocage injections SQL
-
-Interdiction de :
+Blocage de patterns SQL dangereux :
 
 ```
 ;
 --
-/* */
+/*
 OR 1=1
+UNION
 ```
 
 ---
 
-### 4️⃣ Whitelist Tables
+## 2️⃣ SQL paramétré
+
+Toutes les requêtes utilisent :
+
+```
+%(param)s
+```
+
+Ce qui empêche les injections SQL.
+
+---
+
+## 3️⃣ Whitelist Tables
 
 Tables autorisées :
 
@@ -199,109 +166,100 @@ m38h_paiement_facture
 
 ---
 
-### 5️⃣ Whitelist Colonnes
+## 4️⃣ Whitelist Colonnes
 
 Chaque table possède une liste de colonnes autorisées.
 
 ---
 
-### 6️⃣ Validation AST SQL
+## 5️⃣ Validation AST SQL
 
-Les requêtes sont analysées avec :
+Les requêtes sont analysées via :
 
 ```
 sqlglot
 ```
 
-Vérifications :
+Contrôles :
 
-- type SELECT
+- SELECT uniquement
 - tables autorisées
 - colonnes autorisées
 - JOIN autorisés
-- nombre maximum de tables
+- blocage UNION
+- blocage sous-requêtes
 
 ---
 
-### 7️⃣ LIMIT automatique
+## 6️⃣ LIMIT obligatoire
 
-Si la requête ne contient pas de LIMIT :
+Toute requête possède :
 
 ```
-LIMIT 200
+LIMIT 100
 ```
 
-est ajouté automatiquement.
+maximum.
 
 ---
 
-### 8️⃣ Blocage UNION
+## 7️⃣ Base de données read-only
 
-Les requêtes contenant `UNION` sont rejetées.
+Le compte MySQL possède uniquement :
 
----
-
-### 9️⃣ Blocage sous-requêtes
-
-Les sous-requêtes SQL sont interdites.
+```
+SELECT
+```
 
 ---
 
-### 🔟 Base de données en lecture seule
+# 🧠 Version 2 – NLP sans LLM
 
-Le compte MySQL/MariaDB utilisé est configuré en **read-only**.
-
----
-
-# 🧠 Version 2 — NLP Sans LLM
-
-Le chatbot implémente un routing NLP basé sur **regex**.
+La V2 implémente un **routing NLP basé sur regex**.
 
 Fonctionnalités :
 
-✔ dates ISO  
+✔ détection dates  
 ✔ mois texte  
-✔ extraction client  
 ✔ seuil dynamique commandes  
 ✔ seuil dynamique stock  
 ✔ normalisation accents  
-✔ variantes linguistiques  
 
 Exemples :
 
 ```
 factures entre 2026-01-01 et 2026-01-31
 clients avec plus de 3 commandes
-stock inférieur à 5
+produits avec stock inférieur à 5
 ```
 
 ---
 
-# 🤖 Version 3 — Pipeline LLM Sécurisé
+# 🤖 Version 3 – Pipeline LLM
 
-Une version expérimentale utilise un **LLM via OpenRouter**.
+La V3 utilise un **LLM via OpenRouter**.
 
 Pipeline :
 
 ```
-Question utilisateur
-      ↓
+Question
+↓
 Prompt structuré
-      ↓
+↓
 LLM
-      ↓
+↓
 JSON structuré
-      ↓
+↓
 Validation Pydantic
-      ↓
+↓
 SQL Builder
-      ↓
-Validation SQL (sqlglot)
-      ↓
+↓
+Validation SQL
+↓
 Execution
 ```
 
-### Exemple JSON LLM
+Exemple JSON :
 
 ```json
 {
@@ -315,37 +273,17 @@ Execution
 
 ---
 
-# 📦 Templates SQL Supportés
-
-```
-get_factures_between
-get_factures_par_client
-get_factures_non_payees
-get_factures_partiellement_payees
-get_clients_multiple_commandes
-get_produits_stock_faible
-get_total_ventes_mois
-get_factures_negatives
-```
-
-Toutes les requêtes sont :
-
-- paramétrées  
-- sécurisées  
-- validées  
-
----
-
 # 🧪 Golden Set
+
+Le projet utilise des **tests Golden Set** pour mesurer la performance.
 
 ## V1
 
-20 tests couvrant :
+20 requêtes :
 
 ```
 factures
 clients
-dates
 stock
 ```
 
@@ -353,51 +291,37 @@ stock
 
 ## V2
 
-20 tests supplémentaires :
+Tests NLP :
 
 ```
+dates
 mois texte
-seuil dynamique
-variantes linguistiques
+seuils dynamiques
 ```
 
 ---
 
 ## V3
 
-Tests pour pipeline LLM :
+Tests pipeline LLM :
 
 ```
 validation JSON
 validation SQL
-robustesse pipeline
+robustesse LLM
 ```
-
----
-
-## Lancer les tests
-
-```bash
-python test/test_golden_set.py
-```
-
-Chaque test vérifie :
-
-- template sélectionné  
-- paramètres extraits  
-- cohérence du routing  
 
 ---
 
 # 📊 Logging
 
-Les logs sont stockés dans :
+Toutes les requêtes sont enregistrées dans :
 
 ```
 chatbot_logs.json
 ```
 
-Chaque entrée contient :
+Structure :
 
 ```
 log_id
@@ -409,7 +333,6 @@ sql_query
 execution_time
 row_count
 status
-error
 ```
 
 ---
@@ -426,11 +349,8 @@ Statistiques :
 
 ```
 total_requests
-average_duration_ms
-success_count
-error_count
-error_rate
-requests_per_day
+success_rate
+average_duration
 top_templates
 top_questions
 ```
@@ -439,7 +359,7 @@ top_questions
 
 # 🔐 Authentification
 
-Les endpoints sont protégés par :
+Protection API :
 
 ```
 HTTP Basic Auth
@@ -456,12 +376,12 @@ API_PASS=secret
 
 # ⚙️ Configuration LLM
 
-Le projet utilise **OpenRouter**.
+Le projet utilise **OPENROUTER**.
 
-Variable environnement :
+Variable :
 
 ```
-OPENROUTER_API_KEY=your_key_here
+OPENROUTER_API_KEY=...
 ```
 
 ---
@@ -476,7 +396,6 @@ OPENROUTER_API_KEY=your_key_here
 | Read-only DB | ✅ |
 | SELECT only | ✅ |
 | Anti-injection | ✅ |
-| Limitation lignes | ✅ |
 | Logs obligatoires | ✅ |
 | Dashboard audit | ✅ |
 | Auth API | ✅ |
@@ -486,12 +405,10 @@ OPENROUTER_API_KEY=your_key_here
 
 # 🏆 Conclusion
 
-Ce projet implémente un **chatbot SQL avancé** :
+Ce projet implémente un **chatbot SQL sécurisé et évolutif** combinant :
 
-🔐 Sécurisé  
-🧱 Modulaire  
-📊 Mesurable  
-🧪 Testé  
-🤖 Compatible LLM  
+- NLP classique
+- LLM
+- sécurité SQL avancée
 
-Le système combine **NLP classique et LLM sécurisé**, tout en maintenant un **haut niveau de sécurité SQL**, adapté à un **projet de fin d’études en data engineering / NLP appliqué**.
+Le système est **modulaire, testé et sécurisé**, adapté à un **projet de fin d’études en Data Engineering / NLP appliqué**.

@@ -12,6 +12,7 @@ def get_factures_between():
     WHERE f.datef BETWEEN :start_date AND :end_date
       AND f.entity = 1
     ORDER BY f.datef ASC
+    LIMIT 100
     """
 
 def get_factures_par_client():
@@ -26,6 +27,7 @@ def get_factures_par_client():
     WHERE s.nom = :client
       AND f.entity = 1
     ORDER BY f.datef ASC
+    LIMIT 100
     """
 
 def get_factures_negatives():
@@ -41,6 +43,7 @@ def get_factures_negatives():
     WHERE f.total_ht < 0
       AND f.entity = 1
     ORDER BY f.datef ASC
+    LIMIT 100
     """
 
 def get_clients_multiple_commandes():
@@ -54,6 +57,7 @@ def get_clients_multiple_commandes():
     GROUP BY c.rowid, c.nom
     HAVING nb_commandes > :min_commandes
     ORDER BY nb_commandes DESC
+    LIMIT 100
     """
 
 def get_produits_stock_faible():
@@ -65,6 +69,7 @@ def get_produits_stock_faible():
     WHERE p.stock < :stock_min
       AND p.entity = 1
     ORDER BY p.stock ASC
+    LIMIT 100
     """
 
 def get_total_ventes_mois():    
@@ -78,6 +83,7 @@ def get_total_ventes_mois():
       AND MONTH(f.datef) = :month
       AND f.entity = 1
     GROUP BY mois
+    LIMIT 100
     """
 
 def get_factures_non_payees():
@@ -103,6 +109,7 @@ def get_factures_non_payees():
     f.datef
     HAVING (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
     ORDER BY f.datef ASC
+    LIMIT 100
     """
 
 def get_factures_partiellement_payees():
@@ -130,6 +137,7 @@ def get_factures_partiellement_payees():
         COALESCE(SUM(pf.amount), 0) > 0
         AND (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
     ORDER BY f.datef ASC
+    LIMIT 100
     """
 
 TEMPLATE_MAPPING = {

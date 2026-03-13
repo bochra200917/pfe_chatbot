@@ -1,17 +1,13 @@
 # app/audit.py
-
 import json
 import os
 from collections import Counter
 
 LOG_FILE = "chatbot_logs.json"
 
-# limite de logs chargés pour éviter surcharge mémoire
 MAX_LOGS = 5000
 
-# nombre max d'éléments dans les tops
 TOP_LIMIT = 10
-
 
 def get_audit_dashboard():
 
@@ -33,14 +29,9 @@ def get_audit_dashboard():
     if not logs:
         return {"message": "Logs vides."}
 
-    # 🔒 limiter le volume de logs analysés
     logs = logs[-MAX_LOGS:]
 
     total_requests = len(logs)
-
-    # ===============================
-    # Durée moyenne
-    # ===============================
 
     durations = [
         log.get("execution_time", 0)
@@ -49,11 +40,6 @@ def get_audit_dashboard():
     ]
 
     avg_duration = round(sum(durations) / len(durations), 2) if durations else 0
-
-    # ===============================
-    # Succès / erreurs
-    # ===============================
-
     success_count = sum(1 for log in logs if log.get("status") == "success")
     error_count = sum(1 for log in logs if log.get("status") == "error")
 
@@ -62,10 +48,6 @@ def get_audit_dashboard():
         if total_requests > 0
         else 0
     )
-
-    # ===============================
-    # Requêtes par jour
-    # ===============================
 
     per_day_counter = Counter()
 
@@ -77,10 +59,6 @@ def get_audit_dashboard():
             day = timestamp.split(" ")[0]
             per_day_counter[day] += 1
 
-    # ===============================
-    # Top templates
-    # ===============================
-
     template_counter = Counter(
         log.get("template")
         for log in logs
@@ -89,10 +67,6 @@ def get_audit_dashboard():
 
     top_templates = dict(template_counter.most_common(TOP_LIMIT))
 
-    # ===============================
-    # Top questions
-    # ===============================
-
     question_counter = Counter(
         log.get("question")
         for log in logs
@@ -100,10 +74,6 @@ def get_audit_dashboard():
     )
 
     top_questions = dict(question_counter.most_common(TOP_LIMIT))
-
-    # ===============================
-    # Résultat dashboard
-    # ===============================
 
     return {
         "total_requests": total_requests,

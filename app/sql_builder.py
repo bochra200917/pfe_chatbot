@@ -1,38 +1,48 @@
-#app/sql_builder.py
+# app/sql_builder.py
 from app.db_whitelist import ALLOWED_TABLES, ALLOWED_COLUMNS
 
+def build_sql(parsed):
 
-def build_sql(query):
+    tables = parsed.tables
+    columns = parsed.columns
+    filters = parsed.filters
+    limit = parsed.limit or 100
 
-    table = query.tables[0]
+    if not tables:
+        raise ValueError("No table specified")
 
-    if table not in ALLOWED_TABLES:
-        raise Exception("Unauthorized table")
+    for t in tables:
+        if t not in ALLOWED_TABLES:
+            raise ValueError(f"Unauthorized table {t}")
 
-    columns = query.columns
+    table = tables[0]
 
-    if columns == ["*"]:
-        columns_sql = "*"
+    # colonnes autorisées
+    if columns:
+
+        safe_columns = []
+
+        for c in columns:
+            if c not in ALLOWED_COLUMNS.get(table, []):
+                raise ValueError(f"Unauthorized column {c}")
+            safe_columns.append(c)
+
+        column_sql = ", ".join(safe_columns)
+
     else:
-        columns_sql = ", ".join(columns)
+        column_sql = "*"
 
-    sql = f"SELECT {columns_sql} FROM {table}"
+    sql = f"SELECT {column_sql} FROM {table}"
 
-    if query.filters:
+    if filters:
 
         conditions = []
 
-        for key, value in query.filters.items():
+        for k in filters.keys():
+            conditions.append(f"{k} = %({k})s")
 
-            if key not in ALLOWED_COLUMNS[table]:
-                raise Exception("Unauthorized column")
+        sql += " WHERE " + " AND ".join(conditions)
 
-            conditions.append(f"{key} = :{key}")
-
-        where = " AND ".join(conditions)
-
-        sql += f" WHERE {where}"
-
-    sql += f" LIMIT {query.limit}"
+    sql += f" LIMIT {limit}"
 
     return sql

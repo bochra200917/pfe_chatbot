@@ -1,4 +1,5 @@
 # client_console.py
+from urllib import response
 from app.chatbot import get_response
 
 print("=== Console Chatbot V2 ===")
@@ -15,3 +16,5 @@ while True:
     print(f"Logs ID : {result['metadata'].get('logs_id')}")
     print("Rows :", result['table'])
     print("----------------\n")
+    response = get_response(query)
+    print(response)

@@ -1,5 +1,4 @@
 # app/db_whitelist.py
-
 WHITELIST_VERSION = "v1.0"
 
 ALLOWED_TABLES = {
@@ -29,7 +28,6 @@ ALLOWED_COLUMNS = {
     }
 }
 
-# Jointures autorisées explicitement
 ALLOWED_JOINS = {
     ("m38h_facture", "m38h_societe"),
     ("m38h_societe", "m38h_commande"),

@@ -1,18 +1,26 @@
-# app/logger.py
-
+#app/logger.py
 import json
 import time
 import uuid
+import os
 from threading import Lock
 
 LOG_FILE = "chatbot_logs.json"
 
 log_lock = Lock()
 
+MAX_LOG_SIZE_MB = 10
 
 def log_query(question, sql_query, execution_time, row_count,
               template_name, params,
               status="success", error=None):
+
+    if os.path.exists(LOG_FILE):
+
+        size_mb = os.path.getsize(LOG_FILE) / (1024 * 1024)
+
+        if size_mb > MAX_LOG_SIZE_MB:
+            os.rename(LOG_FILE, LOG_FILE + ".backup")
 
     log_id = str(uuid.uuid4())
 
