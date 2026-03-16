@@ -1,0 +1,4 @@
+{
+    "python.analysis.ignore": ["**/*.json"],
+    "python.analysis.typeCheckingMode": "off"
+}

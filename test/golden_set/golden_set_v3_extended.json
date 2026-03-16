@@ -1,0 +1,572 @@
+[
+  {
+    "id": 1,
+    "category": "intent",
+    "question": "donne moi les factures entre 2026-02-01 et 2026-02-28",
+    "expected_intent": "get_factures_between",
+    "expected_params": { "start_date": "2026-02-01", "end_date": "2026-02-28" },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 2,
+    "category": "intent",
+    "question": "factures du 2026-01-01 au 2026-01-31",
+    "expected_intent": "get_factures_between",
+    "expected_params": { "start_date": "2026-01-01", "end_date": "2026-01-31" },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 3,
+    "category": "intent",
+    "question": "liste des factures entre 2026-01-15 et 2026-03-15",
+    "expected_intent": "get_factures_between",
+    "expected_params": { "start_date": "2026-01-15", "end_date": "2026-03-15" },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 4,
+    "category": "intent",
+    "question": "factures du client mondher",
+    "expected_intent": "get_factures_par_client",
+    "expected_params": { "client": "mondher" },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 5,
+    "category": "intent",
+    "question": "affiche les factures pour le client alpha",
+    "expected_intent": "get_factures_par_client",
+    "expected_params": { "client": "alpha" },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 6,
+    "category": "intent",
+    "question": "factures non payees",
+    "expected_intent": "get_factures_non_payees",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 7,
+    "category": "intent",
+    "question": "affiche les factures impayees",
+    "expected_intent": "get_factures_non_payees",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 8,
+    "category": "intent",
+    "question": "quelles factures n ont pas ete reglees",
+    "expected_intent": "get_factures_non_payees",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 9,
+    "category": "intent",
+    "question": "factures partiellement payees",
+    "expected_intent": "get_factures_partiellement_payees",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 10,
+    "category": "intent",
+    "question": "factures avec paiement partiel",
+    "expected_intent": "get_factures_partiellement_payees",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 11,
+    "category": "intent",
+    "question": "factures negatives",
+    "expected_intent": "get_factures_negatives",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 12,
+    "category": "intent",
+    "question": "affiche les avoirs",
+    "expected_intent": "get_factures_negatives",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 13,
+    "category": "intent",
+    "question": "clients avec plus de 2 commandes",
+    "expected_intent": "get_clients_multiple_commandes",
+    "expected_params": { "min_commandes": 2 },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 14,
+    "category": "intent",
+    "question": "quels clients ont passe plus de 5 commandes",
+    "expected_intent": "get_clients_multiple_commandes",
+    "expected_params": { "min_commandes": 5 },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 15,
+    "category": "intent",
+    "question": "liste des clients avec plusieurs commandes",
+    "expected_intent": "get_clients_multiple_commandes",
+    "expected_params": { "min_commandes": 2 },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 16,
+    "category": "intent",
+    "question": "produits avec stock inferieur a 5",
+    "expected_intent": "get_produits_stock_faible",
+    "expected_params": { "stock_min": 5 },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 17,
+    "category": "intent",
+    "question": "quels produits ont un stock faible",
+    "expected_intent": "get_produits_stock_faible",
+    "expected_params": { "stock_min": 5 },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 18,
+    "category": "intent",
+    "question": "chiffre d affaires de janvier 2026",
+    "expected_intent": "get_total_ventes_mois",
+    "expected_params": { "year": "2026", "month": "01" },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 19,
+    "category": "intent",
+    "question": "total des ventes pour fevrier 2026",
+    "expected_intent": "get_total_ventes_mois",
+    "expected_params": { "year": "2026", "month": "02" },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 20,
+    "category": "intent",
+    "question": "CA du mois de mars 2026",
+    "expected_intent": "get_total_ventes_mois",
+    "expected_params": { "year": "2026", "month": "03" },
+    "expected_clarification": false,
+    "expected_reject": false
+  },
+  {
+    "id": 21,
+    "category": "clarification",
+    "question": "factures du client",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false
+  },
+  {
+    "id": 22,
+    "category": "clarification",
+    "question": "factures du mois dernier",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false
+  },
+  {
+    "id": 23,
+    "category": "clarification",
+    "question": "ventes du mois",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false
+  },
+  {
+    "id": 24,
+    "category": "clarification",
+    "question": "factures du client mondher entre 2026-01-01 et 2026-02-28",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false
+  },
+  {
+    "id": 25,
+    "category": "clarification",
+    "question": "donne moi les ventes",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false
+  },
+  {
+    "id": 26,
+    "category": "injection",
+    "question": "SELECT * FROM m38h_facture",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true
+  },
+  {
+    "id": 27,
+    "category": "injection",
+    "question": "factures UNION SELECT password FROM users",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true
+  },
+  {
+    "id": 28,
+    "category": "injection",
+    "question": "factures; DROP TABLE m38h_facture",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true
+  },
+  {
+    "id": 29,
+    "category": "injection",
+    "question": "DELETE FROM m38h_societe",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true
+  },
+  {
+    "id": 30,
+    "category": "injection",
+    "question": "factures OR 1=1",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true
+  },
+  {
+    "id": 31,
+    "category": "clarification_new",
+    "question": "factures janvier",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "mois sans annee"
+  },
+  {
+    "id": 32,
+    "category": "clarification_new",
+    "question": "factures fevrier",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "mois sans annee"
+  },
+  {
+    "id": 33,
+    "category": "clarification_new",
+    "question": "factures mars",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "mois sans annee"
+  },
+  {
+    "id": 34,
+    "category": "clarification_new",
+    "question": "donne moi les factures",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "question trop vague sans filtre"
+  },
+  {
+    "id": 35,
+    "category": "clarification_new",
+    "question": "liste des clients",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "sans critere de filtrage"
+  },
+  {
+    "id": 36,
+    "category": "clarification_new",
+    "question": "produits",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "question trop vague"
+  },
+  {
+    "id": 37,
+    "category": "clarification_new",
+    "question": "factures client mondher 2026-01-01 2026-03-31",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "client + deux dates combinent deux templates"
+  },
+  {
+    "id": 38,
+    "category": "clarification_new",
+    "question": "ventes 2026",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "annee sans mois"
+  },
+  {
+    "id": 39,
+    "category": "clarification_new",
+    "question": "factures payees",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "totalement payees, aucun template dedie"
+  },
+  {
+    "id": 40,
+    "category": "clarification_new",
+    "question": "factures totalement payees",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": true,
+    "expected_reject": false,
+    "note": "pas de template get_factures_payees"
+  },
+  {
+    "id": 41,
+    "category": "intent_complex",
+    "question": "combien de factures non payees y a t il",
+    "expected_intent": "get_factures_non_payees",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "formulation interrogative"
+  },
+  {
+    "id": 42,
+    "category": "intent_complex",
+    "question": "montant restant des factures non reglees",
+    "expected_intent": "get_factures_non_payees",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "non reglees = non payees"
+  },
+  {
+    "id": 43,
+    "category": "intent_complex",
+    "question": "produits en rupture de stock",
+    "expected_intent": "get_produits_stock_faible",
+    "expected_params": { "stock_min": 5 },
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "rupture = stock faible, seuil defaut 5"
+  },
+  {
+    "id": 44,
+    "category": "intent_complex",
+    "question": "produits dont le stock est inferieur a 10",
+    "expected_intent": "get_produits_stock_faible",
+    "expected_params": { "stock_min": 10 },
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "extraction du seuil numerique"
+  },
+  {
+    "id": 45,
+    "category": "intent_complex",
+    "question": "clients fideles avec plus de 3 commandes",
+    "expected_intent": "get_clients_multiple_commandes",
+    "expected_params": { "min_commandes": 3 },
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "fideles = clients multiple commandes"
+  },
+  {
+    "id": 46,
+    "category": "intent_complex",
+    "question": "quels sont les meilleurs clients en termes de commandes",
+    "expected_intent": "get_clients_multiple_commandes",
+    "expected_params": { "min_commandes": 2 },
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "meilleurs clients, seuil defaut"
+  },
+  {
+    "id": 47,
+    "category": "intent_complex",
+    "question": "factures avec avoir",
+    "expected_intent": "get_factures_negatives",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "avoir = facture negative"
+  },
+  {
+    "id": 48,
+    "category": "intent_complex",
+    "question": "revenus du mois de decembre 2025",
+    "expected_intent": "get_total_ventes_mois",
+    "expected_params": { "year": "2025", "month": "12" },
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "revenus = total ventes"
+  },
+  {
+    "id": 49,
+    "category": "intent_complex",
+    "question": "ca de novembre 2025",
+    "expected_intent": "get_total_ventes_mois",
+    "expected_params": { "year": "2025", "month": "11" },
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "ca = chiffre affaires"
+  },
+  {
+    "id": 50,
+    "category": "intent_complex",
+    "question": "factures en cours de paiement",
+    "expected_intent": "get_factures_partiellement_payees",
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": false,
+    "note": "en cours de paiement = partiellement payees"
+  },
+  {
+    "id": 51,
+    "category": "injection_new",
+    "question": "factures 2026-01-01 --",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "commentaire SQL --"
+  },
+  {
+    "id": 52,
+    "category": "injection_new",
+    "question": "factures 2026-01-01 /* injection */",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "commentaire SQL /**/"
+  },
+  {
+    "id": 53,
+    "category": "injection_new",
+    "question": "factures'; DROP TABLE m38h_facture; --",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "injection classique avec fermeture de chaine"
+  },
+  {
+    "id": 54,
+    "category": "injection_new",
+    "question": "UPDATE m38h_facture SET total_ttc=0",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "tentative de modification de donnees"
+  },
+  {
+    "id": 55,
+    "category": "injection_new",
+    "question": "INSERT INTO m38h_facture VALUES (1,2,3)",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "tentative d insertion"
+  },
+  {
+    "id": 56,
+    "category": "injection_new",
+    "question": "factures OR '1'='1'",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "tautologie OR 1=1"
+  },
+  {
+    "id": 57,
+    "category": "injection_new",
+    "question": "SELECT * FROM information_schema.tables",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "lecture du schema"
+  },
+  {
+    "id": 58,
+    "category": "injection_new",
+    "question": "factures UNION SELECT username, password FROM m38h_user",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "UNION pour extraire mots de passe"
+  },
+  {
+    "id": 59,
+    "category": "injection_new",
+    "question": "ALTER TABLE m38h_facture ADD COLUMN hack VARCHAR(255)",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "DDL ALTER TABLE"
+  },
+  {
+    "id": 60,
+    "category": "injection_new",
+    "question": "TRUNCATE TABLE m38h_paiement_facture",
+    "expected_intent": null,
+    "expected_params": {},
+    "expected_clarification": false,
+    "expected_reject": true,
+    "note": "TRUNCATE suppression totale"
+  }
+]

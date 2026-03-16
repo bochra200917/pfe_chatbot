@@ -1,14 +1,15 @@
 import streamlit as st
 import requests
 import pandas as pd
+import html
 from datetime import datetime
 
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────
 API_URL = "http://localhost:8000/ask"
-API_USER="admin"
-API_PASS="1234"
+API_USER = "admin"
+API_PASS = "1234"
 
 st.set_page_config(
     page_title="Chatbot ZAI Informatique",
@@ -57,17 +58,36 @@ st.markdown("""
         margin-top: 1rem;
         box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
+    .history-wrapper {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 8px;
+        background: #fafafa;
+        height: 520px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 transparent;
+    }
+    .history-wrapper::-webkit-scrollbar { width: 5px; }
+    .history-wrapper::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 10px;
+    }
     .history-item {
         background: white;
         border-radius: 8px;
-        padding: 0.6rem 1rem;
-        margin-bottom: 0.4rem;
-        font-size: 0.88rem;
+        padding: 0.55rem 0.9rem;
+        margin-bottom: 0.35rem;
+        font-size: 0.86rem;
         color: #333;
-        border: 1px solid #e0e0e0;
-        cursor: pointer;
+        border: 1px solid #e8e8e8;
+        line-height: 1.5;
     }
-    .history-item:hover { background: #f0f4ff; }
+    .history-count {
+        font-size: 0.78rem;
+        color: #999;
+        margin-bottom: 0.4rem;
+    }
     .meta-chip {
         display: inline-block;
         background: #e8f5e9;
@@ -77,14 +97,6 @@ st.markdown("""
         font-size: 0.8rem;
         margin-right: 6px;
     }
-    .meta-chip-red {
-        background: #ffebee;
-        color: #c62828;
-    }
-    .meta-chip-yellow {
-        background: #fffde7;
-        color: #f57f17;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -93,8 +105,6 @@ st.markdown("""
 # ─────────────────────────────────────────────
 if "history" not in st.session_state:
     st.session_state.history = []
-if "question_input" not in st.session_state:
-    st.session_state.question_input = ""
 
 # ─────────────────────────────────────────────
 # Fonction appel API
@@ -169,97 +179,91 @@ with col_main:
         with st.spinner("Analyse en cours..."):
             result = call_api(question.strip())
 
-        status = result.get("metadata", {}).get("status", "")
-        summary = result.get("summary", "")
+        status    = result.get("metadata", {}).get("status", "")
+        summary   = result.get("summary", "")
         table_data = result.get("table", [])
-        meta = result.get("metadata", {})
+        meta      = result.get("metadata", {})
 
         # Enregistrement dans l'historique
         st.session_state.history.insert(0, {
-            "question": question.strip(),
-            "summary": summary,
-            "status": status,
-            "template": meta.get("template", ""),
-            "row_count": meta.get("row_count", 0),
+            "question":    question.strip(),
+            "summary":     summary,
+            "status":      status,
+            "template":    meta.get("template", ""),
+            "row_count":   meta.get("row_count", 0),
             "duration_ms": meta.get("duration_ms", 0),
-            "logs_id": meta.get("logs_id", ""),
-            "timestamp": datetime.now().strftime("%H:%M:%S")
+            "logs_id":     meta.get("logs_id", ""),
+            "timestamp":   datetime.now().strftime("%H:%M:%S")
         })
 
         # Affichage selon le statut
         if status == "rejected":
-            st.markdown(f"""
-            <div class="rejected-box">
-                🔒 <strong>Requête rejetée</strong><br>
-                {summary}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f'<div class="rejected-box">🔒 <strong>Requête rejetée</strong><br>{html.escape(summary)}</div>', unsafe_allow_html=True)
 
         elif status == "clarification_required":
-            st.markdown(f"""
-            <div class="clarification-box">
-                ❓ <strong>Précision nécessaire</strong><br>
-                {summary}
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(f'<div class="clarification-box">❓ <strong>Précision nécessaire</strong><br>{html.escape(summary)}</div>', unsafe_allow_html=True)
 
         elif status == "error":
             st.error(f"⚠️ {summary}")
 
         else:
-            # Résultat OK
-            template = meta.get("template", "N/A")
-            duration = meta.get("duration_ms", 0)
+            template  = meta.get("template", "N/A")
+            duration  = meta.get("duration_ms", 0)
             row_count = meta.get("row_count", 0)
-            logs_id = meta.get("logs_id", "")
+            logs_id   = meta.get("logs_id", "")
 
             st.markdown(f"""
             <div class="result-box">
-                ✅ <strong>{summary}</strong><br><br>
-                <span class="meta-chip">📋 {template}</span>
+                ✅ <strong>{html.escape(summary)}</strong><br><br>
+                <span class="meta-chip">📋 {html.escape(str(template))}</span>
                 <span class="meta-chip">📊 {row_count} ligne(s)</span>
                 <span class="meta-chip">⏱ {duration:.0f} ms</span>
-                <span class="meta-chip" style="background:#e3f2fd;color:#1565c0;">🔑 {logs_id[:8]}...</span>
+                <span class="meta-chip" style="background:#e3f2fd;color:#1565c0;">🔑 {html.escape(str(logs_id))[:8]}...</span>
             </div>
             """, unsafe_allow_html=True)
 
-            # Tableau de résultats
             if table_data:
                 st.markdown("#### Résultats")
                 df = pd.DataFrame(table_data)
-                st.dataframe(
-                    df,
-                    use_container_width=True,
-                    height=min(400, 50 + 35 * len(df))
-                )
+                st.dataframe(df, use_container_width=True, height=min(400, 50 + 35 * len(df)))
             else:
                 st.info("Aucune donnée retournée.")
 
 # ─────────────────────────────────────────────
-# Colonne historique
+# Colonne historique — scrollable hauteur fixe
 # ─────────────────────────────────────────────
 with col_history:
+    nb = len(st.session_state.history)
     st.markdown("### 🕘 Historique")
 
     if not st.session_state.history:
         st.markdown('<div style="color:#aaa;font-size:0.85rem;">Aucune question posée</div>', unsafe_allow_html=True)
     else:
-        for i, item in enumerate(st.session_state.history[:20]):
-            status_icon = {
-                "rejected": "🔒",
-                "clarification_required": "❓",
-                "error": "⚠️"
-            }.get(item["status"], "✅")
+        st.markdown(f'<div class="history-count">{nb} question(s) enregistrée(s)</div>', unsafe_allow_html=True)
 
-            st.markdown(f"""
-            <div class="history-item">
-                {status_icon} <strong>{item['timestamp']}</strong><br>
-                {item['question'][:50]}{'...' if len(item['question']) > 50 else ''}
-                <br><span style="color:#999;font-size:0.78rem;">{item['summary'][:60]}{'...' if len(item['summary']) > 60 else ''}</span>
-            </div>
-            """, unsafe_allow_html=True)
+        # Construire les items en échappant TOUT le contenu dynamique
+        items_html = ""
+        for item in st.session_state.history:
+            icon = {"rejected": "🔒", "clarification_required": "❓", "error": "⚠️"}.get(item["status"], "✅")
 
-    if st.session_state.history:
+            q = html.escape(item["question"])
+            s = html.escape(item["summary"])
+            t = html.escape(item["timestamp"])
+
+            # Tronquer après échappement
+            q_short = q[:55] + "..." if len(q) > 55 else q
+            s_short = s[:60] + "..." if len(s) > 60 else s
+
+            items_html += (
+                f'<div class="history-item">'
+                f'{icon} <strong>{t}</strong><br>'
+                f'{q_short}<br>'
+                f'<span style="color:#999;font-size:0.78rem;">{s_short}</span>'
+                f'</div>'
+            )
+
+        st.markdown(f'<div class="history-wrapper">{items_html}</div>', unsafe_allow_html=True)
+
         if st.button("🗑 Effacer l'historique", use_container_width=True):
             st.session_state.history = []
             st.rerun()
