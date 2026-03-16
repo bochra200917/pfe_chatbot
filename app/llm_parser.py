@@ -1,7 +1,7 @@
 #app/llm_parser.py
 import json
 import re
-from app.models_v3 import LLMQuery
+from models.pydantic_models import LLMQuery, ChatbotResponse
 
 def parse_llm_json(response: str) -> LLMQuery:
 

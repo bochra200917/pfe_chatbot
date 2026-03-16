@@ -84,6 +84,10 @@ pip install -r requirements.txt
 ```bash
 uvicorn app.main:app --reload
 ```
+## 4 Démarrer Streamlit 
+```bash
+streamlit run ui/app.py
+```
 
 Swagger :
 

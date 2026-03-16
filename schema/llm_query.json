@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LLMQuery",
+  "description": "Contrat JSON généré par le LLM pour router vers les templates SQL prédéfinis. Le LLM ne génère jamais de SQL directement.",
+  "version": "1.0",
+  "type": "object",
+  "required": ["intent", "tables", "columns", "filters", "limit"],
+  "additionalProperties": false,
+  "properties": {
+    "intent": {
+      "type": "string",
+      "description": "Nom exact du template SQL à utiliser",
+      "enum": [
+        "get_factures_between",
+        "get_factures_par_client",
+        "get_factures_non_payees",
+        "get_factures_partiellement_payees",
+        "get_factures_negatives",
+        "get_clients_multiple_commandes",
+        "get_produits_stock_faible",
+        "get_total_ventes_mois"
+      ]
+    },
+    "tables": {
+      "type": "array",
+      "description": "Table principale concernée par la requête",
+      "minItems": 1,
+      "maxItems": 1,
+      "items": {
+        "type": "string",
+        "enum": [
+          "m38h_facture",
+          "m38h_societe",
+          "m38h_commande",
+          "m38h_product",
+          "m38h_paiement_facture"
+        ]
+      }
+    },
+    "columns": {
+      "type": "array",
+      "description": "Colonnes pertinentes identifiées dans la question",
+      "maxItems": 10,
+      "items": {
+        "type": "string"
+      }
+    },
+    "filters": {
+      "type": "object",
+      "description": "Paramètres extraits de la question utilisateur",
+      "properties": {
+        "client": {
+          "type": "string",
+          "description": "Nom du client (pour get_factures_par_client)"
+        },
+        "start_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date de début au format YYYY-MM-DD (pour get_factures_between)"
+        },
+        "end_date": {
+          "type": "string",
+          "format": "date",
+          "description": "Date de fin au format YYYY-MM-DD (pour get_factures_between)"
+        },
+        "year": {
+          "type": "string",
+          "pattern": "^20\\d{2}$",
+          "description": "Année au format YYYY (pour get_total_ventes_mois)"
+        },
+        "month": {
+          "type": "string",
+          "pattern": "^(0[1-9]|1[0-2])$",
+          "description": "Mois au format MM (pour get_total_ventes_mois)"
+        },
+        "min_commandes": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Nombre minimum de commandes (pour get_clients_multiple_commandes)"
+        },
+        "stock_min": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Seuil de stock minimum (pour get_produits_stock_faible)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "limit": {
+      "type": "integer",
+      "description": "Nombre maximum de lignes retournées",
+      "minimum": 1,
+      "maximum": 100,
+      "default": 100
+    }
+  },
+  "examples": [
+    {
+      "intent": "get_factures_between",
+      "tables": ["m38h_facture"],
+      "columns": ["ref", "total_ht", "total_ttc", "datef"],
+      "filters": {
+        "start_date": "2026-01-01",
+        "end_date": "2026-02-28"
+      },
+      "limit": 100
+    },
+    {
+      "intent": "get_factures_par_client",
+      "tables": ["m38h_facture"],
+      "columns": ["ref", "total_ht", "total_ttc", "datef"],
+      "filters": {
+        "client": "mondher"
+      },
+      "limit": 100
+    },
+    {
+      "intent": "get_factures_non_payees",
+      "tables": ["m38h_facture"],
+      "columns": [],
+      "filters": {},
+      "limit": 100
+    },
+    {
+      "intent": "get_produits_stock_faible",
+      "tables": ["m38h_product"],
+      "columns": ["ref", "label", "stock"],
+      "filters": {
+        "stock_min": 5
+      },
+      "limit": 100
+    },
+    {
+      "intent": "get_total_ventes_mois",
+      "tables": ["m38h_facture"],
+      "columns": ["total_ht", "total_ttc"],
+      "filters": {
+        "year": "2026",
+        "month": "01"
+      },
+      "limit": 100
+    }
+  ]
+}
