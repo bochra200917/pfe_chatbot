@@ -1,2 +1,32 @@
 [2026-03-23 11:12:16] uuid=3f6d17a2-c857-4f0c-b98c-0c285a17c360 | status=success | template=get_factures_non_payees | rows=41 | duration=1090.32ms | question=factures non payees
 [2026-03-23 11:12:16] uuid=255b643d-bcbc-416d-9d18-ef7e3aadd898 | status=success | template=get_produits_stock_faible | rows=48 | duration=331.68ms | question=produits avec stock inferieur a 5
+[2026-03-23 11:42:30] uuid=2c3f105e-33a6-4ff9-90dd-6915f80b4bd7 | status=success | template=get_factures_between | rows=99 | duration=926.76ms | question=donne moi les factures entre 2026-02-01 et 2026-02-28
+[2026-03-23 11:42:30] uuid=cac88a06-daf7-4385-84f6-4720e79689d8 | status=success | template=get_factures_between | rows=100 | duration=247.57ms | question=factures du 2026-01-01 au 2026-01-31
+[2026-03-23 11:42:30] uuid=ad796e09-c220-4076-a5c0-9396a6770311 | status=success | template=get_factures_between | rows=100 | duration=208.08ms | question=liste des factures entre 2026-01-15 et 2026-03-15
+[2026-03-23 11:42:30] uuid=78d01841-62a2-46f0-b0ba-c1d17847b903 | status=success | template=get_factures_par_client | rows=4 | duration=196.46ms | question=factures du client mondher
+[2026-03-23 11:42:31] uuid=369d8217-9949-48a5-9868-90cac9f4017e | status=success | template=get_factures_par_client | rows=0 | duration=278.45ms | question=affiche les factures pour le client alpha
+[2026-03-23 11:42:31] uuid=d2c256ca-604a-47e6-890f-607f81e899c9 | status=success | template=get_factures_non_payees | rows=41 | duration=308.49ms | question=factures non payees
+[2026-03-23 11:42:31] uuid=60096f23-cb2f-41ad-bbde-bc2fa58231f0 | status=success | template=get_factures_non_payees | rows=41 | duration=215.11ms | question=affiche les factures impayees
+[2026-03-23 11:42:31] uuid=40acadcf-fea7-45ea-8a68-2c34e1a56b66 | status=success | template=get_factures_non_payees | rows=41 | duration=292.68ms | question=quelles factures n ont pas ete reglees
+[2026-03-23 11:42:32] uuid=c89f11ca-15cb-443d-b47b-611e559cca3e | status=success | template=get_factures_partiellement_payees | rows=6 | duration=291.14ms | question=factures partiellement payees
+[2026-03-23 11:42:32] uuid=a4b35fef-0e56-4a5d-8a95-21527722a3b7 | status=success | template=get_factures_partiellement_payees | rows=6 | duration=238.73ms | question=factures avec paiement partiel
+[2026-03-23 11:42:32] uuid=1e0b4d67-a952-4df1-818a-330bc554ce98 | status=success | template=get_factures_negatives | rows=30 | duration=250.38ms | question=factures negatives
+[2026-03-23 11:42:32] uuid=159cafe6-2c6f-4ff5-aeee-5b014f033d12 | status=success | template=get_factures_negatives | rows=30 | duration=229.15ms | question=affiche les avoirs
+[2026-03-23 11:42:33] uuid=889ce921-4e4f-43e3-be42-a45dd447585c | status=success | template=get_clients_multiple_commandes | rows=2 | duration=202.37ms | question=clients avec plus de 2 commandes
+[2026-03-23 11:42:33] uuid=431cf1ab-e6d8-4f11-8507-65a68a9e3dc1 | status=success | template=get_clients_multiple_commandes | rows=2 | duration=264.61ms | question=quels clients ont passe plus de 5 commandes
+[2026-03-23 11:42:33] uuid=15eaf023-9433-429f-a9b4-99c7d56486c8 | status=success | template=get_clients_multiple_commandes | rows=2 | duration=246.97ms | question=liste des clients avec plusieurs commandes
+[2026-03-23 11:42:33] uuid=67e54178-5670-4f54-be97-8ceac8a0a7d2 | status=success | template=get_produits_stock_faible | rows=48 | duration=244.49ms | question=produits avec stock inferieur a 5
+[2026-03-23 11:42:34] uuid=02c63e2a-f63d-4c87-8f12-4690429812ae | status=success | template=get_produits_stock_faible | rows=48 | duration=247.2ms | question=quels produits ont un stock faible
+[2026-03-23 11:42:34] uuid=00bf259e-23a9-4235-8ce9-c65777fd7bc6 | status=success | template=get_total_ventes_mois | rows=1 | duration=239.09ms | question=chiffre d affaires de janvier 2026
+[2026-03-23 11:42:34] uuid=3ccf10d0-6a4e-435b-ba56-f48e68ef4ad2 | status=success | template=get_total_ventes_mois | rows=1 | duration=297.06ms | question=total des ventes pour fevrier 2026
+[2026-03-23 11:42:34] uuid=67ab9ef5-4ddf-477c-b5cd-fe9ce49cee6e | status=success | template=get_total_ventes_mois | rows=1 | duration=263.5ms | question=CA du mois de mars 2026
+[2026-03-23 11:42:35] uuid=77079cbc-4cea-4fd7-a711-c9a58def485f | status=success | template=get_factures_non_payees | rows=41 | duration=222.08ms | question=combien de factures non payees y a t il
+[2026-03-23 11:42:35] uuid=2f135dd4-14a5-4a5c-a1c5-550e3c864e3c | status=success | template=get_factures_non_payees | rows=41 | duration=227.38ms | question=montant restant des factures non reglees
+[2026-03-23 11:42:35] uuid=2d983c8e-a88c-4c34-b37a-b54ddeaa3ced | status=success | template=get_produits_stock_faible | rows=48 | duration=263.04ms | question=produits en rupture de stock
+[2026-03-23 11:42:35] uuid=8b55cfc5-925e-4b3f-96a7-646c7844bb17 | status=success | template=get_produits_stock_faible | rows=50 | duration=227.05ms | question=produits dont le stock est inferieur a 10
+[2026-03-23 11:42:36] uuid=f707a553-37ff-407e-ac1d-63fa5842ecd2 | status=success | template=get_clients_multiple_commandes | rows=2 | duration=184.79ms | question=clients fideles avec plus de 3 commandes
+[2026-03-23 11:42:36] uuid=11a1dc05-60ad-4cf0-8c5f-dc701be2f61b | status=success | template=get_clients_multiple_commandes | rows=2 | duration=210.08ms | question=quels sont les meilleurs clients en termes de commandes
+[2026-03-23 11:42:36] uuid=e6d7cfc3-02ca-4754-a258-39ed5c694595 | status=success | template=get_factures_negatives | rows=30 | duration=210.69ms | question=factures avec avoir
+[2026-03-23 11:42:36] uuid=17fbeca7-52c4-470b-98ee-34d6f1fe5fc0 | status=success | template=get_total_ventes_mois | rows=1 | duration=198.6ms | question=revenus du mois de decembre 2025
+[2026-03-23 11:42:36] uuid=a6689310-59c6-474e-bd5b-178d3b82e0a5 | status=success | template=get_total_ventes_mois | rows=0 | duration=192.57ms | question=ca de novembre 2025
+[2026-03-23 11:42:37] uuid=81399de9-46b7-4b32-b8e9-d44e32896dcb | status=success | template=get_factures_partiellement_payees | rows=6 | duration=270.24ms | question=factures en cours de paiement
