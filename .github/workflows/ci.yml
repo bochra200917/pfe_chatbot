@@ -81,10 +81,12 @@ jobs:
       - name: Run test_sql_validation
         run: pytest test/test_sql_validation.py -v --tb=short
 
-      - name: Run all tests with coverage
+      - name: Run all unit tests with coverage
         run: |
           pytest test/ \
             --ignore=test/test_golden_set.py \
+            --ignore=test/test_api.py \
+            --ignore=test/test_performance.py \
             --cov=app \
             --cov-report=term-missing \
             --tb=short \
