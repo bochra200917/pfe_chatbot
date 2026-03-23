@@ -1,0 +1,81 @@
+{
+  "version": "v1.0",
+  "description": "Whitelist des tables, colonnes et jointures autorisées pour le système NL2SQL — Chatbot ZAI Informatique",
+  "created_at": "2026-03-23",
+  "sha256": "8bc62fff284f25984390efba4578e4b5753fd0b4ba5153eea1d6e249c7864551",
+
+  "allowed_tables": [
+    "m38h_facture",
+    "m38h_societe",
+    "m38h_commande",
+    "m38h_product",
+    "m38h_paiement_facture"
+  ],
+
+  "allowed_columns": {
+    "m38h_facture": [
+      "ref",
+      "total_ht",
+      "total_ttc",
+      "datef",
+      "fk_soc",
+      "entity",
+      "rowid"
+    ],
+    "m38h_societe": [
+      "rowid",
+      "nom",
+      "entity"
+    ],
+    "m38h_commande": [
+      "rowid",
+      "fk_soc"
+    ],
+    "m38h_product": [
+      "ref",
+      "label",
+      "stock",
+      "entity"
+    ],
+    "m38h_paiement_facture": [
+      "fk_facture",
+      "amount"
+    ]
+  },
+
+  "allowed_joins": [
+    ["m38h_facture", "m38h_societe"],
+    ["m38h_societe", "m38h_commande"],
+    ["m38h_facture", "m38h_paiement_facture"]
+  ],
+
+  "pii_policy": {
+    "masked_columns": [],
+    "excluded_tables": [
+      "m38h_user",
+      "m38h_usergroup",
+      "m38h_salary",
+      "m38h_holiday",
+      "m38h_accounting_account",
+      "m38h_accounting_bookkeeping",
+      "m38h_bank",
+      "m38h_bank_account"
+    ],
+    "note": "Aucune colonne sensible (password, pass, salary, iban) n'est accessible via le chatbot. Les tables RH et comptabilité sont exclues."
+  },
+
+  "changelog": [
+    {
+      "version": "v1.0",
+      "date": "2026-03-23",
+      "author": "Bochra Ben Yedder",
+      "changes": [
+        "Version initiale",
+        "5 tables autorisées : m38h_facture, m38h_societe, m38h_commande, m38h_product, m38h_paiement_facture",
+        "3 jointures autorisées",
+        "Exclusion explicite des tables sensibles (user, salary, accounting, bank)",
+        "Politique PII documentée"
+      ]
+    }
+  ]
+}

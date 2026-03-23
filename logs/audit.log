@@ -1,0 +1,2 @@
+[2026-03-23 11:12:16] uuid=3f6d17a2-c857-4f0c-b98c-0c285a17c360 | status=success | template=get_factures_non_payees | rows=41 | duration=1090.32ms | question=factures non payees
+[2026-03-23 11:12:16] uuid=255b643d-bcbc-416d-9d18-ef7e3aadd898 | status=success | template=get_produits_stock_faible | rows=48 | duration=331.68ms | question=produits avec stock inferieur a 5

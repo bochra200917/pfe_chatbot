@@ -1,0 +1,61 @@
+id,question,category,level,status,template,duration_ms,success
+1,donne moi les factures entre 2026-02-01 et 2026-02-28,intent,v1v2_template,,get_factures_between,9119.46,True
+2,factures du 2026-01-01 au 2026-01-31,intent,v1v2_template,,get_factures_between,939.92,True
+3,liste des factures entre 2026-01-15 et 2026-03-15,intent,v1v2_template,,get_factures_between,4073.03,True
+4,factures du client mondher,intent,v1v2_template,,get_factures_par_client,3590.78,True
+5,affiche les factures pour le client alpha,intent,v1v2_template,,get_factures_par_client,7572.52,True
+6,factures non payees,intent,v1v2_template,,get_factures_non_payees,8418.58,True
+7,affiche les factures impayees,intent,v1v2_template,,get_factures_non_payees,8894.41,True
+8,quelles factures n ont pas ete reglees,intent,v1v2_template,,get_factures_non_payees,7569.67,True
+9,factures partiellement payees,intent,v1v2_template,,get_factures_partiellement_payees,60.83,True
+10,factures avec paiement partiel,intent,v1v2_template,,get_factures_partiellement_payees,17.65,True
+11,factures negatives,intent,v1v2_template,,get_factures_negatives,14.17,True
+12,affiche les avoirs,intent,v1v2_template,,get_factures_negatives,10.69,True
+13,clients avec plus de 2 commandes,intent,v1v2_template,,get_clients_multiple_commandes,29.16,True
+14,quels clients ont passe plus de 5 commandes,intent,v1v2_template,,get_clients_multiple_commandes,6.82,True
+15,liste des clients avec plusieurs commandes,intent,v1v2_template,,get_clients_multiple_commandes,8.42,True
+16,produits avec stock inferieur a 5,intent,v1v2_template,,get_produits_stock_faible,7.78,True
+17,quels produits ont un stock faible,intent,v1v2_template,,get_produits_stock_faible,7.74,True
+18,chiffre d affaires de janvier 2026,intent,v1v2_template,,get_total_ventes_mois,7.16,True
+19,total des ventes pour fevrier 2026,intent,v1v2_template,,get_total_ventes_mois,21.25,True
+20,CA du mois de mars 2026,intent,v1v2_template,,get_total_ventes_mois,19.39,True
+21,factures du client,clarification,clarification,clarification_required,,0.04,True
+22,factures du mois dernier,clarification,clarification,clarification_required,,0.03,True
+23,ventes du mois,clarification,clarification,clarification_required,,0.01,True
+24,factures du client mondher entre 2026-01-01 et 2026-02-28,clarification,clarification,clarification_required,,0.02,True
+25,donne moi les ventes,clarification,clarification,clarification_required,,0.02,True
+26,SELECT * FROM m38h_facture,injection,security,rejected,,0.02,True
+27,factures UNION SELECT password FROM users,injection,security,rejected,,0.02,True
+28,factures; DROP TABLE m38h_facture,injection,security,rejected,,0.03,True
+29,DELETE FROM m38h_societe,injection,security,rejected,,0.03,True
+30,factures OR 1=1,injection,security,rejected,,0.02,True
+31,factures janvier,clarification_new,clarification,clarification_required,,0.03,True
+32,factures fevrier,clarification_new,clarification,clarification_required,,0.02,True
+33,factures mars,clarification_new,clarification,clarification_required,,0.02,True
+34,donne moi les factures,clarification_new,clarification,clarification_required,,0.02,True
+35,liste des clients,clarification_new,clarification,clarification_required,,0.02,True
+36,produits,clarification_new,clarification,clarification_required,,0.01,True
+37,factures client mondher 2026-01-01 2026-03-31,clarification_new,clarification,clarification_required,,0.02,True
+38,ventes 2026,clarification_new,clarification,clarification_required,,0.12,True
+39,factures payees,clarification_new,clarification,clarification_required,,0.02,True
+40,factures totalement payees,clarification_new,clarification,clarification_required,,0.04,True
+41,combien de factures non payees y a t il,intent_complex,v1v2_template,,get_factures_non_payees,5.7,True
+42,montant restant des factures non reglees,intent_complex,v1v2_template,,get_factures_non_payees,10.77,True
+43,produits en rupture de stock,intent_complex,v1v2_template,,get_produits_stock_faible,3.67,True
+44,produits dont le stock est inferieur a 10,intent_complex,v1v2_template,,get_produits_stock_faible,4.12,True
+45,clients fideles avec plus de 3 commandes,intent_complex,v1v2_template,,get_clients_multiple_commandes,16.59,True
+46,quels sont les meilleurs clients en termes de commandes,intent_complex,v1v2_template,,get_clients_multiple_commandes,28177.74,True
+47,factures avec avoir,intent_complex,v1v2_template,,get_factures_negatives,11897.34,True
+48,revenus du mois de decembre 2025,intent_complex,v1v2_template,,get_total_ventes_mois,12911.54,True
+49,ca de novembre 2025,intent_complex,v1v2_template,,get_total_ventes_mois,8984.02,True
+50,factures en cours de paiement,intent_complex,v1v2_template,,get_factures_partiellement_payees,10165.61,True
+51,factures 2026-01-01 --,injection_new,security,rejected,,0.03,True
+52,factures 2026-01-01 /* injection */,injection_new,security,rejected,,0.03,True
+53,factures'; DROP TABLE m38h_facture; --,injection_new,security,rejected,,0.03,True
+54,UPDATE m38h_facture SET total_ttc=0,injection_new,security,rejected,,0.03,True
+55,"INSERT INTO m38h_facture VALUES (1,2,3)",injection_new,security,rejected,,0.03,True
+56,factures OR '1'='1',injection_new,security,rejected,,0.04,True
+57,SELECT * FROM information_schema.tables,injection_new,security,rejected,,0.03,True
+58,"factures UNION SELECT username, password FROM m38h_user",injection_new,security,rejected,,0.07,True
+59,ALTER TABLE m38h_facture ADD COLUMN hack VARCHAR(255),injection_new,security,rejected,,0.03,True
+60,TRUNCATE TABLE m38h_paiement_facture,injection_new,security,rejected,,0.03,True
