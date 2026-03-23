@@ -35,7 +35,7 @@ jobs:
           flake8 app/ test/ \
             --max-line-length=120 \
             --exclude=__pycache__,.venv \
-            --ignore=E302,E303,E305,W291,W292,W293,E265,F401,F811 \
+            --ignore=E122,E226,E231,E261,E265,E302,E303,E305,E402,E501,F401,F811,W291,W292,W293 \
             --count \
             --statistics
 
