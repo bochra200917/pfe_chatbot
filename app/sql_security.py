@@ -134,11 +134,25 @@ FORBIDDEN_KEYWORDS = [
 
 def detect_injection(text: str):
 
-    lower = text.lower()
+    lower = text.lower().strip()  # ← ajouter .strip()
+
+    # détection SELECT brut
+    if re.search(r'^\s*SELECT\b', text.strip(), re.IGNORECASE):
+        raise ValueError("Raw SQL query detected")
+
+    # détection mots-clés DDL/DML en début de requête
+    ddl_dml_start = [
+        "delete ", "delete\n",
+        "update ", "update\n",
+        "insert ", "insert\n",
+        "alter ", "alter\n",
+        "truncate ", "truncate\n",
+        "drop ", "drop\n",
+    ]
+    for keyword in ddl_dml_start:
+        if lower.startswith(keyword) or lower == keyword.strip():
+            raise SQLSecurityError("Potential SQL injection detected")
 
     for keyword in FORBIDDEN_KEYWORDS:
-        if re.search(r'^\s*SELECT\b', text.strip(), re.IGNORECASE):
-            raise ValueError("Raw SQL query detected")
-
         if keyword in lower:
             raise SQLSecurityError("Potential SQL injection detected")
