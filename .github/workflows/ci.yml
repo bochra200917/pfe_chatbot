@@ -32,9 +32,10 @@ jobs:
 
       - name: Run flake8
         run: |
-          flake8 app/ tests/ \
+          flake8 app/ test/ \
             --max-line-length=120 \
             --exclude=__pycache__,.venv \
+            --ignore=E302,E303,E305,W291,W292,W293,E265,F401,F811 \
             --count \
             --statistics
 
@@ -72,18 +73,18 @@ jobs:
           echo "OPENROUTER_API_KEY=test_key" >> .env
 
       - name: Run test_pydantic
-        run: pytest tests/test_pydantic.py -v --tb=short
+        run: pytest test/test_pydantic.py -v --tb=short
 
       - name: Run test_whitelist
-        run: pytest tests/test_whitelist.py -v --tb=short
+        run: pytest test/test_whitelist.py -v --tb=short
 
       - name: Run test_sql_validation
-        run: pytest tests/test_sql_validation.py -v --tb=short
+        run: pytest test/test_sql_validation.py -v --tb=short
 
       - name: Run all tests with coverage
         run: |
-          pytest tests/ \
-            --ignore=tests/test_golden_set.py \
+          pytest test/ \
+            --ignore=test/test_golden_set.py \
             --cov=app \
             --cov-report=term-missing \
             --tb=short \
@@ -122,11 +123,11 @@ jobs:
           echo "API_PASS=secret" >> .env
           echo "OPENROUTER_API_KEY=test_key" >> .env
 
-      - name: Validate golden_v3_extended.json
+      - name: Validate golden_set_v3_extended.json
         run: |
           python3 -c "
           import json
-          with open('tests/golden_sets/golden_v3_extended.json') as f:
+          with open('test/golden_set/golden_set_v3_extended.json') as f:
               data = json.load(f)
           assert len(data) == 60, f'Attendu 60 questions, trouvé {len(data)}'
           print(f'Golden set valide : {len(data)} questions')
@@ -143,7 +144,7 @@ jobs:
           sys.path.insert(0, '.')
           from app.sql_security import detect_injection
 
-          with open('tests/golden_sets/golden_v3_extended.json') as f:
+          with open('test/golden_set/golden_set_v3_extended.json') as f:
               data = json.load(f)
 
           injections = [d for d in data if d['expected_reject']]

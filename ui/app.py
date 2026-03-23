@@ -179,10 +179,11 @@ with col_main:
         with st.spinner("Analyse en cours..."):
             result = call_api(question.strip())
 
-        status    = result.get("metadata", {}).get("status", "")
-        summary   = result.get("summary", "")
+        status     = result.get("metadata", {}).get("status", "")
+        summary    = result.get("summary", "")
         table_data = result.get("table", [])
-        meta      = result.get("metadata", {})
+        meta       = result.get("metadata", {})
+        sql_query  = meta.get("sql_query", "")
 
         # Enregistrement dans l'historique
         st.session_state.history.insert(0, {
@@ -198,10 +199,16 @@ with col_main:
 
         # Affichage selon le statut
         if status == "rejected":
-            st.markdown(f'<div class="rejected-box">🔒 <strong>Requête rejetée</strong><br>{html.escape(summary)}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="rejected-box">🔒 <strong>Requête rejetée</strong><br>{html.escape(summary)}</div>',
+                unsafe_allow_html=True
+            )
 
         elif status == "clarification_required":
-            st.markdown(f'<div class="clarification-box">❓ <strong>Précision nécessaire</strong><br>{html.escape(summary)}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="clarification-box">❓ <strong>Précision nécessaire</strong><br>{html.escape(summary)}</div>',
+                unsafe_allow_html=True
+            )
 
         elif status == "error":
             st.error(f"⚠️ {summary}")
@@ -222,12 +229,18 @@ with col_main:
             </div>
             """, unsafe_allow_html=True)
 
+            # Tableau de résultats
             if table_data:
                 st.markdown("#### Résultats")
                 df = pd.DataFrame(table_data)
                 st.dataframe(df, use_container_width=True, height=min(400, 50 + 35 * len(df)))
             else:
                 st.info("Aucune donnée retournée.")
+
+            # ── Requête SQL — section dépliable (pour la soutenance) ──
+            if sql_query:
+                with st.expander("🔍 Voir la requête SQL générée"):
+                    st.code(sql_query, language="sql")
 
 # ─────────────────────────────────────────────
 # Colonne historique — scrollable hauteur fixe
@@ -237,20 +250,28 @@ with col_history:
     st.markdown("### 🕘 Historique")
 
     if not st.session_state.history:
-        st.markdown('<div style="color:#aaa;font-size:0.85rem;">Aucune question posée</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div style="color:#aaa;font-size:0.85rem;">Aucune question posée</div>',
+            unsafe_allow_html=True
+        )
     else:
-        st.markdown(f'<div class="history-count">{nb} question(s) enregistrée(s)</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="history-count">{nb} question(s) enregistrée(s)</div>',
+            unsafe_allow_html=True
+        )
 
-        # Construire les items en échappant TOUT le contenu dynamique
         items_html = ""
         for item in st.session_state.history:
-            icon = {"rejected": "🔒", "clarification_required": "❓", "error": "⚠️"}.get(item["status"], "✅")
+            icon = {
+                "rejected": "🔒",
+                "clarification_required": "❓",
+                "error": "⚠️"
+            }.get(item["status"], "✅")
 
             q = html.escape(item["question"])
             s = html.escape(item["summary"])
             t = html.escape(item["timestamp"])
 
-            # Tronquer après échappement
             q_short = q[:55] + "..." if len(q) > 55 else q
             s_short = s[:60] + "..." if len(s) > 60 else s
 

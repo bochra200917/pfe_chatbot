@@ -141,6 +141,22 @@ def match_question(question: str):
 
     if "negatif" in q:
         return "get_factures_negatives", {}
+    
+    # montant restant = non payées
+    if "montant restant" in q or "non regle" in q or "pas regle" in q:
+        return "get_factures_non_payees", {}
+
+    # paiement partiel / en cours de paiement
+    if "paiement partiel" in q or "cours de paiement" in q:
+        return "get_factures_partiellement_payees", {}
+
+    # avoirs / factures negatives
+    if "negatif" in q or "avoir" in q:
+        return "get_factures_negatives", {}
+
+    # meilleurs clients
+    if "meilleurs clients" in q:
+        return "get_clients_multiple_commandes", {"min_commandes": 2}
 
     return None, None
 
@@ -183,7 +199,20 @@ def get_response(question: str):
         "factures janvier",
         "factures fevrier",
         "factures mars",
+        "donne moi les factures",   # ← ajouter
+        "liste des clients",         # ← ajouter
+        "ventes 2026",               # ← ajouter
+        "factures payees",           # ← ajouter
+        "factures totalement payees", # ← ajouter
     ]
+    
+    # "produits" seul sans critère = ambigu
+    if normalize(question).strip() == "produits":
+        return {
+            "table": [],
+            "summary": "Veuillez préciser votre demande.",
+            "metadata": {"status": "clarification_required"}
+        }
 
     if any(p in q_lower for p in ambiguous_patterns):
         return {
@@ -253,16 +282,17 @@ def get_response(question: str):
         )
 
         return {
-            "table": result_rows,
-            "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
-            "metadata": {
-                "template": template_name,
-                "duration_ms": duration,
-                "row_count": len(result_rows),
-                "params": params,
-                "logs_id": log_id
-            }
-        }
+    "table": result_rows,
+    "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
+    "metadata": {
+        "template": template_name,
+        "duration_ms": duration,
+        "row_count": len(result_rows),
+        "params": params,
+        "logs_id": log_id,
+        "sql_query": sql_query   # ← ajouter cette ligne
+    }
+}
 
     except Exception as e:
 
