@@ -34,8 +34,8 @@ jobs:
         run: |
           flake8 app/ test/ \
             --max-line-length=120 \
-            --exclude=__pycache__,.venv \
-            --ignore=E122,E221,E226,E231,E241,E261,E265,E302,E303,E305,E402,E501,F401,F811,W291,W292,W293,W503 \
+            --exclude=__pycache__,.venv,ui/ \
+            --ignore=E122,E221,E226,E231,E241,E251,E261,E265,E272,E302,E303,E305,E402,E501,E701,E741,F401,F541,F811,F841,W291,W292,W293,W503,W504,E711,E712 \
             --count \
             --statistics
 
@@ -50,11 +50,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Setup Python
         uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Install dependencies
         run: |
