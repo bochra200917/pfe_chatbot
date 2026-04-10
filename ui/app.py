@@ -46,6 +46,18 @@ def month_name(m):
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
+.rejected-box {
+    color: black !important;
+}
+
+.clarification-box {
+    color: black !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<style>
 .main { background-color: #f8f9fa; }
 .chat-title { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.2rem; }
 .chat-subtitle { font-size: 0.95rem; color: #6c757d; margin-bottom: 1.5rem; }

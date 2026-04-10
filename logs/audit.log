@@ -861,3 +861,4 @@
 [2026-04-06 10:39:10] uuid=60b389cc-948f-4615-8a1c-b62537c4b720 | status=error | template=get_total_ventes_mois | rows=0 | duration=149.71ms | question=CA total par mois pour 2026
 [2026-04-06 10:39:12] uuid=e4c3112f-1dfc-4b0b-8dbb-5581dd75d12d | status=success | template=get_total_ventes_mois | rows=1 | duration=181.51ms | question=chiffre d affaires de janvier 2026
 [2026-04-10 10:10:49] uuid=4b063eac-dd98-4d9f-a3b8-60cb5f4e6d1e | status=success | template=get_factures_non_payees | rows=51 | duration=1063.93ms | question=Factures non payées
+[2026-04-10 14:58:58] uuid=473b91c5-e19e-4fa2-ab66-119fa841d6af | status=success | template=get_factures_non_payees | rows=51 | duration=188.82ms | question=Factures non payées
