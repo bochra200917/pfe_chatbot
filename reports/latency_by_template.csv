@@ -1,0 +1,5 @@
+﻿template,n,mean,median,std,min,max,p25,p75,p95,p99,performance
+get_factures_between,3,2276.2,2277.4,5.0,2270.7,2280.6,2274.1,2279.0,2280.3,2280.5,[!] Lent
+get_factures_non_payees,3,2392.2,2424.2,116.7,2263.0,2489.6,2343.6,2456.9,2483.1,2488.3,[!] Lent
+get_factures_partiellement_payees,3,2432.6,2375.8,176.1,2292.0,2630.1,2333.9,2502.9,2604.7,2625.0,[!] Lent
+get_total_ventes_mois,5,2400.3,2341.0,218.2,2255.9,2781.2,2260.1,2363.4,2697.6,2764.4,[!] Lent

@@ -111,7 +111,7 @@ def generate_latency_figure():
         data_to_plot.append(durations_clar)
         labels_to_plot.append(f"Clarification\n(n={len(durations_clar)})")
 
-    bp = axes[0].boxplot(data_to_plot, labels=labels_to_plot, patch_artist=True)
+    bp = axes[0].boxplot(data_to_plot, tick_labels=labels_to_plot, patch_artist=True)
     colors_box = ["#2196F3", "#F44336", "#FF9800"]
     for patch, color in zip(bp["boxes"], colors_box):
         patch.set_facecolor(color)

@@ -17,13 +17,13 @@
 
 | Métrique | Valeur |
 |---|---|
-| Moyenne (mean) | 132.27 ms |
-| Médiane | 93.08 ms |
-| Écart-type | 161.41 ms |
-| P95 | 298.09 ms |
-| P99 | 928.02 ms |
-| Minimum | 0.01 ms |
-| Maximum | 928.02 ms |
+| Moyenne (mean) | 116.12 ms |
+| Médiane | 0.07 ms |
+| Écart-type | 212.1 ms |
+| P95 | 393.65 ms |
+| P99 | 1218.1 ms |
+| Minimum | 0.0 ms |
+| Maximum | 1218.1 ms |
 
 ## Répartition des appels
 
@@ -38,6 +38,6 @@
 - **100.0%** sont servies directement par V1/V2 (sans coût LLM)
 
 ## Conclusion
-- Latence moyenne : **132.27 ms** — très acceptable pour un usage métier
-- P95 : **298.09 ms** — 95% des requêtes répondent en moins de 298.09 ms
+- Latence moyenne : **116.12 ms** — très acceptable pour un usage métier
+- P95 : **393.65 ms** — 95% des requêtes répondent en moins de 393.65 ms
 - La stratégie V1/V2 first réduit efficacement les appels LLM

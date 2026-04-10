@@ -11,6 +11,7 @@ VALID_INTENTS = [
     "get_clients_multiple_commandes",
     "get_produits_stock_faible",
     "get_total_ventes_mois",
+    "get_total_paiements",
 ]
 
 VALID_TABLES = [

@@ -8,7 +8,7 @@ load_dotenv()
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-MODEL_NAME = "google/gemini-2.0-flash-lite-001"
+MODEL_NAME = "anthropic/claude-sonnet-4.6"
 
 # Rate limit : max appels par jour
 MAX_CALLS_PER_DAY = 100
@@ -38,7 +38,33 @@ def call_llm(prompt: str):
         "temperature": 0,
         "max_tokens": 200,
         "messages": [
-            {"role": "system", "content": "Tu es un assistant qui identifie l'intention d'une question métier. Retourne UNIQUEMENT un JSON valide, sans markdown, sans explication."},
+            {"role": "system", "content": """
+Tu es un assistant qui transforme une question en JSON structuré.
+
+Tu dois STRICTEMENT utiliser ces tables exactes :
+
+- m38h_facture (factures)
+- m38h_societe (clients)
+- m38h_paiement_facture (paiements)
+- m38h_commande
+- m38h_product
+
+Règles OBLIGATOIRES :
+- Ne JAMAIS utiliser : factures, clients, paiements
+- Toujours utiliser les noms exacts avec m38h_
+- Retourner UNIQUEMENT un JSON valide
+- Pas de texte, pas d'explication
+- Si la question parle de paiements → intent = get_total_paiements
+- Si la question parle de factures → intent = get_factures_between
+- Si la question parle de ventes → intent = get_total_ventes_mois
+
+Format attendu :
+{
+  "intent": "...",
+  "tables": ["..."],
+  "filters": {}
+}
+"""},
             {"role": "user", "content": prompt}
         ]
     }

@@ -140,6 +140,21 @@ def get_factures_partiellement_payees():
     LIMIT 100
     """
 
+def get_total_paiements():
+    return """
+    SELECT
+        s.nom AS client,
+        SUM(pf.amount) AS total_paiements
+    FROM m38h_paiement_facture pf
+    LEFT JOIN m38h_facture f ON pf.fk_facture = f.rowid
+    LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
+    WHERE f.datef BETWEEN :start_date AND :end_date
+      AND f.entity = 1
+    GROUP BY s.nom
+    ORDER BY total_paiements DESC
+    LIMIT 100
+    """
+
 TEMPLATE_MAPPING = {
     "get_factures_between": get_factures_between,
     "get_factures_par_client": get_factures_par_client,
@@ -148,5 +163,6 @@ TEMPLATE_MAPPING = {
     "get_produits_stock_faible": get_produits_stock_faible,
     "get_total_ventes_mois": get_total_ventes_mois,
     "get_factures_non_payees": get_factures_non_payees,
-    "get_factures_partiellement_payees": get_factures_partiellement_payees
+    "get_factures_partiellement_payees": get_factures_partiellement_payees,
+    "get_total_paiements": get_total_paiements,
 }

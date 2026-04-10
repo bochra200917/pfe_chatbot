@@ -18,7 +18,8 @@
         "get_factures_negatives",
         "get_clients_multiple_commandes",
         "get_produits_stock_faible",
-        "get_total_ventes_mois"
+        "get_total_ventes_mois",
+        "get_total_paiements"
       ]
     },
     "tables": {
@@ -139,6 +140,16 @@
         "month": "01"
       },
       "limit": 100
-    }
+    },
+    {
+  "intent": "get_total_paiements",
+  "tables": ["m38h_paiement_facture"],
+  "columns": ["amount"],
+  "filters": {
+    "start_date": "2026-01-01",
+    "end_date": "2026-03-31"
+  },
+  "limit": 100
+}
   ]
 }

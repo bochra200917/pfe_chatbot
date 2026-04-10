@@ -8,227 +8,333 @@ from app.logger import log_query
 from app.sql_security import detect_injection
 from app.chatbot_v3 import run_llm_pipeline
 from app.sql_security import validate_sql_query
+from app.cache import chatbot_cache
+from app.suggestion_engine import generate_suggestions
+from app.prompt_template import apply_mapping_rules
 
 MONTHS = {
-    "janv": "01",
-    "fév": "02",
-    "fev": "02",
-    "avr": "04",
-    "juil": "07",
-    "sept": "09",
-    "oct": "10",
-    "nov": "11",
-    "dec": "12",
-    "déc": "12",
-    "janvier": "01",
-    "fevrier": "02",
-    "février": "02",
-    "mars": "03",
-    "avril": "04",
-    "mai": "05",
-    "juin": "06",
-    "juillet": "07",
-    "aout": "08",
-    "août": "08",
-    "septembre": "09",
-    "octobre": "10",
-    "novembre": "11",
-    "decembre": "12",
-    "décembre": "12"
+    "janv": "01", "fév": "02", "fev": "02", "avr": "04",
+    "juil": "07", "sept": "09", "oct": "10", "nov": "11",
+    "dec": "12", "déc": "12", "janvier": "01", "fevrier": "02",
+    "février": "02", "mars": "03", "avril": "04", "mai": "05",
+    "juin": "06", "juillet": "07", "aout": "08", "août": "08",
+    "septembre": "09", "octobre": "10", "novembre": "11",
+    "decembre": "12", "décembre": "12"
 }
 
 
-def normalize(text: str):
+def normalize(text: str) -> str:
     text = text.lower().strip()
     text = unicodedata.normalize("NFD", text)
-    text = text.encode("ascii", "ignore").decode("utf-8")
-    return text
+    return text.encode("ascii", "ignore").decode("utf-8")
 
 
 def match_question(question: str):
-
     q = normalize(question)
 
-    # format YYYY-MM sans jour (ex: total ventes 2026-01)
     match_ym = re.search(r'(\d{4})-(\d{2})(?!-\d{2})', q)
-    if match_ym and any(word in q for word in ["total", "ventes", "chiffre", "ca"]):
-        return "get_total_ventes_mois", {
-            "year": match_ym.group(1),
-            "month": match_ym.group(2)
-        }
+    if match_ym and any(w in q for w in ["total", "ventes", "chiffre", "ca"]):
+        return "get_total_ventes_mois", {"year": match_ym.group(1), "month": match_ym.group(2)}
 
-    # factures entre deux dates complètes
     match = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
     if match:
-        return "get_factures_between", {
-            "start_date": match.group(1),
-            "end_date": match.group(2)
-        }
+        return "get_factures_between", {"start_date": match.group(1), "end_date": match.group(2)}
 
-    # factures partiellement payées
     if "partiellement pay" in q or "partiel" in q:
         return "get_factures_partiellement_payees", {}
 
-    # factures non payées (variantes)
-    if ("non pay" in q or "impaye" in q
-            or "non regle" in q or "pas regle" in q
-            or "pas ete regle" in q or "n ont pas" in q
-            or "montant restant" in q):
+    if ("non pay" in q or "impaye" in q or "non regle" in q
+            or "pas regle" in q or "pas ete regle" in q
+            or "n ont pas" in q or "montant restant" in q):
         return "get_factures_non_payees", {}
 
-    # paiement partiel / en cours de paiement
     if "paiement partiel" in q or "cours de paiement" in q:
         return "get_factures_partiellement_payees", {}
 
-    # factures negatives / avoirs
     if "negatif" in q or "negativ" in q or "avoir" in q:
         return "get_factures_negatives", {}
 
-    # factures par client — variante "factures client X" (sans "du")
     match = re.search(r'factures?\s+client\s+([a-zA-Z0-9_\- ]+)', q)
     if match:
-        client_name = match.group(1).strip()
-        return "get_factures_par_client", {"client": client_name}
+        return "get_factures_par_client", {"client": match.group(1).strip()}
 
-    # factures par client — variante "factures du client X"
     match = re.search(r'client\s+([a-zA-Z0-9_\- ]+)', q)
     if "facture" in q and match:
-        client_name = match.group(1).strip()
-        client_name = client_name.replace("pour", "").strip()
+        client_name = match.group(1).strip().replace("pour", "").strip()
         return "get_factures_par_client", {"client": client_name}
 
-    # ventes par mois (nom du mois)
     for month_name, month_num in MONTHS.items():
         if month_name in q:
             match_year = re.search(r'\b(20\d{2})\b', q)
             if match_year:
-                return "get_total_ventes_mois", {
-                    "year": match_year.group(1),
-                    "month": month_num
-                }
+                return "get_total_ventes_mois", {"year": match_year.group(1), "month": month_num}
             return None, None
 
-    # ventes format YYYY-MM (fallback)
     match = re.search(r'(\d{4})-(\d{2})', q)
-    if match and any(word in q for word in ["total", "ventes", "chiffre", "ca"]):
-        return "get_total_ventes_mois", {
-            "year": match.group(1),
-            "month": match.group(2)
-        }
+    if match and any(w in q for w in ["total", "ventes", "chiffre", "ca"]):
+        return "get_total_ventes_mois", {"year": match.group(1), "month": match.group(2)}
 
-    # clients avec plus de N commandes
     match = re.search(r'plus de (\d+) commandes', q)
     if match:
-        return "get_clients_multiple_commandes", {
-            "min_commandes": int(match.group(1))
-        }
+        return "get_clients_multiple_commandes", {"min_commandes": int(match.group(1))}
 
-    # clients avec plusieurs commandes (variantes)
-    if ("plus de deux commandes" in q
-            or "commandes multiples" in q
-            or "plusieurs commandes" in q
-            or "plus de commandes" in q
-            or "meilleurs clients" in q
-            or "clients fideles" in q):
+    if ("plus de deux commandes" in q or "commandes multiples" in q
+            or "plusieurs commandes" in q or "plus de commandes" in q
+            or "meilleurs clients" in q or "clients fideles" in q):
         return "get_clients_multiple_commandes", {"min_commandes": 2}
 
-    # produits stock faible
     if "stock" in q or "rupture" in q:
         match = re.search(r'\d+', q)
-        if match:
-            return "get_produits_stock_faible", {
-                "stock_min": int(match.group())
-            }
-        return "get_produits_stock_faible", {"stock_min": 5}
+        seuil = int(match.group()) if match else 5
+        return "get_produits_stock_faible", {"stock_min": seuil}
+
+    match = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+    if match and any(w in q for w in ["paiement", "regl", "encaissement", "verse"]):
+        return "get_total_paiements", {"start_date": match.group(1), "end_date": match.group(2)}
+
+    if "3 derniers mois" in q and any(w in q for w in ["paiement", "regl"]):
+        from datetime import datetime, timedelta
+        end = datetime.today()
+        start = end - timedelta(days=90)
+        return "get_total_paiements", {
+            "start_date": start.strftime("%Y-%m-%d"),
+            "end_date":   end.strftime("%Y-%m-%d")
+        }
 
     return None, None
 
 
-def get_response(question: str):
+def _convert_mapping_result(result: dict):
+    intent = result.get("intent", "")
+    params = result.get("params", {})
+
+    if intent in ("rejected", "clarification_required", ""):
+        return None, None
+
+    harmonized = {}
+    if "date_debut"    in params: harmonized["start_date"]    = params["date_debut"]
+    if "date_fin"      in params: harmonized["end_date"]      = params["date_fin"]
+    if "seuil"         in params: harmonized["stock_min"]     = params["seuil"]
+    if "min_commandes" in params: harmonized["min_commandes"] = params["min_commandes"]
+    if "mois"          in params: harmonized["month"]         = params["mois"]
+    if "annee"         in params: harmonized["year"]          = params["annee"]
+
+    for k, v in params.items():
+        if k not in ("date_debut", "date_fin", "seuil", "mois", "annee"):
+            harmonized.setdefault(k, v)
+
+    return intent, harmonized
+
+
+def _execute_template(question: str, template_name: str,
+                      params: dict, start_time: float) -> dict:
+    """
+    Bloc réutilisable : vérifie le cache, sinon exécute le SQL.
+    Centralise le logging from_cache=True/False pour corriger le cache hit rate.
+    """
+    # ── Cache hit ──
+    cached = chatbot_cache.get(template_name, params)
+    if cached is not None:
+        duration    = round((time.time() - start_time) * 1000, 2)
+        suggestions = generate_suggestions(template_name, params)
+        log_id = log_query(
+            question,
+            cached.get("sql_query", ""),
+            duration,
+            len(cached["table"]),
+            template_name,
+            params,
+            "success",
+            None,
+            from_cache=True          # ← FIX : correctement loggué
+        )
+        return {
+            "table": cached["table"],
+            "summary": f"{len(cached['table'])} résultat(s) trouvé(s). (cache)",
+            "metadata": {
+                "status":      "success",
+                "template":    template_name,
+                "duration_ms": duration,
+                "row_count":   len(cached["table"]),
+                "params":      params,
+                "logs_id":     log_id,
+                "sql_query":   cached.get("sql_query", ""),
+                "from_cache":  True,
+                "suggestions": suggestions
+            }
+        }
+
+    # ── Template introuvable ──
+    template_function = TEMPLATE_MAPPING.get(template_name)
+    if template_function is None:
+        return {
+            "table": [],
+            "summary": "Template non trouvé.",
+            "metadata": {
+                "status":      "error",
+                "template":    template_name,
+                "suggestions": []
+            }
+        }
+
+    # ── Exécution SQL ──
+    sql_query = template_function()
+    try:
+        validate_sql_query(sql_query)
+        columns, rows, execution_time = execute_query(sql_query, params)
+        duration    = round((time.time() - start_time) * 1000, 2)
+        result_rows = [dict(zip(columns, row)) for row in rows]
+        suggestions = generate_suggestions(template_name, params)
+
+        log_id = log_query(
+            question, sql_query, duration, len(result_rows),
+            template_name, params, "success", None,
+            from_cache=False
+        )
+
+        chatbot_cache.set(template_name, params, {
+            "table":     result_rows,
+            "logs_id":   log_id,
+            "sql_query": sql_query
+        })
+
+        return {
+            "table": result_rows,
+            "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
+            "metadata": {
+                "status":      "success",
+                "template":    template_name,
+                "duration_ms": duration,
+                "row_count":   len(result_rows),
+                "params":      params,
+                "logs_id":     log_id,
+                "sql_query":   sql_query,
+                "from_cache":  False,
+                "suggestions": suggestions
+            }
+        }
+
+    except Exception as e:
+        duration = round((time.time() - start_time) * 1000, 2)
+        log_id = log_query(
+            question, sql_query, duration, 0,
+            template_name, params, "error", str(e),
+            from_cache=False
+        )
+        return {
+            "table": [],
+            "summary": "Erreur lors de l'exécution.",
+            "metadata": {
+                "status":      "error",
+                "template":    template_name,
+                "duration_ms": duration,
+                "row_count":   0,
+                "params":      params,
+                "error":       str(e),
+                "logs_id":     log_id,
+                "suggestions": []
+            }
+        }
+
+
+def get_response(question: str) -> dict:
 
     start_time = time.time()
 
+    # ── Couche 1 : sécurité ──
     try:
         detect_injection(question)
     except Exception:
         return {
             "table": [],
             "summary": "Requête rejetée pour des raisons de sécurité.",
-            "metadata": {"status": "rejected"}
+            "metadata": {"status": "rejected", "suggestions": []}
         }
 
     q_lower = normalize(question)
 
-    # factures "du client" sans nom = ambigu
+    # ── Couche 2 : ambiguïtés ──
     if re.search(r'factures?\s+(du\s+)?client\s*$', q_lower):
         return {
             "table": [],
-            "summary": "Veuillez préciser votre demande.",
-            "metadata": {"status": "clarification_required"}
+            "summary": "Veuillez préciser le nom du client.",
+            "metadata": {"status": "clarification_required", "suggestions": []}
         }
 
-    # client + deux dates = ambigu
-    if "client" in q_lower and re.search(
-        r'\d{4}-\d{2}-\d{2}.*\d{4}-\d{2}-\d{2}', q_lower
-    ):
+    if "client" in q_lower and re.search(r'\d{4}-\d{2}-\d{2}.*\d{4}-\d{2}-\d{2}', q_lower):
         return {
             "table": [],
-            "summary": "Veuillez préciser votre demande : souhaitez-vous filtrer par client ou par période ?",
-            "metadata": {"status": "clarification_required"}
+            "summary": "Souhaitez-vous filtrer par client ou par période ?",
+            "metadata": {"status": "clarification_required", "suggestions": []}
         }
 
-    # "produits" seul sans critère = ambigu
     if q_lower.strip() == "produits":
         return {
             "table": [],
-            "summary": "Veuillez préciser votre demande.",
-            "metadata": {"status": "clarification_required"}
+            "summary": "Veuillez préciser votre demande sur les produits.",
+            "metadata": {"status": "clarification_required", "suggestions": []}
         }
 
     ambiguous_patterns = [
-        "ventes du mois",
-        "donne moi les ventes",
-        "factures du mois dernier",
-        "factures janvier",
-        "factures fevrier",
-        "factures mars",
-        "donne moi les factures",
-        "liste des clients",
-        "ventes 2026",
-        "factures payees",
-        "factures totalement payees",
+        "ventes du mois", "donne moi les ventes", "factures du mois dernier",
+        "factures janvier", "factures fevrier", "factures mars",
+        "donne moi les factures", "liste des clients", "ventes 2026",
+        "factures payees", "factures totalement payees",
     ]
-
     for p in ambiguous_patterns:
         if p in q_lower:
-            # Exception : "donne moi les factures" avec dates = pas ambigu
-            if p == "donne moi les factures" and re.search(
-                r'\d{4}-\d{2}-\d{2}', q_lower
-            ):
+            if p == "donne moi les factures" and re.search(r'\d{4}-\d{2}-\d{2}', q_lower):
                 continue
-            # Exception : "donne moi les factures" avec "client" = pas ambigu
             if p == "donne moi les factures" and "client" in q_lower:
                 continue
-            # Exception : "liste des clients" avec "commandes" = pas ambigu
             if p == "liste des clients" and "commandes" in q_lower:
                 continue
-            # Exception : "ventes 2026" avec format YYYY-MM = pas ambigu
             if p == "ventes 2026" and re.search(r'\d{4}-\d{2}', q_lower):
                 continue
             return {
                 "table": [],
                 "summary": "Veuillez préciser votre demande.",
-                "metadata": {"status": "clarification_required"}
+                "metadata": {"status": "clarification_required", "suggestions": []}
             }
 
+    # ── Couche 2b : règles de mapping enrichies ──
+    mapping_result = apply_mapping_rules(question)
+    if mapping_result is not None:
+        intent = mapping_result.get("intent", "")
+
+        if intent == "rejected":
+            return {
+                "table": [],
+                "summary": "Requête rejetée pour des raisons de sécurité.",
+                "metadata": {"status": "rejected", "suggestions": []}
+            }
+
+        if intent == "clarification_required":
+            return {
+                "table": [],
+                "summary": mapping_result.get(
+                    "clarification_message", "Veuillez préciser votre demande."),
+                "metadata": {"status": "clarification_required", "suggestions": []}
+            }
+
+        template_name, params = _convert_mapping_result(mapping_result)
+        if template_name is not None:
+            return _execute_template(question, template_name, params, start_time)
+
+    # ── Couche 3 : routing V1/V2 ──
     template_name, params = match_question(question)
 
+    # ── Couche 4 : LLM fallback ──
     if template_name is None:
         try:
-            result = run_llm_pipeline(question)
+            result      = run_llm_pipeline(question)
+            intent      = result["metadata"].get("template", "")
+            p           = result["metadata"].get("params", {})
+            suggestions = generate_suggestions(intent, p)
+            result["metadata"]["suggestions"] = suggestions
             return {
-                "table": result["table"],
-                "summary": f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
+                "table":    result["table"],
+                "summary":  f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
                 "metadata": result["metadata"]
             }
         except Exception as e:
@@ -236,76 +342,8 @@ def get_response(question: str):
             return {
                 "table": [],
                 "summary": "Je ne peux pas répondre à cette question.",
-                "metadata": {"status": "rejected"}
+                "metadata": {"status": "rejected", "suggestions": []}
             }
 
-    template_function = TEMPLATE_MAPPING.get(template_name)
-
-    if template_function is None:
-        return {
-            "table": [],
-            "summary": "Template non trouvé.",
-            "metadata": {"template": template_name}
-        }
-
-    sql_query = template_function()
-
-    try:
-        validate_sql_query(sql_query)
-
-        columns, rows, execution_time = execute_query(sql_query, params)
-
-        duration = round((time.time() - start_time) * 1000, 2)
-
-        result_rows = [dict(zip(columns, row)) for row in rows]
-
-        log_id = log_query(
-            question,
-            sql_query,
-            duration,
-            len(result_rows),
-            template_name,
-            params,
-            "success",
-            None
-        )
-
-        return {
-            "table": result_rows,
-            "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
-            "metadata": {
-                "template": template_name,
-                "duration_ms": duration,
-                "row_count": len(result_rows),
-                "params": params,
-                "logs_id": log_id,
-                "sql_query": sql_query
-            }
-        }
-
-    except Exception as e:
-        duration = round((time.time() - start_time) * 1000, 2)
-
-        log_id = log_query(
-            question,
-            sql_query,
-            duration,
-            0,
-            template_name,
-            params,
-            "error",
-            str(e)
-        )
-
-        return {
-            "table": [],
-            "summary": "Erreur lors de l'exécution.",
-            "metadata": {
-                "template": template_name,
-                "duration_ms": duration,
-                "row_count": 0,
-                "params": params,
-                "error": str(e),
-                "logs_id": log_id
-            }
-        }
+    # ── Couches 5 + 6 : cache + SQL ──
+    return _execute_template(question, template_name, params, start_time)

@@ -12,7 +12,6 @@ log_lock = Lock()
 
 MAX_LOG_SIZE_MB = 10
 
-
 def _ensure_audit_dir():
     """Crée le dossier logs/ si inexistant"""
     os.makedirs("logs", exist_ok=True)
@@ -20,8 +19,9 @@ def _ensure_audit_dir():
 
 def log_query(question, sql_query, execution_time, row_count,
               template_name, params,
-              status="success", error=None):
-
+              status="success", error=None,
+              from_cache=False): 
+    
     # Rotation du fichier JSON si trop grand
     if os.path.exists(LOG_FILE):
         size_mb = os.path.getsize(LOG_FILE) / (1024 * 1024)
@@ -41,7 +41,8 @@ def log_query(question, sql_query, execution_time, row_count,
         "execution_time": execution_time,
         "row_count":      row_count,
         "status":         status,
-        "error":          error
+        "error":          error,
+        "from_cache":     from_cache
     }
 
     with log_lock:

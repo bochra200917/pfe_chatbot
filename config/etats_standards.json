@@ -1,0 +1,42 @@
+[
+  {
+    "label": "📄 Factures du mois en cours",
+    "question_template": "factures entre {first_day_month} et {today}",
+    "categorie": "facturation"
+  },
+  {
+    "label": "💰 CA du mois en cours",
+    "question_template": "chiffre d affaires de {mois_courant} {annee}",
+    "categorie": "ventes"
+  },
+  {
+    "label": "🔴 Factures non payées",
+    "question_template": "factures non payées",
+    "categorie": "facturation"
+  },
+  {
+    "label": "🟡 Factures partiellement payées",
+    "question_template": "factures partiellement payées",
+    "categorie": "facturation"
+  },
+  {
+    "label": "📦 Produits en stock faible (< 10)",
+    "question_template": "produits avec stock inférieur à 10",
+    "categorie": "stock"
+  },
+  {
+    "label": "🏆 Top clients (multi-commandes)",
+    "question_template": "clients avec plus de 2 commandes",
+    "categorie": "clients"
+  },
+  {
+    "label": "📈 CA annuel par mois",
+    "question_template": "chiffre d affaires total par mois pour {annee}",
+    "categorie": "ventes"
+  },
+  {
+    "label": "🗓 Factures de l'année en cours",
+    "question_template": "factures entre {first_day_year} et {today}",
+    "categorie": "facturation"
+  }
+]

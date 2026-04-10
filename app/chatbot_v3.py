@@ -18,8 +18,8 @@ def run_llm_pipeline(question: str):
     # appel LLM → identification de l'intent et extraction des paramètres
     prompt = build_prompt(question)
     llm_response = call_llm(prompt)
-    parsed = parse_llm_json(llm_response)
-
+    parsed = parse_llm_json(llm_response, question)
+    
     # routing vers le template existant (pas de SQL libre)
     template_function = TEMPLATE_MAPPING.get(parsed.intent)
 
@@ -54,6 +54,7 @@ def run_llm_pipeline(question: str):
     return {
         "table": result,
         "metadata": {
+            "status":    "success",
             "template": parsed.intent,
             "row_count": len(rows),
             "duration_ms": duration,

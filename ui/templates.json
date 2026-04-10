@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "updated_at": "2026-04-10T10:34:27.420379",
+  "templates": {
+    "stock_faible": {
+      "intent": "get_low_stock_products",
+      "description": "Produits dont le stock est inférieur à un seuil donné",
+      "sql": "SELECT p.ref,\n       p.label AS produit,\n       ps.reel AS stock_actuel,\n       e.label AS entrepot\nFROM m38h_product p\nJOIN m38h_product_stock ps ON ps.fk_product = p.rowid\nJOIN m38h_entrepot e ON e.rowid = ps.fk_entrepot\nWHERE ps.reel < :seuil_stock\n  AND p.tosell = 1\nORDER BY ps.reel ASC\nLIMIT :limit",
+      "params": [
+        "limit",
+        "seuil_stock"
+      ],
+      "keywords": [
+        "stock",
+        "rupture",
+        "inférieur",
+        "produit disponible",
+        "seuil"
+      ],
+      "active": true,
+      "created_at": "2026-04-10T10:28:26.570737",
+      "updated_at": "2026-04-10T10:28:26.570746"
+    }
+  }
+}

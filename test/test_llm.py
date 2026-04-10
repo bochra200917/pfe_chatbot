@@ -15,7 +15,7 @@ response = requests.post(
         "Content-Type": "application/json"
     },
     json={
-        "model": "google/gemini-2.0-flash-lite-001",
+        "model": "anthropic/claude-sonnet-4.6",
         "max_tokens": 50,
         "messages": [{"role": "user", "content": "dis bonjour"}]
     }
