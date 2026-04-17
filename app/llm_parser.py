@@ -70,8 +70,8 @@ def parse_llm_json(response: str, prompt: str) -> LLMQuery:
             intent = INTENT_ALIASES[intent]
 
         if intent not in VALID_INTENTS:
-            raise ValueError(f"Intent invalide reçu du LLM: {intent}")
-
+            raise ValueError(f"Intent non supporté: {intent}")
+        
         data["intent"] = intent
 
         # ─────────────────────────────
