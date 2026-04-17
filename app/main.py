@@ -205,6 +205,57 @@ def analytics(user: str = Depends(authenticate)):
     from app.analytics import get_analytics
     return get_analytics()
 
+# ─────────────────────────────────────────────
+# Nouvel endpoint : /execute
+# ─────────────────────────────────────────────
+
+class ExecuteRequest(BaseModel):
+    sql: str
+
+@app.post("/reload")
+def reload_templates(user: str = Depends(authenticate)):
+    """Recharge les templates depuis templates.json sans redémarrer."""
+    from app.chatbot import reload_templates as _reload
+    _reload()
+    return {"status": "reloaded", "timestamp": datetime.now().isoformat()}
+
+@app.post("/execute")
+def execute_sql(request: ExecuteRequest, user: str = Depends(authenticate)):
+    """
+    Exécute un SQL généré par le moteur hybride (LLM).
+    Sécurisé : validation SELECT-only + whitelist avant exécution.
+    """
+    from app.sql_security import validate_sql_query, enforce_limit
+    from app.db import execute_query
+
+    if not request.sql:
+        raise HTTPException(status_code=400, detail="SQL vide reçu")
+
+    print("SQL reçu:", request.sql)
+    print("REQUEST BODY:", request.dict())
+    
+    sql = request.sql.strip()
+    # Validation sécurité
+    try:
+        validate_sql_query(sql)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"SQL invalide : {str(e)}")
+
+    # Enforce LIMIT
+    sql = enforce_limit(sql, 200)
+
+    # Exécution
+    try:
+        columns, rows, execution_time = execute_query(sql, {})
+        result_rows = [dict(zip(columns, row)) for row in rows]
+        return {
+            "rows":           result_rows,
+            "row_count":      len(result_rows),
+            "execution_time": execution_time,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erreur exécution : {str(e)}")
+    
 @app.on_event("startup")
 async def startup_event():
     """Pré-charge le pool de connexions au démarrage de l'API."""

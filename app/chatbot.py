@@ -11,6 +11,7 @@ from app.sql_security import validate_sql_query
 from app.cache import chatbot_cache
 from app.suggestion_engine import generate_suggestions
 from app.prompt_template import apply_mapping_rules
+from ui.hybrid_engine import load_templates
 
 MONTHS = {
     "janv": "01", "fév": "02", "fev": "02", "avr": "04",
@@ -31,6 +32,56 @@ def normalize(text: str) -> str:
 
 def match_question(question: str):
     q = normalize(question)
+
+    # ══════════════════════════════════════════════════════════════════
+    # PRIORITÉ HAUTE — patterns spécifiques avant les patterns généraux
+    # ══════════════════════════════════════════════════════════════════
+
+    # ── Top clients par CA ─────────────────────────────────────────
+    if any(w in q for w in ["top", "meilleur", "eleve", "plus grand", "plus important",
+                             "plus haut", "chiffre affaires le plus", "plus eleve",
+                             "les plus eleve", "le plus eleve"]) \
+            and any(w in q for w in ["client", "societe"]):
+        match_n = re.search(r'\b(\d+)\b', q)
+        limit = int(match_n.group(1)) if match_n else 5
+        return "get_top_clients_ca", {"limit": limit}
+
+    # ── Commandes par mois — PRIORITÉ HAUTE ───────────────────────
+    if (
+    "commande" in q
+    and any(w in q for w in ["combien", "nombre", "total"])
+    and not any(w in q for w in ["facture", "vente", "ca", "chiffre"])
+):
+        for month_key, month_num in MONTHS.items():
+            if month_key in q:
+                match_year = re.search(r'\b(20\d{2})\b', q)
+                year = match_year.group(1) if match_year else "2026"
+                return "get_commandes_par_mois", {"annee": year, "mois": month_num}
+        match_ym = re.search(r'(\d{4})-(\d{2})', q)
+        if match_ym:
+            return "get_commandes_par_mois", {
+                "annee": match_ym.group(1),
+                "mois":  match_ym.group(2)
+            }
+        if any(w in q for w in ["combien", "nombre", "total", "liste", "affiche"]):
+            from datetime import datetime
+            now = datetime.today()
+            return "get_commandes_par_mois", {
+                "annee": str(now.year),
+                "mois":  str(now.month).zfill(2)
+            }
+
+    # ── Liste clients simple ───────────────────────────────────────
+    if (
+    "client" in q
+    and any(w in q for w in ["liste", "tous", "affiche", "donne"])
+    and not any(w in q for w in ["commande", "facture", "top", "meilleur"])
+):
+        return "liste_clients_simple", {}
+    
+    # ══════════════════════════════════════════════════════════════════
+    # PATTERNS EXISTANTS
+    # ══════════════════════════════════════════════════════════════════
 
     match_ym = re.search(r'(\d{4})-(\d{2})(?!-\d{2})', q)
     if match_ym and any(w in q for w in ["total", "ventes", "chiffre", "ca"]):
@@ -63,8 +114,9 @@ def match_question(question: str):
         client_name = match.group(1).strip().replace("pour", "").strip()
         return "get_factures_par_client", {"client": client_name}
 
+    # Boucle MONTHS — uniquement pour le CA/ventes
     for month_name, month_num in MONTHS.items():
-        if month_name in q:
+        if month_name in q and any(w in q for w in ["ca", "chiffre", "vente", "revenu"]):
             match_year = re.search(r'\b(20\d{2})\b', q)
             if match_year:
                 return "get_total_ventes_mois", {"year": match_year.group(1), "month": month_num}
@@ -80,7 +132,7 @@ def match_question(question: str):
 
     if ("plus de deux commandes" in q or "commandes multiples" in q
             or "plusieurs commandes" in q or "plus de commandes" in q
-            or "meilleurs clients" in q or "clients fideles" in q):
+            or "clients fideles" in q):
         return "get_clients_multiple_commandes", {"min_commandes": 2}
 
     if "stock" in q or "rupture" in q:
@@ -94,7 +146,7 @@ def match_question(question: str):
 
     if "3 derniers mois" in q and any(w in q for w in ["paiement", "regl"]):
         from datetime import datetime, timedelta
-        end = datetime.today()
+        end   = datetime.today()
         start = end - timedelta(days=90)
         return "get_total_paiements", {
             "start_date": start.strftime("%Y-%m-%d"),
@@ -130,7 +182,8 @@ def _execute_template(question: str, template_name: str,
                       params: dict, start_time: float) -> dict:
     """
     Bloc réutilisable : vérifie le cache, sinon exécute le SQL.
-    Centralise le logging from_cache=True/False pour corriger le cache hit rate.
+    Filtre automatiquement les paramètres non présents dans le SQL
+    pour éviter les erreurs du driver MariaDB.
     """
     # ── Cache hit ──
     cached = chatbot_cache.get(template_name, params)
@@ -146,7 +199,7 @@ def _execute_template(question: str, template_name: str,
             params,
             "success",
             None,
-            from_cache=True          # ← FIX : correctement loggué
+            from_cache=True
         )
         return {
             "table": cached["table"],
@@ -169,7 +222,7 @@ def _execute_template(question: str, template_name: str,
     if template_function is None:
         return {
             "table": [],
-            "summary": "Template non trouvé.",
+            "summary": f"Template '{template_name}' non trouvé.",
             "metadata": {
                 "status":      "error",
                 "template":    template_name,
@@ -179,11 +232,29 @@ def _execute_template(question: str, template_name: str,
 
     # ── Exécution SQL ──
     sql_query = template_function()
+
     try:
         validate_sql_query(sql_query)
-        columns, rows, execution_time = execute_query(sql_query, params)
+
+        # Ne passer au driver que les paramètres présents dans le SQL.
+        # Cela évite l'erreur "paramètre inconnu" quand on passe {"limit": 5}
+        # à un SQL qui ne contient pas :limit (ex: get_top_clients_ca).
+        sql_placeholders = set(re.findall(r':(\w+)', sql_query))
+        sql_params = {k: v for k, v in params.items() if k in sql_placeholders}
+
+        columns, rows, execution_time = execute_query(sql_query, sql_params)
         duration    = round((time.time() - start_time) * 1000, 2)
         result_rows = [dict(zip(columns, row)) for row in rows]
+
+        # ── Troncature top N côté Python ──
+        # Le SQL retourne jusqu'à 200 lignes (garde-fou DB),
+        # on tronque ici au nombre demandé par l'utilisateur.
+        if template_name == "get_top_clients_ca" and "limit" in params:
+            try:
+                result_rows = result_rows[:int(params["limit"])]
+            except (ValueError, TypeError):
+                pass
+
         suggestions = generate_suggestions(template_name, params)
 
         log_id = log_query(
@@ -237,11 +308,17 @@ def _execute_template(question: str, template_name: str,
         }
 
 
+def reload_templates():
+    """Recharge les templates depuis le fichier JSON."""
+    global TEMPLATES
+    TEMPLATES = load_templates()
+
+
 def get_response(question: str) -> dict:
 
     start_time = time.time()
 
-    # ── Couche 1 : sécurité ──
+    # ── 1. Couche sécurité ──
     try:
         detect_injection(question)
     except Exception:
@@ -253,7 +330,22 @@ def get_response(question: str) -> dict:
 
     q_lower = normalize(question)
 
-    # ── Couche 2 : ambiguïtés ──
+    # ── 2. Ambiguïtés simples ──
+    if q_lower.strip() in ["facture", "factures"]:
+        return {
+            "table": [],
+            "summary": "Veuillez préciser votre demande (ex: factures non payées, factures par client...).",
+            "metadata": {"status": "clarification_required", "suggestions": []}
+        }
+
+    if q_lower.strip() in ["vente", "ventes"]:
+        return {
+            "table": [],
+            "summary": "Veuillez préciser votre demande (ex: chiffre d'affaires par mois...).",
+            "metadata": {"status": "clarification_required", "suggestions": []}
+        }
+
+    # ── 2b. Ambiguïtés avancées ──
     if re.search(r'factures?\s+(du\s+)?client\s*$', q_lower):
         return {
             "table": [],
@@ -278,16 +370,15 @@ def get_response(question: str) -> dict:
     ambiguous_patterns = [
         "ventes du mois", "donne moi les ventes", "factures du mois dernier",
         "factures janvier", "factures fevrier", "factures mars",
-        "donne moi les factures", "liste des clients", "ventes 2026",
+        "donne moi les factures", "ventes 2026",
         "factures payees", "factures totalement payees",
     ]
+
     for p in ambiguous_patterns:
         if p in q_lower:
             if p == "donne moi les factures" and re.search(r'\d{4}-\d{2}-\d{2}', q_lower):
                 continue
             if p == "donne moi les factures" and "client" in q_lower:
-                continue
-            if p == "liste des clients" and "commandes" in q_lower:
                 continue
             if p == "ventes 2026" and re.search(r'\d{4}-\d{2}', q_lower):
                 continue
@@ -297,7 +388,12 @@ def get_response(question: str) -> dict:
                 "metadata": {"status": "clarification_required", "suggestions": []}
             }
 
-    # ── Couche 2b : règles de mapping enrichies ──
+    # ── 3. EARLY MATCH (PRIORITÉ ABSOLUE) ──
+    early_match, early_params = match_question(question)
+    if early_match in ("get_top_clients_ca", "get_commandes_par_mois", "liste_clients_simple"):
+        return _execute_template(question, early_match, early_params, start_time)
+
+    # ── 4. Mapping rules ──
     mapping_result = apply_mapping_rules(question)
     if mapping_result is not None:
         intent = mapping_result.get("intent", "")
@@ -321,22 +417,24 @@ def get_response(question: str) -> dict:
         if template_name is not None:
             return _execute_template(question, template_name, params, start_time)
 
-    # ── Couche 3 : routing V1/V2 ──
+    # ── 5. Match question (fallback règles) ──
     template_name, params = match_question(question)
 
-    # ── Couche 4 : LLM fallback ──
+    # ── 6. LLM fallback ──
     if template_name is None:
         try:
-            result      = run_llm_pipeline(question)
-            intent      = result["metadata"].get("template", "")
-            p           = result["metadata"].get("params", {})
+            result = run_llm_pipeline(question)
+            intent = result["metadata"].get("template", "")
+            p = result["metadata"].get("params", {})
             suggestions = generate_suggestions(intent, p)
             result["metadata"]["suggestions"] = suggestions
+
             return {
-                "table":    result["table"],
-                "summary":  f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
+                "table": result["table"],
+                "summary": f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
                 "metadata": result["metadata"]
             }
+
         except Exception as e:
             print("LLM ERROR:", e)
             return {
@@ -345,5 +443,5 @@ def get_response(question: str) -> dict:
                 "metadata": {"status": "rejected", "suggestions": []}
             }
 
-    # ── Couches 5 + 6 : cache + SQL ──
+    # ── 7. Exécution SQL ──
     return _execute_template(question, template_name, params, start_time)

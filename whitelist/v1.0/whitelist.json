@@ -28,9 +28,13 @@
       "entity"
     ],
     "m38h_commande": [
-      "rowid",
-      "fk_soc"
-    ],
+  "rowid",
+  "fk_soc",
+  "date_commande",
+  "total_ht",
+  "total_ttc",
+  "entity"
+],
     "m38h_product": [
       "ref",
       "label",
@@ -39,7 +43,8 @@
     ],
     "m38h_paiement_facture": [
       "fk_facture",
-      "amount"
+      "amount",
+        "datep"
     ]
   },
 

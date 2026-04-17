@@ -6,10 +6,19 @@ import os
 import time
 from urllib.parse import quote_plus
 from app.sql_security import enforce_limit
+from pathlib import Path
 
-load_dotenv()
+env_path = Path(__file__).resolve().parent.parent / ".env"
+load_dotenv(dotenv_path=env_path)
+
+print("DB_HOST =", os.getenv("DB_HOST"))
+print("DB_USER =", os.getenv("DB_USER"))
 
 DB_HOST     = os.getenv("DB_HOST")
+
+if not DB_HOST:
+    raise Exception("❌ DB_HOST non chargé depuis .env")
+
 DB_PORT     = os.getenv("DB_PORT")
 DB_USER     = os.getenv("DB_USER")
 DB_PASSWORD = quote_plus(os.getenv("DB_PASSWORD"))
@@ -84,19 +93,34 @@ def execute_query(sql_query: str, params: dict = None):
     try:
         sql_query = enforce_limit(sql_query, 200)
 
+        print("\n================ DEBUG SQL =================")
+        print("SQL exécuté:", sql_query)
+        print("PARAMS:", params)
+
         with engine.connect() as connection:
             connection.execute(text("SET SESSION max_statement_time=5"))
+
             result = connection.execute(text(sql_query), params)
-            rows    = result.fetchall()
+
+            rows = result.fetchall()
             columns = result.keys()
+
+        print("RESULT:", rows)
+        print("===========================================\n")
 
         execution_time = round((time.time() - start) * 1000, 2)
         return columns, rows, execution_time
 
     except Exception as e:
         execution_time = round((time.time() - start) * 1000, 2)
-        raise Exception(f"Erreur DB sécurisée : {str(e)}")
 
+        print("\n❌ ERREUR SQL")
+        print("SQL:", sql_query)
+        print("PARAMS:", params)
+        print("ERROR:", str(e))
+        print("===========================================\n")
+
+        raise Exception(f"Erreur DB sécurisée : {str(e)}")
 
 # ─────────────────────────────────────────────
 # Stats du pool — exposées dans /cache/stats

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_at": "2026-04-10T10:34:27.420379",
+  "updated_at": "2026-04-17T12:05:11.009488",
   "templates": {
     "stock_faible": {
       "intent": "get_low_stock_products",
@@ -20,6 +20,62 @@
       "active": true,
       "created_at": "2026-04-10T10:28:26.570737",
       "updated_at": "2026-04-10T10:28:26.570746"
+    },
+    "commandes_par_mois": {
+      "intent": "get_commandes_par_mois",
+      "description": "Nombre et total des commandes pour un mois donné",
+      "sql": "SELECT \n    COUNT(c.rowid) AS nb_commandes,\n    DATE_FORMAT(c.date_commande, '%Y-%m') AS mois,\n    SUM(c.total_ht) AS total_ht,\n    SUM(c.total_ttc) AS total_ttc\nFROM m38h_commande c\nWHERE YEAR(c.date_commande) = :annee\n  AND MONTH(c.date_commande) = :mois\n  AND c.entity = 1\nGROUP BY mois\nLIMIT 200",
+      "params": [
+        "annee",
+        "mois"
+      ],
+      "keywords": [
+        "commandes",
+        "combien de commandes",
+        "nombre de commandes",
+        "commandes passées",
+        "commandes du mois"
+      ],
+      "active": true,
+      "created_at": "2026-04-13T09:06:57.414165",
+      "updated_at": "2026-04-13T09:09:39.085029"
+    },
+    "top_clients_ca": {
+      "intent": "get_top_clients_ca",
+      "description": "Top N clients avec le chiffre d'affaires le plus élevé",
+      "sql": "SELECT \n    s.nom AS client,\n    COUNT(f.rowid) AS nb_factures,\n    SUM(f.total_ht) AS CA_HT,\n    SUM(f.total_ttc) AS CA_TTC\nFROM m38h_facture f\nJOIN m38h_societe s ON f.fk_soc = s.rowid\nWHERE f.entity = 1\n  AND f.fk_statut != 0\nGROUP BY s.rowid, s.nom\nORDER BY CA_TTC DESC\nLIMIT :limit",
+      "params": [
+        "limit"
+      ],
+      "keywords": [
+        "top clients",
+        "meilleurs clients",
+        "chiffre affaires élevé",
+        "clients ca",
+        "clients chiffre affaires",
+        "5 clients",
+        "10 clients"
+      ],
+      "active": true,
+      "created_at": "2026-04-13T09:08:17.499824",
+      "updated_at": "2026-04-13T09:09:34.848518"
+    },
+    "factures_par_client": {
+      "intent": "get_factures_by_client",
+      "description": "Factures d’un client avec total HT et TTC",
+      "sql": "SELECT f.ref, s.nom AS client, f.total_ht, f.total_ttc\nFROM m38h_facture f\nJOIN m38h_societe s ON f.fk_soc = s.rowid\nWHERE s.nom LIKE :client\nAND f.entity = 1\nLIMIT :limit",
+      "params": [
+        "limit",
+        "client"
+      ],
+      "keywords": [
+        "facture",
+        "client",
+        "total"
+      ],
+      "active": true,
+      "created_at": "2026-04-17T12:00:08.716816",
+      "updated_at": "2026-04-17T12:01:47.632417"
     }
   }
 }

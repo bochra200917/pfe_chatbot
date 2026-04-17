@@ -1,5 +1,5 @@
 """
-hybrid_engine.py
+ui/hybrid_engine.py
 Moteur hybride NL2SQL — Chatbot Dolibarr
 Logique : Templates V1/V2 d'abord → Claude via OpenRouter en fallback si échec
 
@@ -14,10 +14,34 @@ import os
 from datetime import datetime
 from typing import Optional
 from dataclasses import dataclass, field, asdict
-
-from openai import OpenAI
 import sqlglot
 from sqlglot.errors import ParseError
+from sentence_transformers import SentenceTransformer, util
+import requests
+
+def call_ollama(prompt: str, model: str = "mistral") -> str:
+    """
+    Appel à Ollama en local via API REST
+    """
+    try:
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=60
+        )
+
+        if response.status_code == 200:
+            return response.json().get("response", "").strip()
+        else:
+            return ""
+
+    except Exception as e:
+        logger.error(f"Ollama error: {e}")
+        return ""
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +62,12 @@ ALLOWED_TABLES = {
     "m38h_user", "m38h_salary", "m38h_projet", "m38h_projet_task",
 }
 
+# ─── Embeddings Model ─────────────────────────────────────────────
+embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+
 MAX_ROWS = 200
 LLM_CONFIDENCE_THRESHOLD = 0.0  # fallback déclenché si templates échouent
-
+TEMPLATE_EMBEDDINGS = {}
 # ─── Dataclasses ──────────────────────────────────────────────────────────────
 
 @dataclass
@@ -60,7 +87,25 @@ class HybridResult:
     def to_dict(self) -> dict:
         return asdict(self)
 
+def build_template_embeddings(templates: dict):
+    """
+    Pré-calcule les embeddings des templates (description + keywords)
+    """
+    global TEMPLATE_EMBEDDINGS
 
+    TEMPLATE_EMBEDDINGS = {}
+
+    for tid, t in templates.items():
+        if not t.get("active", True):
+            continue
+
+        text = t.get("description", "") + " " + " ".join(t.get("keywords", []))
+
+        if text.strip():
+            TEMPLATE_EMBEDDINGS[tid] = embedding_model.encode(
+                text,
+                normalize_embeddings=True
+            )
 # ─── Validation SQL ───────────────────────────────────────────────────────────
 
 def validate_sql_security(sql: str) -> tuple[bool, str]:
@@ -114,31 +159,64 @@ def inject_params(sql: str, params: dict) -> str:
 def load_templates(templates_file: str = "templates.json") -> dict:
     if not os.path.exists(templates_file):
         return {}
+
     with open(templates_file, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return data.get("templates", {})
+
+    templates = data.get("templates", {})
+
+    # 🔥 AJOUT IMPORTANT
+    build_template_embeddings(templates)
+
+    return templates
 
 
-def match_template(question: str, templates: dict) -> tuple[Optional[str], Optional[dict], dict]:
+def match_template(question: str, templates: dict):
     """
-    Tente de matcher la question à un template via mots-clés.
-    Retourne (template_id, template, params_extraits) ou (None, None, {}).
+    Matching sémantique via embeddings (SentenceTransformer)
     """
-    question_lower = question.lower()
 
-    for tid, t in templates.items():
-        if not t.get("active", True):
-            continue
-        keywords = t.get("keywords", [])
-        if not keywords:
-            continue
-        score = sum(1 for kw in keywords if kw.lower() in question_lower)
-        if score >= 1:
-            params = extract_params_from_question(question, t.get("params", []))
-            return tid, t, params
+    if not TEMPLATE_EMBEDDINGS:
+        return None, None, {}
 
-    return None, None, {}
+    q_emb = embedding_model.encode(question, normalize_embeddings=True)
 
+    best_score = -1
+    best_tid = None
+
+    for tid, t_emb in TEMPLATE_EMBEDDINGS.items():
+        score = util.cos_sim(q_emb, t_emb)[0][0].item()
+        print(f"[EMBEDDING DEBUG] template={tid} score={score}")
+
+        if score > best_score:
+            best_score = score
+            best_tid = tid
+
+    # seuil de confiance
+    THRESHOLD = 0.70
+
+    if best_score < THRESHOLD:
+        return None, None, {}
+
+    logger.info(
+    f"[EMBEDDINGS MATCH] question='{question}' | "
+    f"best_tid={best_tid} | score={round(best_score, 3)}"
+    )
+    
+    template = templates.get(best_tid, {})
+
+    params = extract_params_from_question(
+        question,
+        template.get("params", [])
+    )
+
+
+    print(f"\n[EMBEDDING RESULT]")
+    print(f"Question: {question}")
+    print(f"Best template: {best_tid}")
+    print(f"Best score: {best_score}\n")
+
+    return best_tid, template, params
 
 def extract_params_from_question(question: str, param_names: list) -> dict:
     """Extraction basique des paramètres depuis la question (regex)."""
@@ -216,7 +294,15 @@ Ton rôle : identifier l'intent de la question et extraire les paramètres.
 
 {SCHEMA_SUMMARY}
 
-Réponds UNIQUEMENT en JSON valide, sans texte avant ni après, sans balises markdown.
+IMPORTANT :
+- Tu DOIS répondre uniquement avec un JSON valide
+- AUCUN texte avant ou après
+- PAS de ```json
+- PAS d'explication
+- PAS de commentaire
+- Si tu ne respectes pas ce format, la réponse sera rejetée
+
+Réponds STRICTEMENT au format JSON suivant :
 Format attendu :
 {{
   "intent": "nom_intent",
@@ -224,7 +310,7 @@ Format attendu :
   "params": {{
     "param1": "valeur1"
   }},
-  "needs_sql_generation": false,
+  "needs_sql_generation": true,
   "reason": "courte explication"
 }}
 
@@ -234,53 +320,62 @@ Si la question est hors périmètre DB, intent = "out_of_scope".
 """
 
 SYSTEM_PROMPT_SQL = f"""
-Tu es un générateur SQL sécurisé pour une base Dolibarr (MariaDB).
+Tu es un expert SQL spécialisé en MariaDB (Dolibarr).
 
 {SCHEMA_SUMMARY}
 
-Réponds UNIQUEMENT avec un objet JSON valide, sans texte avant ni après, sans balises markdown.
-Format attendu :
-{{
-  "sql": "SELECT ... FROM ... WHERE ... LIMIT 200",
-  "explanation": "courte explication de la requête",
-  "confidence": 0.9
-}}
+Ta mission : générer UNE requête SQL correcte.
 
-La requête SQL doit :
-- Commencer par SELECT
-- Contenir LIMIT (max 200)
-- N'utiliser que les tables autorisées
-- Ne jamais modifier les données
+RÈGLES STRICTES :
+- SELECT uniquement
+- LIMIT 200 obligatoire
+- Utiliser uniquement les tables autorisées
+- Toujours inclure : entity = 1
+- Ne jamais modifier les données (pas de INSERT, UPDATE, DELETE, DROP...)
+
+IMPORTANT :
+- Si la question contient "par client" → utiliser GROUP BY
+- Utiliser SUM() pour les montants
+- Utiliser JOIN avec m38h_societe pour les clients
+- Si la question contient "combien" → utiliser COUNT(*)
+- Si la question contient "commandes" → utiliser m38h_commande
+- Si la question contient un mois + année → filtrer avec MONTH() et YEAR()
+
+Exemple :
+SELECT COUNT(*) as total
+FROM m38h_commande
+WHERE MONTH(date_commande) = 3
+AND YEAR(date_commande) = 2026
+AND entity = 1
+LIMIT 200
+
+FORMAT DE SORTIE :
+- Retourne UNIQUEMENT la requête SQL
+- PAS de JSON
+- PAS d'explication
+- PAS de texte avant ou après
+
+EXEMPLE :
+SELECT s.nom, SUM(f.total_ttc)
+FROM m38h_facture f
+JOIN m38h_societe s ON f.fk_soc = s.rowid
+WHERE YEAR(f.datef) = 2026 AND f.entity = 1
+GROUP BY s.nom
+LIMIT 200
 """
 
-
-def call_claude(system_prompt: str, user_message: str, max_tokens: int = 500) -> str:
-    """Appelle Claude via OpenRouter et retourne le texte de la réponse."""
-    client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=os.environ.get("OPENROUTER_API_KEY"),
-    )
-    response = client.chat.completions.create(
-        model="anthropic/claude-sonnet-4.6",
-        max_tokens=max_tokens,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_message},
-        ],
-    )
-    return response.choices[0].message.content.strip()
-
-
 def clean_llm_json(raw: str) -> str:
-    """Nettoie la réponse LLM pour extraire uniquement le JSON."""
-    raw = re.sub(r'```json\s*', '', raw)
-    raw = re.sub(r'```\s*', '', raw)
-    raw = raw.strip()
-    match = re.search(r'\{.*\}', raw, re.DOTALL)
+    if not raw:
+        return ""
+
+    raw = re.sub(r"```json", "", raw, flags=re.IGNORECASE)
+    raw = re.sub(r"```", "", raw)
+
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
     if match:
         return match.group(0)
-    return raw
 
+    return raw.strip()
 
 def llm_classify_intent(question: str, templates: dict) -> dict:
     """
@@ -301,28 +396,151 @@ Question utilisateur : "{question}"
 
 Identifie l'intent et extrais les paramètres.
 """
-    raw = call_claude(SYSTEM_PROMPT_ROUTER, user_msg, max_tokens=300)
+    prompt = SYSTEM_PROMPT_ROUTER + "\n\n" + user_msg
+    raw = call_ollama(prompt)    
     logger.debug(f"LLM router raw response: {repr(raw)}")
 
     raw = clean_llm_json(raw)
-    return json.loads(raw)
+
+    try:
+        parsed = json.loads(raw)
+
+    # Sécurité minimale
+        if not isinstance(parsed, dict):
+            raise ValueError("Réponse non dict")
+
+        return parsed
+
+    except Exception as e:
+        logger.error(f"LLM JSON invalide (router): {raw}")
+    
+        return {
+        "intent": "unknown",
+        "confidence": 0,
+        "params": {},
+        "needs_sql_generation": True,
+        "reason": "invalid_json"
+    }
+
+    # tentative de correction simple
+        raw_fixed = raw.replace(",}", "}").replace(",]", "]")
+
+        try:
+            return json.loads(raw_fixed)
+        except Exception:
+        # fallback intelligent (ne casse pas le pipeline)
+            return {
+            "intent": "unknown",
+            "confidence": 0,
+            "params": {},
+            "needs_sql_generation": True,
+            "reason": "fallback JSON parsing failed"
+        }
 
 
-def llm_generate_sql(question: str) -> dict:
+def llm_generate_sql(question: str, cache: dict = None) -> dict:    
     """
-    Utilise Claude pour générer directement le SQL pour une question complexe.
-    Retourne un dict avec sql, explanation, confidence.
+    Génère du SQL via Ollama (robuste, sans dépendance stricte au JSON)
     """
+
     user_msg = f'Génère une requête SQL pour : "{question}"'
-    raw = call_claude(SYSTEM_PROMPT_SQL, user_msg, max_tokens=500)
-    logger.debug(f"LLM SQL raw response: {repr(raw)}")
+    cache_key = question.strip().lower()
 
-    raw = clean_llm_json(raw)
-    return json.loads(raw)
+    # ── Étape 1 : appel Ollama ──
+    try:
+        prompt = SYSTEM_PROMPT_SQL + "\n\n" + user_msg
+        raw = call_ollama(prompt)
+        logger.debug(f"LLM SQL raw response: {repr(raw)}")
+    except Exception as e:
+        logger.error(f"Erreur appel LLM : {e}")
+        return {
+            "sql": "",
+            "explanation": f"Erreur appel LLM : {str(e)}",
+            "confidence": 0
+        }
 
+    if not raw:
+        return {
+            "sql": "",
+            "explanation": "Réponse vide du LLM",
+            "confidence": 0
+        }
+
+    # ── Étape 2 : tentative parsing JSON (optionnelle) ──
+    sql = ""
+    explanation = ""
+    confidence = 0
+
+    raw_clean = clean_llm_json(raw)
+
+    # ── Étape 3 : 🔥 extraction robuste SQL (clé pour Ollama) ──
+    if not sql or not isinstance(sql, str):
+
+        import re
+
+        logger.warning("Extraction SQL depuis texte brut...")
+
+        # Cas idéal : SELECT ... LIMIT
+        match = re.search(
+            r"(SELECT .*? LIMIT \d+)",
+            raw,
+            re.IGNORECASE | re.DOTALL
+        )
+
+        if match:
+            sql = match.group(1)
+
+        else:
+            # fallback : SELECT ... ;
+            match = re.search(
+                r"(SELECT .*?;)",
+                raw,
+                re.IGNORECASE | re.DOTALL
+            )
+
+            if match:
+                sql = match.group(1)
+
+        # fallback ultime : tout ce qui commence par SELECT
+        if not sql:
+            match = re.search(
+                r"(SELECT .*)",
+                raw,
+                re.IGNORECASE | re.DOTALL
+            )
+            if match:
+                sql = match.group(1)
+
+    # ── Étape 4 : validation finale ──
+    if not sql or not isinstance(sql, str):
+        logger.error(f"SQL introuvable dans réponse LLM : {raw}")
+        return {
+            "sql": "",
+            "explanation": "SQL non trouvé dans la réponse LLM",
+            "confidence": 0
+        }
+
+    sql = sql.strip()
+
+    # ── Étape 5 : sécurisation LIMIT ──
+    if "LIMIT" not in sql.upper():
+        sql += " LIMIT 200"
+
+    if cache is not None:
+        cache[cache_key] = {
+        "sql": sql,
+        "explanation": explanation or "SQL généré via Ollama",
+        "confidence": confidence or 0.7
+    }
+    
+    return {
+        "sql": sql,
+        "explanation": explanation or "SQL généré via Ollama",
+        "confidence": confidence or 0.7
+    }
+    
 
 # ─── Moteur hybride principal ─────────────────────────────────────────────────
-
 class HybridEngine:
     """
     Moteur hybride NL2SQL.
@@ -332,13 +550,22 @@ class HybridEngine:
     def __init__(self, templates_file: str = "templates.json"):
         self.templates_file = templates_file
         self.templates = load_templates(templates_file)
+        build_template_embeddings(self.templates)
+        self._llm_cache = {}
 
+    def cache_key(self, question: str) -> str:
+        return question.strip().lower()
+    
     def reload_templates(self):
         self.templates = load_templates(self.templates_file)
-
+        build_template_embeddings(self.templates)
+    
     def process(self, question: str) -> HybridResult:
         start = time.time()
         question = question.strip()
+
+        # debug tracing global
+        logger.info(f"[QUERY] {question}")
 
         # ── Étape 1 : Matching templates V1/V2 ──────────────────────────────
         tid, template, params = match_template(question, self.templates)
@@ -354,113 +581,145 @@ class HybridEngine:
 
                 if valid:
                     return HybridResult(
-                        question=question,
-                        mode="template",
-                        intent=template.get("intent", tid),
-                        sql=sql_final,
-                        params=params,
-                        valid=True,
-                        error=None,
-                        llm_called=False,
-                        duration_ms=round((time.time() - start) * 1000, 2),
-                    )
+                    question=question,
+                    mode="template",
+                    intent=template.get("intent", tid),
+                    sql=sql_final,
+                    params=params,
+                    valid=True,
+                    error=None,
+                    llm_called=False,
+                    duration_ms=round((time.time() - start) * 1000, 2),
+                )
                 else:
                     logger.warning(f"Template {tid} SQL invalide : {err}")
             else:
-                logger.info(f"Template {tid} : paramètres manquants {missing} — passage au LLM")
+                logger.info(
+                f"Template {tid} : paramètres manquants {missing} — passage au LLM"
+            )
 
-        # ── Étape 2 : LLM Router (classify + extract params) ─────────────────
+    # ── Étape 2 : LLM Router ──────────────────────────────
+        llm_classification = {
+        "intent": "unknown",
+        "params": {},
+        "needs_sql_generation": False
+    }
+
         try:
             llm_classification = llm_classify_intent(question, self.templates)
-            intent = llm_classification.get("intent", "unknown")
-            llm_params = llm_classification.get("params", {})
-            needs_sql = llm_classification.get("needs_sql_generation", False)
+        except Exception as e:
+            logger.error(f"Router error: {e}")
 
-            # Hors périmètre
-            if intent == "out_of_scope":
-                return HybridResult(
+        intent = llm_classification.get("intent", "unknown")
+        llm_params = llm_classification.get("params", {})
+        needs_sql = llm_classification.get("needs_sql_generation", False)
+
+    # sécurité hors périmètre
+        if intent == "out_of_scope":
+            return HybridResult(
+            question=question,
+            mode="fallback_error",
+            intent="out_of_scope",
+            sql=None,
+            params={},
+            valid=False,
+            error="Question hors périmètre.",
+            llm_called=True,
+            duration_ms=round((time.time() - start) * 1000, 2),
+        )
+
+    # ── Étape 3 : LLM génère le SQL directement ───────────────────
+        if needs_sql:
+            try:
+                llm_sql_result = llm_generate_sql(question, self._llm_cache)
+                generated_sql = llm_sql_result.get("sql", "")
+
+                if not generated_sql or not isinstance(generated_sql, str):
+                    return HybridResult(
                     question=question,
                     mode="fallback_error",
-                    intent="out_of_scope",
+                    intent=intent,
                     sql=None,
                     params={},
                     valid=False,
-                    error="Question hors périmètre de la base de données.",
+                    error="SQL vide généré par le LLM.",
                     llm_called=True,
                     duration_ms=round((time.time() - start) * 1000, 2),
                 )
 
-            # LLM a identifié un template existant
-            if not needs_sql and intent in self.templates:
-                t = self.templates[intent]
-                sql_template = t.get("sql", "")
-                sql_final = inject_params(sql_template, llm_params)
-                valid, err = validate_sql_security(sql_final)
-
-                if valid:
-                    return HybridResult(
-                        question=question,
-                        mode="llm_router",
-                        intent=intent,
-                        sql=sql_final,
-                        params=llm_params,
-                        valid=True,
-                        error=None,
-                        llm_called=True,
-                        duration_ms=round((time.time() - start) * 1000, 2),
-                    )
-
-            # ── Étape 3 : LLM génère le SQL directement ───────────────────
-            if needs_sql:
-                llm_sql_result = llm_generate_sql(question)
-                generated_sql = llm_sql_result.get("sql", "")
-
                 valid, err = validate_sql_security(generated_sql)
+
+            # 🔥 FALLBACK INTELLIGENT SI SQL INVALIDE
+                if not valid:
+                    logger.warning("SQL invalide → fallback intelligent activé")
+
+                    q = question.lower()
+
+                # 👉 cas "combien de commandes"
+                    if "combien" in q and "commande" in q:
+
+                        mois_map = {
+                        "janvier": 1, "février": 2, "mars": 3, "avril": 4,
+                        "mai": 5, "juin": 6, "juillet": 7, "août": 8,
+                        "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12
+                    }
+
+                        mois = None
+                    for nom, num in mois_map.items():
+                        if nom in q:
+                            mois = num
+                            break
+
+                        year_match = re.search(r"(20\d{2})", q)
+                        annee = year_match.group(1) if year_match else "2026"
+
+                        if mois:
+                            generated_sql = f"""
+SELECT COUNT(*) as total
+FROM m38h_commande
+WHERE MONTH(date_commande) = {mois}
+AND YEAR(date_commande) = {annee}
+AND entity = 1
+LIMIT 200
+"""
+                            valid, err = validate_sql_security(generated_sql)
+                        else:
+                            valid = False
+                            err = "mois introuvable"
+
+            # ── résultat final ──────────────────────────────
                 if valid:
                     return HybridResult(
-                        question=question,
-                        mode="llm_sql",
-                        intent=intent,
-                        sql=generated_sql,
-                        params={},
-                        valid=True,
-                        error=None,
-                        llm_called=True,
-                        duration_ms=round((time.time() - start) * 1000, 2),
-                        warning="SQL généré par LLM — vérifié par AST mais à valider manuellement.",
-                    )
+                    question=question,
+                    mode="llm_sql",
+                    intent=intent,
+                    sql=generated_sql,
+                    params=llm_params,
+                    valid=True,
+                    error=None,
+                    llm_called=True,
+                    duration_ms=round((time.time() - start) * 1000, 2),
+                    warning="SQL généré par LLM — vérifié par AST mais à valider manuellement.",
+                )
                 else:
                     return HybridResult(
-                        question=question,
-                        mode="fallback_error",
-                        intent=intent,
-                        sql=None,
-                        params={},
-                        valid=False,
-                        error=f"SQL généré par LLM invalide : {err}",
-                        llm_called=True,
-                        duration_ms=round((time.time() - start) * 1000, 2),
-                    )
+                    question=question,
+                    mode="fallback_error",
+                    intent=intent,
+                    sql=None,
+                    params=llm_params,
+                    valid=False,
+                    error=f"SQL généré par LLM invalide : {err}",
+                    llm_called=True,
+                    duration_ms=round((time.time() - start) * 1000, 2),
+                )
 
-        except json.JSONDecodeError as e:
-            logger.error(f"LLM JSON invalide : {e}")
-            return HybridResult(
+            except Exception as e:
+                logger.error(f"Erreur LLM SQL : {e}")
+                return HybridResult(
                 question=question,
                 mode="fallback_error",
-                intent=None,
-                sql=None,
-                params={},
-                valid=False,
-                error="Réponse LLM mal formée (JSON invalide).",
-                llm_called=True,
-                duration_ms=round((time.time() - start) * 1000, 2),
-            )
-        except Exception as e:
-            logger.error(f"Erreur LLM : {e}")
-            return HybridResult(
-                question=question,
-                mode="fallback_error",
-                intent=None,
+                intent=intent,
                 sql=None,
                 params={},
                 valid=False,
@@ -469,15 +728,16 @@ class HybridEngine:
                 duration_ms=round((time.time() - start) * 1000, 2),
             )
 
-        # ── Étape 4 : Aucune solution trouvée ────────────────────────────────
+    # ── Étape 4 : Aucune solution trouvée ────────────────────────────────
         return HybridResult(
-            question=question,
-            mode="fallback_error",
-            intent=None,
-            sql=None,
-            params={},
-            valid=False,
-            error="Aucun template ni SQL valide trouvé pour cette question.",
-            llm_called=True,
-            duration_ms=round((time.time() - start) * 1000, 2),
-        )
+        question=question,
+        mode="fallback_error",
+        intent=intent,
+        sql=None,
+        params={},
+        valid=False,
+        error="Aucun template ni SQL valide trouvé pour cette question.",
+        llm_called=True,
+        duration_ms=round((time.time() - start) * 1000, 2),
+    )
+

@@ -22,9 +22,11 @@ except Exception:
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────
-API_URL  = "http://localhost:8000/ask"
-API_USER = "admin"
-API_PASS = "1234"
+API_URL        = "http://localhost:8000/ask"
+API_USER       = "admin"
+API_PASS       = "1234"
+HYBRID_API_URL = "http://localhost:8001/ask"
+EXECUTE_URL    = "http://localhost:8000/execute"
 
 st.set_page_config(
     page_title="Chatbot ZAI Informatique",
@@ -46,13 +48,8 @@ def month_name(m):
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-.rejected-box {
-    color: black !important;
-}
-
-.clarification-box {
-    color: black !important;
-}
+.rejected-box { color: black !important; }
+.clarification-box { color: black !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -75,6 +72,11 @@ st.markdown("""
     background: #fffde7 !important; border-radius: 10px; padding: 1.2rem 1.5rem;
     border-left: 4px solid #FFC107;
 }
+.llm-badge {
+    background: #ede9fe !important; border-radius: 10px; padding: 0.5rem 1rem;
+    border-left: 4px solid #7c3aed; margin-bottom: 0.5rem;
+    font-size: 0.82rem; color: #4c1d95;
+}
 .history-wrapper {
     border: 1px solid #e0e0e0; border-radius: 10px; padding: 8px;
     background: #fafafa; height: 520px; overflow-y: auto;
@@ -90,11 +92,14 @@ st.markdown("""
     display: inline-block; background: #e8f5e9; color: #2e7d32;
     border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; margin-right: 6px;
 }
+.meta-chip-llm {
+    display: inline-block; background: #ede9fe; color: #6d28d9;
+    border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; margin-right: 6px;
+}
 .suggestion-box {
     background: #f3f4f6 !important; border-radius: 10px; padding: 0.8rem 1rem;
     border-left: 4px solid #6366f1;
 }
-/* ── Tableaux scrollables ── */
 .scroll-table, .fb-scroll {
     background: #f9fafb !important; border: 1px solid #e5e7eb !important;
     border-radius: 10px; max-height: 350px; overflow-y: auto;
@@ -120,7 +125,6 @@ st.markdown("""
 .col-rank  { width: 8%;  text-align: center; font-weight: 600; }
 .col-ques  { width: 76%; }
 .col-count { width: 16%; text-align: center; font-weight: 600; color: #2e7d32; }
-/* ── Feedback row (Streamlit columns) ── */
 .fb-row-wrapper {
     border-bottom: 1px solid #e5e7eb; padding: 4px 0;
     background: white; font-size: 0.83rem; color: #111;
@@ -176,8 +180,13 @@ def save_feedbacks(items: list):
 
 def append_feedback(logs_id, question, rating, comment=""):
     os.makedirs("logs", exist_ok=True)
-    entry = {"timestamp": datetime.now().isoformat(), "logs_id": logs_id,
-             "question": question, "rating": rating, "comment": comment}
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "logs_id":   logs_id,
+        "question":  question,
+        "rating":    rating,
+        "comment":   comment,
+    }
     with open(FEEDBACK_FILE, "a", encoding="utf-8") as f:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
@@ -195,20 +204,228 @@ if st.session_state.delete_fb_idx >= 0:
 # API HELPERS
 # ═══════════════════════════════════════════════════════════════════════
 
-def call_api(question: str) -> dict:
+def call_hybrid_fallback(question: str) -> dict | None:
+    """
+    Appelle le moteur hybride LLM (port 8001).
+    1. Génère le SQL via LLM
+    2. Exécute le SQL via /execute (port 8000)
+    Retourne un résultat formaté pour Streamlit, ou None si échec.
+    """
     try:
-        r = requests.post(API_URL, json={"question": question},
-                          auth=(API_USER, API_PASS), timeout=30)
-        if r.status_code == 200:
-            return r.json()
-        return {"table": [], "summary": f"Erreur API ({r.status_code})",
-                "metadata": {"status": "error", "suggestions": []}}
-    except requests.exceptions.ConnectionError:
-        return {"table": [], "summary": "Serveur inaccessible.",
-                "metadata": {"status": "error", "suggestions": []}}
+        # ── Étape 1 : LLM génère le SQL ──
+        r = requests.post(
+            HYBRID_API_URL,
+            json={"question": question, "force_llm": False},
+            timeout=60
+        )
+        
+        print(f"\n🔵 HYBRID API STATUS: {r.status_code}")
+        print(f"🔵 HYBRID API BODY: {r.text[:500]}")
+        
+        if r.status_code != 200:
+            return {
+                "table": [],
+                "summary": f"❌ Erreur API hybride (code {r.status_code})",
+                "metadata": {
+                    "status": "error",
+                    "template": "llm",
+                    "sql_query": "",
+                    "duration_ms": 0,
+                    "row_count": 0,
+                    "logs_id": "",
+                    "from_cache": False,
+                    "suggestions": [],
+                    "warning": "Le moteur hybride n'est pas accessible. Vérifiez le port 8001.",
+                    "llm_mode": "llm_error",
+                }
+            }
+
+        data = r.json()
+        
+        # Debug : afficher la réponse complète du LLM
+        print(f"🔵 LLM RESPONSE: valid={data.get('valid')}, sql={data.get('sql', '')[:100]}")
+        print(f"🔵 LLM ERROR: {data.get('error', 'none')}")
+
+        # Échec LLM ou SQL invalide
+        if not data.get("valid"):
+            error_msg = data.get("error", "Validation SQL échouée")
+            return {
+                "table": [],
+                "summary": f"❌ Requête LLM rejetée : {error_msg}",
+                "metadata": {
+                    "status": "error",
+                    "template": data.get("intent", "llm"),
+                    "sql_query": data.get("sql", ""),
+                    "duration_ms": data.get("duration_ms", 0),
+                    "row_count": 0,
+                    "logs_id": data.get("request_id", ""),
+                    "from_cache": False,
+                    "suggestions": [],
+                    "warning": f"Erreur LLM : {error_msg}",
+                    "llm_mode": data.get("mode", "llm"),
+                }
+            }
+
+        sql = data.get("sql", "").strip()
+        
+        if not sql:
+            return {
+                "table": [],
+                "summary": "❌ Requête LLM rejetée : SQL vide généré par le LLM.",
+                "metadata": {
+                    "status": "error",
+                    "template": data.get("intent", "llm"),
+                    "sql_query": "",
+                    "duration_ms": data.get("duration_ms", 0),
+                    "row_count": 0,
+                    "logs_id": data.get("request_id", ""),
+                    "from_cache": False,
+                    "suggestions": [],
+                    "warning": "Le LLM n'a généré aucun SQL exploitable.",
+                    "llm_mode": data.get("mode", "llm"),
+                }
+            }
+
+        print(f"🟢 SQL GÉNÉRÉ PAR LLM: {sql[:200]}")
+
+        # ── Étape 2 : Exécution via /execute (port 8000) ──
+        try:
+            exec_response = requests.post(
+                EXECUTE_URL,
+                json={"sql": sql},
+                auth=(API_USER, API_PASS),
+                timeout=30
+            )
+            
+            print(f"🟢 EXECUTE STATUS: {exec_response.status_code}")
+            print(f"🟢 EXECUTE BODY: {exec_response.text[:500]}")
+            
+            if exec_response.status_code == 200:
+                exec_data = exec_response.json()
+                row_count = exec_data.get("row_count", 0)
+                return {
+                    "table":   exec_data.get("rows", []),
+                    "summary": f"{row_count} résultat(s) trouvé(s).",
+                    "metadata": {
+                        "status":      "success",
+                        "template":    data.get("intent", "llm"),
+                        "sql_query":   sql,
+                        "duration_ms": data.get("duration_ms", 0),
+                        "row_count":   row_count,
+                        "logs_id":     data.get("request_id", ""),
+                        "from_cache":  False,
+                        "suggestions": [],
+                        "warning":     data.get("warning", ""),
+                        "llm_mode":    data.get("mode", "llm"),
+                    }
+                }
+            else:
+                # Erreur /execute
+                try:
+                    error_detail = exec_response.json().get("detail", exec_response.text[:200])
+                except Exception:
+                    error_detail = exec_response.text[:200]
+                
+                return {
+                    "table": [],
+                    "summary": f"❌ Erreur lors de l'exécution SQL.",
+                    "metadata": {
+                        "status": "error",
+                        "template": data.get("intent", "llm"),
+                        "sql_query": sql,
+                        "duration_ms": data.get("duration_ms", 0),
+                        "row_count": 0,
+                        "logs_id": data.get("request_id", ""),
+                        "from_cache": False,
+                        "suggestions": [],
+                        "warning": f"Erreur /execute ({exec_response.status_code}) : {error_detail}",
+                        "llm_mode": data.get("mode", "llm"),
+                    }
+                }
+                
+        except Exception as ex:
+            print(f"🔴 EXECUTE EXCEPTION: {ex}")
+            return {
+                "table": [],
+                "summary": "❌ Connexion DB indisponible.",
+                "metadata": {
+                    "status": "error",
+                    "template": data.get("intent", "llm"),
+                    "sql_query": sql,
+                    "duration_ms": data.get("duration_ms", 0),
+                    "row_count": 0,
+                    "logs_id": data.get("request_id", ""),
+                    "from_cache": False,
+                    "suggestions": [],
+                    "warning": f"Erreur de connexion : {str(ex)}",
+                    "llm_mode": data.get("mode", "llm"),
+                }
+            }
+
     except Exception as e:
-        return {"table": [], "summary": str(e),
-                "metadata": {"status": "error", "suggestions": []}}
+        print(f"🔴 HYBRID FALLBACK EXCEPTION: {e}")
+        return None
+
+def call_api(question: str) -> dict:
+    """
+    Stratégie en 3 étapes :
+    1. Port 8000 — templates V1/V2 (rapide, sans LLM)
+       → Si résultat avec données : retour direct
+       → Si rejeté pour sécurité  : retour direct (pas de LLM)
+       → Tous les autres cas       : passer au LLM
+    2. Port 8001 — moteur hybride LLM (fallback)
+    3. Aucune solution trouvée
+    """
+    # ── Étape 1 : templates V1/V2 (port 8000) ──
+    try:
+        r = requests.post(
+            API_URL,
+            json={"question": question},
+            auth=(API_USER, API_PASS),
+            timeout=30
+        )
+        if r.status_code == 200:
+            result = r.json()
+            status = result.get("metadata", {}).get("status", "")
+            table  = result.get("table", [])
+
+            # ✅ Résultat avec données → retour direct sans LLM
+            if status == "success" and table:
+                return result
+
+            # 🔒 Rejeté pour sécurité (injection SQL) → retour sans LLM
+            if status == "rejected":
+                return result
+
+            # Tous les autres cas (clarification, success vide, erreur)
+            # → on laisse tomber vers le LLM
+
+    except requests.exceptions.ConnectionError:
+        return {
+            "table":    [],
+            "summary":  "Serveur inaccessible (port 8000).",
+            "metadata": {"status": "error", "suggestions": []},
+        }
+    except Exception as e:
+        return {
+            "table":    [],
+            "summary":  str(e),
+            "metadata": {"status": "error", "suggestions": []},
+        }
+
+    # ── Étape 2 : LLM fallback (port 8001) ──
+    with st.spinner("🤖 Analyse en cours avec l'IA…"):
+        hybrid_result = call_hybrid_fallback(question)
+
+    if hybrid_result:
+        return hybrid_result
+
+    # ── Étape 3 : aucune solution ──
+    return {
+        "table":    [],
+        "summary":  "Je ne peux pas répondre à cette question. Essayez de la reformuler.",
+        "metadata": {"status": "error", "suggestions": []},
+    }
 
 
 def call_api_endpoint(endpoint: str, method: str = "GET") -> dict:
@@ -220,6 +437,9 @@ def call_api_endpoint(endpoint: str, method: str = "GET") -> dict:
         return {}
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# TRAITEMENT QUESTION EN ATTENTE
+# ═══════════════════════════════════════════════════════════════════════
 if st.session_state.pending_question:
     q = st.session_state.pending_question
     st.session_state.pending_question = ""
@@ -237,10 +457,11 @@ if st.session_state.pending_question:
         "row_count":   meta.get("row_count", 0),
         "duration_ms": meta.get("duration_ms", 0),
         "logs_id":     meta.get("logs_id", ""),
-        "timestamp":   datetime.now().strftime("%H:%M:%S")
+        "timestamp":   datetime.now().strftime("%H:%M:%S"),
+        "llm_mode":    meta.get("llm_mode", ""),
     })
-# ── Nettoyage différé du champ de saisie ──
-# Doit être traité ICI, avant que st.text_input(key="form_question") soit rendu
+
+# Nettoyage différé du champ de saisie
 if st.session_state.do_clear_form:
     st.session_state.form_question = ""
     st.session_state.do_clear_form = False
@@ -269,13 +490,17 @@ def auto_chart(df: pd.DataFrame, template: str):
         if template == "get_total_ventes_mois" and "CA_HT" in df.columns:
             fig, ax = plt.subplots(figsize=(6, 3))
             ax.bar(df["mois"].astype(str), df["CA_HT"], color="#4CAF50", alpha=0.85)
-            ax.set_ylabel("CA HT"); ax.set_title("Chiffre d'affaires HT")
-            ax.tick_params(axis="x", rotation=30); fig.tight_layout()
+            ax.set_ylabel("CA HT")
+            ax.set_title("Chiffre d'affaires HT")
+            ax.tick_params(axis="x", rotation=30)
+            fig.tight_layout()
         elif template == "get_clients_multiple_commandes" and "nb_commandes" in df.columns:
             top = df.nlargest(10, "nb_commandes")
             fig, ax = plt.subplots(figsize=(6, max(3, len(top) * 0.4)))
             ax.barh(top["client_nom"].astype(str), top["nb_commandes"], color="#2196F3", alpha=0.85)
-            ax.set_xlabel("Nb commandes"); ax.set_title("Top clients"); fig.tight_layout()
+            ax.set_xlabel("Nb commandes")
+            ax.set_title("Top clients")
+            fig.tight_layout()
         elif template == "get_produits_stock_faible" and "stock_disponible" in df.columns:
             top = df.nsmallest(15, "stock_disponible")
             colors = ["#e53935" if s == 0 else "#FF9800" if s < 3 else "#4CAF50"
@@ -283,15 +508,19 @@ def auto_chart(df: pd.DataFrame, template: str):
             fig, ax = plt.subplots(figsize=(6, max(3, len(top) * 0.35)))
             ax.barh(top["produit_nom"].astype(str), top["stock_disponible"],
                     color=colors, alpha=0.85)
-            ax.set_xlabel("Stock"); ax.set_title("Produits à stock faible"); fig.tight_layout()
+            ax.set_xlabel("Stock")
+            ax.set_title("Produits à stock faible")
+            fig.tight_layout()
         elif template in ("get_factures_non_payees", "get_factures_partiellement_payees") \
                 and "montant_paye" in df.columns and "montant_restant" in df.columns:
-            tp = float(df["montant_paye"].sum()); tr = float(df["montant_restant"].sum())
+            tp = float(df["montant_paye"].sum())
+            tr = float(df["montant_restant"].sum())
             if tp + tr > 0:
                 fig, ax = plt.subplots(figsize=(5, 3))
                 ax.pie([tp, tr], labels=["Payé", "Restant"],
                        colors=["#4CAF50", "#e53935"], autopct="%1.1f%%", startangle=90)
-                ax.set_title("Répartition paiements"); fig.tight_layout()
+                ax.set_title("Répartition paiements")
+                fig.tight_layout()
         elif template == "get_factures_between" \
                 and "date_facture" in df.columns and "total_ttc" in df.columns:
             df2 = df.copy()
@@ -301,62 +530,68 @@ def auto_chart(df: pd.DataFrame, template: str):
                 fig, ax = plt.subplots(figsize=(6, 3))
                 ax.plot(df2["date_facture"], df2["total_ttc"].astype(float),
                         color="#9C27B0", marker="o", markersize=3, linewidth=1.5)
-                ax.set_ylabel("Total TTC"); ax.set_title("Factures sur la période")
-                ax.tick_params(axis="x", rotation=30); fig.tight_layout()
+                ax.set_ylabel("Total TTC")
+                ax.set_title("Factures sur la période")
+                ax.tick_params(axis="x", rotation=30)
+                fig.tight_layout()
+        # ── Graphique automatique pour résultats LLM ──
+        elif "total_ttc" in df.columns and "client" in df.columns:
+            top = df.nlargest(10, "total_ttc") if len(df) > 10 else df
+            fig, ax = plt.subplots(figsize=(6, max(3, len(top) * 0.4)))
+            ax.barh(top["client"].astype(str), top["total_ttc"].astype(float),
+                    color="#9C27B0", alpha=0.85)
+            ax.set_xlabel("Total TTC")
+            ax.set_title("CA par client")
+            fig.tight_layout()
+        elif "total_ttc" in df.columns and len(df) > 1:
+            fig, ax = plt.subplots(figsize=(6, 3))
+            ax.bar(range(len(df)), df["total_ttc"].astype(float),
+                   color="#2196F3", alpha=0.85)
+            ax.set_title("Résultats")
+            fig.tight_layout()
     except Exception:
         fig = None
     return fig
 
 
 # ═══════════════════════════════════════════════════════════════════════
-# États prêts à l'emploi — définitions
-# (dates dynamiques calculées à l'appel)
+# États prêts à l'emploi
 # ═══════════════════════════════════════════════════════════════════════
-
-import json
+import json as _json
 
 ETATS_CONFIG_PATH = "config/etats_standards.json"
 
-def get_etats_standards() -> list[dict]:
-    """
-    Charge les états depuis le fichier JSON de configuration.
-    Fallback sur les états par défaut si le fichier est absent ou corrompu.
-    """
+def get_etats_standards() -> list:
     today           = date.today()
     first_day_month = date(today.year, today.month, 1)
     first_day_year  = date(today.year, 1, 1)
     mois_courant    = month_name(str(today.month).zfill(2))
 
     variables = {
-        "today":            str(today),
-        "first_day_month":  str(first_day_month),
-        "first_day_year":   str(first_day_year),
-        "mois_courant":     mois_courant,
-        "annee":            str(today.year),
+        "today":           str(today),
+        "first_day_month": str(first_day_month),
+        "first_day_year":  str(first_day_year),
+        "mois_courant":    mois_courant,
+        "annee":           str(today.year),
     }
 
     try:
         with open(ETATS_CONFIG_PATH, "r", encoding="utf-8") as f:
-            etats_raw = json.load(f)
-
+            etats_raw = _json.load(f)
         etats = []
         for e in etats_raw:
             question = e["question_template"]
             for key, val in variables.items():
                 question = question.replace(f"{{{key}}}", val)
-            etats.append({
-                "label":    e["label"],
-                "question": question,
-            })
+            etats.append({"label": e["label"], "question": question})
         return etats
-
-    except (FileNotFoundError, KeyError, json.JSONDecodeError):
-        # Fallback : liste hardcodée si le fichier est absent
+    except (FileNotFoundError, KeyError, _json.JSONDecodeError):
         return [
-            {"label": "🔴 Factures non payées",           "question": "factures non payées"},
-            {"label": "📦 Produits stock faible (< 10)",   "question": "produits avec stock inférieur à 10"},
-            {"label": "🏆 Top clients (multi-commandes)",  "question": "clients avec plus de 2 commandes"},
+            {"label": "🔴 Factures non payées",          "question": "factures non payées"},
+            {"label": "📦 Produits stock faible (< 10)",  "question": "produits avec stock inférieur à 10"},
+            {"label": "🏆 Top clients (multi-commandes)", "question": "clients avec plus de 2 commandes"},
         ]
+
 
 # ═══════════════════════════════════════════════════════════════════════
 # render_result
@@ -372,6 +607,8 @@ def render_result(result: dict, question: str, context: str = "main"):
     logs_id     = meta.get("logs_id", "") or "noid"
     from_cache  = meta.get("from_cache", False)
     suggestions = meta.get("suggestions", [])
+    warning     = meta.get("warning", "")
+    llm_mode    = meta.get("llm_mode", "")
     pfx         = f"{context}_{logs_id}"
 
     if status == "rejected":
@@ -392,10 +629,25 @@ def render_result(result: dict, question: str, context: str = "main"):
     row_count = meta.get("row_count", 0)
     cache_tag = " · cache ⚡" if from_cache else ""
 
+    # Badge LLM si la réponse vient du moteur hybride
+    is_llm = bool(llm_mode) or str(template).startswith("llm:")
+    if is_llm:
+        st.markdown(
+            '<div class="llm-badge">🤖 <strong>Réponse générée par IA</strong> '
+            '— SQL validé et exécuté de manière sécurisée</div>',
+            unsafe_allow_html=True
+        )
+
+    chip_template = (
+        f'<span class="meta-chip-llm">🤖 {html.escape(str(template))}</span>'
+        if is_llm else
+        f'<span class="meta-chip">📋 {html.escape(str(template))}</span>'
+    )
+
     st.markdown(f"""
     <div class="result-box">
         ✅ <strong>{html.escape(summary)}</strong><br><br>
-        <span class="meta-chip">📋 {html.escape(str(template))}</span>
+        {chip_template}
         <span class="meta-chip">📊 {row_count} ligne(s)</span>
         <span class="meta-chip">⏱ {duration:.0f} ms{cache_tag}</span>
         <span class="meta-chip" style="background:#e3f2fd;color:#1565c0;">
@@ -403,6 +655,10 @@ def render_result(result: dict, question: str, context: str = "main"):
         </span>
     </div>
     """, unsafe_allow_html=True)
+
+    # Avertissement LLM si présent
+    if warning:
+        st.warning(f"⚠️ {warning}")
 
     if table_data:
         df = pd.DataFrame(table_data)
@@ -442,17 +698,18 @@ def render_result(result: dict, question: str, context: str = "main"):
                         chart_fig=fig,
                         from_cache=from_cache,
                         sql_query=str(sql_query),
-            )
+                    )
                     st.download_button(
-                "⬇ PDF",
-                data=pdf_bytes,
-                file_name=f"{template}_{ts}.pdf",
-                mime="application/pdf",
-                use_container_width=True,
-                key=f"pdf_{pfx}",
-            )
+                        "⬇ PDF",
+                        data=pdf_bytes,
+                        file_name=f"{template}_{ts}.pdf",
+                        mime="application/pdf",
+                        use_container_width=True,
+                        key=f"pdf_{pfx}",
+                    )
                 except Exception as e:
                     st.caption(f"PDF indisponible : {e}")
+
         if sql_query:
             with st.expander("🔍 Voir la requête SQL générée"):
                 st.code(sql_query, language="sql")
@@ -466,8 +723,7 @@ def render_result(result: dict, question: str, context: str = "main"):
         st.markdown("")
         sug_cols = st.columns(min(len(suggestions), 2))
         for i, s in enumerate(suggestions):
-            if sug_cols[i % 2].button(f"→ {s}", key=f"sug_{pfx}_{i}",
-                                       use_container_width=True):
+            if sug_cols[i % 2].button(f"→ {s}", key=f"sug_{pfx}_{i}", use_container_width=True):
                 st.session_state.pending_question = s
                 st.session_state.result_context   = context
                 if context == "guided":
@@ -515,7 +771,7 @@ def render_result(result: dict, question: str, context: str = "main"):
 
 
 # ─────────────────────────────────────────────
-# Layout — 4 onglets (radio horizontal)
+# Layout — onglets (radio horizontal)
 # ─────────────────────────────────────────────
 tab_labels = ["💬 Chatbot", "🎯 Assistant guidé", "📊 Analyse prédictive",
               "⚙️ Cache & Audit", "📈 Analytics"]
@@ -556,7 +812,6 @@ if selected_tab == "💬 Chatbot":
             st.session_state.active_tab       = 0
             st.rerun()
 
-        # ── MODIFICATION 1 : Combo box "États prêts à l'emploi" ──
         st.markdown("**États prêts à l'emploi :**")
         etats = get_etats_standards()
         etat_labels = [e["label"] for e in etats]
@@ -613,11 +868,12 @@ if selected_tab == "💬 Chatbot":
             for item in st.session_state.history:
                 icon = {"rejected": "🔒", "clarification_required": "❓",
                         "error": "⚠️"}.get(item["status"], "✅")
+                llm_icon = " 🤖" if item.get("llm_mode") else ""
                 q = html.escape(item["question"])
                 s = html.escape(item["summary"])
                 items_html += (
                     f'<div class="history-item">'
-                    f'{icon} <strong>{item["timestamp"]}</strong><br>'
+                    f'{icon}{llm_icon} <strong>{item["timestamp"]}</strong><br>'
                     f'{q[:55]}{"..." if len(q) > 55 else ""}<br>'
                     f'<span style="color:#999;font-size:0.78rem;">'
                     f'{s[:60]}{"..." if len(s) > 60 else ""}</span>'
@@ -626,10 +882,10 @@ if selected_tab == "💬 Chatbot":
             st.markdown(f'<div class="history-wrapper">{items_html}</div>',
                         unsafe_allow_html=True)
             if st.button("🗑 Effacer l'historique", use_container_width=True):
-                st.session_state.history        = []
-                st.session_state.last_result    = None
-                st.session_state.last_question  = ""
-                st.session_state.do_clear_form  = True   # ← flag, pas d'assignation directe
+                st.session_state.history       = []
+                st.session_state.last_result   = None
+                st.session_state.last_question = ""
+                st.session_state.do_clear_form = True
                 st.rerun()
 
 # ═══════════════════════════════════════════
@@ -662,18 +918,22 @@ elif selected_tab == "🎯 Assistant guidé":
     if submit_guided:
         today = date.today()
         if quick == "Ce mois":
-            start_date = date(today.year, today.month, 1); end_date = today
+            start_date = date(today.year, today.month, 1)
+            end_date   = today
         elif quick == "Année en cours":
-            start_date = date(today.year, 1, 1); end_date = today
+            start_date = date(today.year, 1, 1)
+            end_date   = today
         elif quick == "Tout 2026":
-            start_date = date(2026, 1, 1); end_date = date(2026, 12, 31)
+            start_date = date(2026, 1, 1)
+            end_date   = date(2026, 12, 31)
+
         q_parts = {
-            ("Factures", "Non payées"):            "factures non payées",
-            ("Factures", "Partiellement payées"):  "factures partiellement payées",
-            ("Factures", "Par client"):            "donne moi les factures",
-            ("Factures", "Total"):                 f"factures entre {start_date} et {end_date}",
-            ("Clients",  "Multiples commandes"):   "clients avec plus de 2 commandes",
-            ("Produits", "Stock faible"):          "produits avec stock inférieur à 5",
+            ("Factures", "Non payées"):           "factures non payées",
+            ("Factures", "Partiellement payées"): "factures partiellement payées",
+            ("Factures", "Par client"):           "donne moi les factures",
+            ("Factures", "Total"):                f"factures entre {start_date} et {end_date}",
+            ("Clients",  "Multiples commandes"):  "clients avec plus de 2 commandes",
+            ("Produits", "Stock faible"):         "produits avec stock inférieur à 5",
         }
         question = q_parts.get(
             (data_type, analysis_type),
@@ -750,7 +1010,7 @@ elif selected_tab == "⚙️ Cache & Audit":
                 st.metric("Taille", f"{stats.get('size', 0)} / {stats.get('max_size', 100)}")
                 st.metric("Hit rate", f"{stats.get('hit_rate', 0)}%")
                 col_a, col_b = st.columns(2)
-                col_a.metric("Hits", stats.get("hits", 0))
+                col_a.metric("Hits",   stats.get("hits", 0))
                 col_b.metric("Misses", stats.get("misses", 0))
                 by_tpl = stats.get("by_template", {})
                 if by_tpl:
@@ -767,31 +1027,27 @@ elif selected_tab == "⚙️ Cache & Audit":
         audit = call_api_endpoint("/audit")
         if audit and "total_requests" in audit:
 
-            # ── Métriques globales ──
             m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Total requêtes",  audit.get("total_requests", 0))
-            m2.metric("Succès",          audit.get("success_count", 0))
-            m3.metric("Erreurs",         audit.get("error_count", 0))
-            m4.metric("Rejetées",        audit.get("rejected_count", 0))
+            m1.metric("Total requêtes", audit.get("total_requests", 0))
+            m2.metric("Succès",         audit.get("success_count", 0))
+            m3.metric("Erreurs",        audit.get("error_count", 0))
+            m4.metric("Rejetées",       audit.get("rejected_count", 0))
 
-            # ── Latence P95 / P99 ──
             st.markdown("**Latence (ms)**")
             latency = audit.get("latency", {})
             lc1, lc2, lc3, lc4 = st.columns(4)
-            lc1.metric("Moyenne",  f"{latency.get('mean_ms', 0):.0f} ms")
-            lc2.metric("Médiane",  f"{latency.get('median_ms', 0):.0f} ms")
-            lc3.metric("P95",      f"{latency.get('p95_ms', 0):.0f} ms")
-            lc4.metric("P99",      f"{latency.get('p99_ms', 0):.0f} ms")
+            lc1.metric("Moyenne", f"{latency.get('mean_ms', 0):.0f} ms")
+            lc2.metric("Médiane", f"{latency.get('median_ms', 0):.0f} ms")
+            lc3.metric("P95",     f"{latency.get('p95_ms', 0):.0f} ms")
+            lc4.metric("P99",     f"{latency.get('p99_ms', 0):.0f} ms")
 
-            # ── Cache hit/miss ──
             st.markdown("**Cache**")
             cache = audit.get("cache", {})
             cc1, cc2, cc3 = st.columns(3)
-            cc1.metric("Hit rate",  f"{cache.get('hit_rate_pct', 0):.1f}%")
-            cc2.metric("Hits",      cache.get("cache_hits", 0))
-            cc3.metric("Misses",    cache.get("cache_misses", 0))
+            cc1.metric("Hit rate", f"{cache.get('hit_rate_pct', 0):.1f}%")
+            cc2.metric("Hits",     cache.get("cache_hits", 0))
+            cc3.metric("Misses",   cache.get("cache_misses", 0))
 
-            # ── Alertes ──
             alerts = audit.get("alerts", [])
             if alerts:
                 st.markdown("**Alertes**")
@@ -805,57 +1061,50 @@ elif selected_tab == "⚙️ Cache & Audit":
             else:
                 st.success("✅ Aucune alerte — système nominal")
 
-            # ── Tendances 24h ──
             trends = audit.get("trends", {})
             if trends.get("recent_24h", {}).get("count", 0) > 0:
                 st.markdown("**Tendance 24h**")
                 delta = trends.get("delta_pct", 0)
                 trend = trends.get("trend", "stable")
                 color = "normal" if trend == "stable" else (
-                "inverse" if trend == "hausse" else "normal"
-            )
+                    "inverse" if trend == "hausse" else "normal"
+                )
                 tc1, tc2 = st.columns(2)
                 tc1.metric(
-                "Requêtes dernières 24h",
-                trends["recent_24h"]["count"],
-                delta=f"{trends['recent_24h']['mean_ms']:.0f} ms moy."
-            )
+                    "Requêtes dernières 24h",
+                    trends["recent_24h"]["count"],
+                    delta=f"{trends['recent_24h']['mean_ms']:.0f} ms moy."
+                )
                 tc2.metric(
-                "Tendance latence",
-                trend.capitalize(),
-                delta=f"{delta:+.1f}%",
-                delta_color=color
-            )
+                    "Tendance latence",
+                    trend.capitalize(),
+                    delta=f"{delta:+.1f}%",
+                    delta_color=color
+                )
 
-            # ── Top questions (tableau HTML existant) ──
             top_q = audit.get("top_questions", {})
             if top_q:
                 st.markdown("**Top questions**")
                 header = (
-                '<div class="scroll-table">'
-                '<div class="scroll-table-header">'
-                '<span class="col-rank">#</span>'
-                '<span class="col-ques">Question</span>'
-                '<span class="col-count">Nb</span>'
-                '</div>'
-            )
+                    '<div class="scroll-table">'
+                    '<div class="scroll-table-header">'
+                    '<span class="col-rank">#</span>'
+                    '<span class="col-ques">Question</span>'
+                    '<span class="col-count">Nb</span>'
+                    '</div>'
+                )
                 rows_html = ""
                 for rank, (q_text, cnt) in enumerate(
                         sorted(top_q.items(), key=lambda x: -x[1]), 1):
-                    q_esc = html.escape(
-                    q_text[:70] + ("…" if len(q_text) > 70 else ""))
+                    q_esc = html.escape(q_text[:70] + ("…" if len(q_text) > 70 else ""))
                     rows_html += (
-                    f'<div class="scroll-table-row">'
-                    f'<span class="col-rank">{rank}</span>'
-                    f'<span class="col-ques">{q_esc}</span>'
-                    f'<span class="col-count">{cnt}</span>'
-                    f'</div>'
-                )
-                st.markdown(
-                header + rows_html + "</div>",
-                unsafe_allow_html=True
-            )
-
+                        f'<div class="scroll-table-row">'
+                        f'<span class="col-rank">{rank}</span>'
+                        f'<span class="col-ques">{q_esc}</span>'
+                        f'<span class="col-count">{cnt}</span>'
+                        f'</div>'
+                    )
+                st.markdown(header + rows_html + "</div>", unsafe_allow_html=True)
         else:
             st.info("API non disponible.")
 
@@ -871,7 +1120,7 @@ elif selected_tab == "⚙️ Cache & Audit":
         pos = sum(1 for f in feedbacks if f.get("rating") == "positive")
         neg = sum(1 for f in feedbacks if f.get("rating") == "negative")
         m1, m2, m3 = st.columns(3)
-        m1.metric("Total", len(feedbacks))
+        m1.metric("Total",       len(feedbacks))
         m2.metric("👍 Positifs", pos)
         m3.metric("👎 Négatifs", neg)
 
@@ -882,8 +1131,6 @@ elif selected_tab == "⚙️ Cache & Audit":
                            key="btn_export_fb")
 
         st.markdown("##### Liste des feedbacks")
-
-        # ── En-tête HTML ──
         st.markdown(
             '<div class="fb-scroll">'
             '<div class="fb-header">'
@@ -896,13 +1143,11 @@ elif selected_tab == "⚙️ Cache & Audit":
             unsafe_allow_html=True
         )
 
-        # ── Lignes : st.columns → pas de redirect ──
         for i, fb in enumerate(feedbacks):
             icon    = "👍" if fb.get("rating") == "positive" else "👎"
             ts      = fb.get("timestamp", "")[:16].replace("T", " ")
             q_text  = fb.get("question", "")[:60]
-            comment = fb.get("comment", "") or "—"
-            comment = comment[:50]
+            comment = (fb.get("comment", "") or "—")[:50]
 
             rc = st.columns([0.06, 0.13, 0.40, 0.30, 0.11])
             rc[0].markdown(f"<div style='text-align:center;font-size:1rem;'>{icon}</div>",
@@ -912,7 +1157,6 @@ elif selected_tab == "⚙️ Cache & Audit":
                            unsafe_allow_html=True)
             rc[3].markdown(f"<small style='color:#666;font-style:italic;'>{html.escape(comment)}</small>",
                            unsafe_allow_html=True)
-            # FIX : bouton Streamlit natif → pas de redirect, reste sur la même page
             if rc[4].button("🗑", key=f"del_{i}", help="Supprimer ce feedback"):
                 st.session_state.delete_fb_idx = i
                 st.rerun()
@@ -923,7 +1167,10 @@ elif selected_tab == "⚙️ Cache & Audit":
             save_feedbacks([])
             st.success("Tous les feedbacks supprimés.")
             st.rerun()
-        
+
+# ═══════════════════════════════════════════
+# Onglet 5 — Analytics
+# ═══════════════════════════════════════════
 elif selected_tab == "📈 Analytics":
     st.markdown("### 📈 Analytics — Requêtes utilisateurs")
     st.caption("Analyse comportementale basée sur les logs de production")
@@ -942,17 +1189,15 @@ elif selected_tab == "📈 Analytics":
         gmean = data.get("global_mean_ms", 0)
         cache = data.get("cache", {})
 
-        # ── Métriques résumé ──
         r1, r2, r3, r4 = st.columns(4)
-        r1.metric("Total requêtes",   total)
-        r2.metric("Taux de succès",   f"{sr}%")
-        r3.metric("Latence moy.",     f"{gmean:.0f} ms")
-        r4.metric("Cache hit rate",   f"{cache.get('hit_rate', 0)}%")
+        r1.metric("Total requêtes", total)
+        r2.metric("Taux de succès", f"{sr}%")
+        r3.metric("Latence moy.",   f"{gmean:.0f} ms")
+        r4.metric("Cache hit rate", f"{cache.get('hit_rate', 0)}%")
 
         st.markdown("---")
         col_left, col_right = st.columns(2)
 
-        # ── Graphique 1 : Répartition par template ──
         with col_left:
             st.markdown("#### Répartition par template")
             tpl_counts = data.get("template_counts", {})
@@ -963,8 +1208,7 @@ elif selected_tab == "📈 Analytics":
                 colors = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0",
                           "#e53935", "#00BCD4", "#FF5722", "#795548",
                           "#607D8B", "#E91E63"]
-                ax1.barh(labels, values,
-                         color=colors[:len(labels)], alpha=0.85)
+                ax1.barh(labels, values, color=colors[:len(labels)], alpha=0.85)
                 ax1.set_xlabel("Nb requêtes")
                 ax1.set_title("Templates les plus utilisés")
                 for i, v in enumerate(values):
@@ -973,7 +1217,6 @@ elif selected_tab == "📈 Analytics":
                 st.pyplot(fig1)
                 plt.close(fig1)
 
-        # ── Graphique 2 : Volume par jour ──
         with col_right:
             st.markdown("#### Volume journalier (7 derniers jours)")
             daily = data.get("daily_volume", {})
@@ -981,8 +1224,7 @@ elif selected_tab == "📈 Analytics":
                 fig2, ax2 = plt.subplots(figsize=(6, 4))
                 days   = list(daily.keys())
                 counts = list(daily.values())
-                ax2.plot(days, counts, color="#2196F3",
-                         marker="o", linewidth=2, markersize=6)
+                ax2.plot(days, counts, color="#2196F3", marker="o", linewidth=2, markersize=6)
                 ax2.fill_between(days, counts, alpha=0.15, color="#2196F3")
                 ax2.set_ylabel("Requêtes")
                 ax2.set_title("Évolution du volume journalier")
@@ -998,15 +1240,14 @@ elif selected_tab == "📈 Analytics":
         st.markdown("---")
         col_l2, col_r2 = st.columns(2)
 
-        # ── Graphique 3 : Latence par template ──
         with col_l2:
             st.markdown("#### Latence par template (sans cache)")
             lat_tpl = data.get("latency_by_template", {})
             if lat_tpl:
                 fig3, ax3 = plt.subplots(figsize=(6, 4))
-                tpls   = [k.replace("get_", "") for k in lat_tpl.keys()]
-                means  = [v["mean"] for v in lat_tpl.values()]
-                p95s   = [v["p95"]  for v in lat_tpl.values()]
+                tpls  = [k.replace("get_", "") for k in lat_tpl.keys()]
+                means = [v["mean"] for v in lat_tpl.values()]
+                p95s  = [v["p95"]  for v in lat_tpl.values()]
                 x = range(len(tpls))
                 w = 0.35
                 ax3.bar([i - w/2 for i in x], means,
@@ -1022,7 +1263,6 @@ elif selected_tab == "📈 Analytics":
                 st.pyplot(fig3)
                 plt.close(fig3)
 
-        # ── Graphique 4 : Cache cold vs warm ──
         with col_r2:
             st.markdown("#### Impact du cache sur la latence")
             cold_m = cache.get("cold_mean", 0)
@@ -1031,20 +1271,17 @@ elif selected_tab == "📈 Analytics":
                 fig4, ax4 = plt.subplots(figsize=(6, 4))
                 cats = ["Sans cache\n(cold)", "Avec cache\n(warm)"]
                 vals = [cold_m, warm_m]
-                bars = ax4.bar(cats, vals,
-                               color=["#FF9800", "#4CAF50"], alpha=0.85, width=0.4)
+                bars = ax4.bar(cats, vals, color=["#FF9800", "#4CAF50"], alpha=0.85, width=0.4)
                 ax4.set_ylabel("Latence moy. (ms)")
                 ax4.set_title("Comparaison latence cache hit vs miss")
                 for bar, val in zip(bars, vals):
-                    ax4.text(bar.get_x() + bar.get_width()/2,
+                    ax4.text(bar.get_x() + bar.get_width() / 2,
                              bar.get_height() + 5,
                              f"{val:.0f} ms",
                              ha="center", fontsize=11, fontweight="bold")
                 if cold_m > 0 and warm_m < cold_m:
-                    gain = round((1 - warm_m/cold_m) * 100, 1)
-                    ax4.set_title(
-                        f"Gain cache : {gain}% de réduction de latence",
-                        fontsize=11)
+                    gain = round((1 - warm_m / cold_m) * 100, 1)
+                    ax4.set_title(f"Gain cache : {gain}% de réduction de latence", fontsize=11)
                 fig4.tight_layout()
                 st.pyplot(fig4)
                 plt.close(fig4)
@@ -1053,7 +1290,6 @@ elif selected_tab == "📈 Analytics":
 
         st.markdown("---")
 
-        # ── Tableau : Top questions ──
         st.markdown("#### Top 10 questions les plus posées")
         top_q = data.get("top_questions", {})
         if top_q:
@@ -1063,7 +1299,6 @@ elif selected_tab == "📈 Analytics":
             ])
             st.dataframe(df_topq, use_container_width=True, hide_index=True)
 
-        # ── Tableau : Taux de succès par template ──
         st.markdown("#### Taux de succès par template")
         sbt = data.get("success_by_template", {})
         if sbt:

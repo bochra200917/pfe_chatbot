@@ -15,7 +15,7 @@ response = requests.post(
         "Content-Type": "application/json"
     },
     json={
-        "model": "anthropic/claude-sonnet-4.6",
+        "model": "z-ai/glm-4.5-air",
         "max_tokens": 50,
         "messages": [{"role": "user", "content": "dis bonjour"}]
     }
