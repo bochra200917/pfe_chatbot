@@ -11,7 +11,6 @@ from app.sql_security import validate_sql_query
 from app.cache import chatbot_cache
 from app.suggestion_engine import generate_suggestions
 from app.prompt_template import apply_mapping_rules
-from ui.hybrid_engine import load_templates
 try:
     from sentence_transformers import SentenceTransformer
 except ImportError:
@@ -75,14 +74,19 @@ def match_question(question: str):
     # ══════════════════════════════════════════════════════════════════
 
     # ── Top clients par CA ─────────────────────────────────────────
-    if any((w in q for w in ["top", "meilleur", "eleve", "plus grand", "plus important",
-                             "plus haut", "chiffre affaires le plus", "plus eleve",
-                             "les plus eleve", "le plus eleve"]) 
-            and any(w in q for w in ["client", "societe"])):
+    if (
+    any(w in q for w in [
+        "top", "meilleur", "eleve", "plus grand", "plus important",
+        "plus haut", "chiffre affaires le plus", "plus eleve",
+        "les plus eleve", "le plus eleve"
+    ])
+    and
+    any(w in q for w in ["client", "societe"])
+):
         match_n = re.search(r'\b(\d+)\b', q)
         limit = int(match_n.group(1)) if match_n else 5
         return "get_top_clients_ca", {"limit": limit}
-
+    
     # ── Commandes par mois — PRIORITÉ HAUTE ───────────────────────
     if (
     "commande" in q
@@ -364,8 +368,8 @@ def _execute_template(question: str, template_name: str,
 
 
 def reload_templates():
-    """Recharge les templates depuis le fichier JSON."""
     global TEMPLATES
+    from ui.hybrid_engine import load_templates
     TEMPLATES = load_templates()
 
 

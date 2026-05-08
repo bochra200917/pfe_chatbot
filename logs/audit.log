@@ -1319,3 +1319,8 @@
 [2026-05-07 12:11:34] uuid=11618d1e-e6c1-46b3-8a0c-79b67133766f | status=success | template=get_factures_partiellement_payees | rows=8 | duration=454.15ms | question=Quelles sont mes factures fournisseurs partiellement payées ?
 [2026-05-07 12:12:10] uuid=75807939-1880-48f6-9641-2f3f39c4ba9e | status=success | template=get_factures_between | rows=200 | duration=611.25ms | question=Factures entre 2026-01-01 et 2026-04-30
 [2026-05-07 12:12:39] uuid=26c5f040-6ae0-47f4-8fae-0333ff1c18fc | status=success | template=get_produits_stock_faible | rows=100 | duration=478.84ms | question=Quels produits ont un stock inférieur à 3 ?
+[2026-05-08 12:30:05] uuid=f407338b-f293-4987-9e77-7bbb5cd0ae0f | status=success | template=get_factures_non_payees | rows=93 | duration=195.55ms | question=Factures non payées
+[2026-05-08 12:30:37] uuid=84e98139-7af9-4532-90a3-f0eeb905005b | status=success | template=get_factures_between | rows=200 | duration=242.08ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-08 12:30:45] uuid=03585b3c-1e12-4034-8a98-731a0a40d43e | status=success | template=get_produits_stock_faible | rows=100 | duration=190.94ms | question=Produits avec stock inférieur à 5
+[2026-05-08 12:30:57] uuid=2b0deb5e-e92b-496f-a55b-ed1cf1fcc170 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=185.48ms | question=Clients avec plus de 2 commandes
+[2026-05-08 12:31:03] uuid=5e24f976-f2a3-4cf2-9370-5f45bb4cba72 | status=success | template=get_total_ventes_mois | rows=1 | duration=187.57ms | question=Chiffre d'affaires de janvier 2026

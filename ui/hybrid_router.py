@@ -27,8 +27,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from hybrid_engine import HybridEngine, HybridResult, validate_sql_security
-
+from ui.hybrid_engine import HybridEngine, HybridResult, validate_sql_security
 # ─── Logging ──────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
