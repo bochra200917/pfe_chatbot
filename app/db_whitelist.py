@@ -55,6 +55,33 @@ ALLOWED_COLUMNS = {
         "rowid", "fk_facture", "fk_product",
         "qty", "total_ht", "total_ttc", "entity",
     },
+    "m38h_projet": {
+    "rowid",
+    "ref",
+    "title",
+    "dateo",
+    "fk_soc",
+    "entity"
+    },
+}
+ALLOWED_COLUMNS["m38h_socpeople"] = {
+    "rowid", "fk_soc", "lastname", "firstname", "email"
+}
+
+ALLOWED_COLUMNS["m38h_product_stock"] = {
+    "rowid", "fk_product", "fk_entrepot", "reel"
+}
+
+ALLOWED_COLUMNS["m38h_stock_mouvement"] = {
+    "rowid", "fk_product", "qty", "datem"
+}
+
+ALLOWED_COLUMNS["m38h_entrepot"] = {
+    "rowid", "label", "entity"
+}
+
+ALLOWED_COLUMNS["m38h_projet_task"] = {
+    "rowid", "fk_projet", "label", "dateo"
 }
 
 ALLOWED_JOINS = {
