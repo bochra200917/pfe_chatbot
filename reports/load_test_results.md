@@ -32,6 +32,7 @@
 | Min / Max | 2021.18 ms / 2827.1 ms |
 
 ## Conclusion
-- Le système supporte 9.27 RPS sans erreur
+- Le système supporte jusqu'à **43.73 RPS effectifs** (cible 50 RPS) sans erreur
+- 0 erreur sur 1 800 requêtes au total (300 + 1 500)
 - Le compte DB read-only est respecté sous charge
 - Aucune fuite de données ni timeout non géré observé

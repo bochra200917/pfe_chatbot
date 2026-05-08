@@ -1,7 +1,7 @@
 # Rapport de Performance — Chatbot V3
 
 ## Environnement
-- Modèle LLM : google/gemini-2.0-flash-lite-001 (via OpenRouter)
+- Moteur LLM fallback : Ollama (Mistral 7B) — local, gratuit, 0 appel cloud sur golden set
 - Golden set : 60 questions (V3 étendu)
 - Base de données : MariaDB (Infomaniak)
 
@@ -30,7 +30,7 @@
 | Niveau | Nb appels | % |
 |---|---|---|
 | V1/V2 templates (sans LLM) | 30 | 50.0% |
-| LLM (Gemini) | 0 | 0.0% |
+| | LLM (Ollama/Mistral) | 0 | 0.0% | | 0 | 0.0% |
 | Sécurité / Clarification | 30 | 50.0% |
 
 ## Overhead LLM

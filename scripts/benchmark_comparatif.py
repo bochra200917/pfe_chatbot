@@ -440,8 +440,8 @@ def write_benchmark_report(v3: dict, df_comp: pd.DataFrame,
         "",
         "## Méthodologie",
         "",
-        "- **Notre système (ZAI V3)** : mesures réelles sur golden set de 14 questions "
-        "(11 fonctionnelles + 3 injections SQL), exécutées en local via l'API FastAPI.",
+        "- **Notre système (ZAI V3)** : mesures réelles sur golden set de 60 questions "
+        "(30 fonctionnelles + 15 clarifications + 15 injections SQL), exécutées en local via l'API FastAPI.",
         "- **Autres solutions** : données issues de la littérature académique "
         "(benchmarks Spider / BIRD) et des tarifs publics des APIs. "
         "Ces systèmes n'ont pas été déployés localement — les valeurs sont des "

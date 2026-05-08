@@ -37,10 +37,10 @@ ALLOWED_COLUMNS = {
     },
     # ── FIX 2 : colonnes pour m38h_commandedet ──
     "m38h_commandedet": {
-        "rowid", "fk_commande", "fk_product",
-        "qty",
-        "total_ht", "total_ttc",
-        "entity",
+    "rowid", "fk_commande", "fk_product",
+    "qty",
+    "total_ht", "total_ttc",
+    "entity",
     },
     "m38h_product": {
         "ref", "label", "stock", "entity", "rowid",

@@ -1,85 +1,74 @@
 {
-  "version": "v1.0",
-  "description": "Whitelist des tables, colonnes et jointures autorisées pour le système NL2SQL — Chatbot ZAI Informatique",
+  "version": "v1.1",
+  "description": "Whitelist des tables, colonnes et jointures autorisées — Chatbot ZAI Informatique",
   "created_at": "2026-03-23",
-  "sha256": "8bc62fff284f25984390efba4578e4b5753fd0b4ba5153eea1d6e249c7864551",
+  "updated_at": "2026-04-20",
 
   "allowed_tables": [
     "m38h_facture",
+    "m38h_facturedet",
     "m38h_societe",
     "m38h_commande",
+    "m38h_commandedet",
     "m38h_product",
-    "m38h_paiement_facture"
+    "m38h_product_stock",
+    "m38h_stock_mouvement",
+    "m38h_entrepot",
+    "m38h_paiement",
+    "m38h_paiement_facture",
+    "m38h_socpeople",
+    "m38h_projet",
+    "m38h_projet_task"
   ],
 
   "allowed_columns": {
-    "m38h_facture": [
-      "ref",
-      "total_ht",
-      "total_ttc",
-      "datef",
-      "fk_soc",
-      "entity",
-      "rowid"
-    ],
-    "m38h_societe": [
-      "rowid",
-      "nom",
-      "entity"
-    ],
-    "m38h_commande": [
-  "rowid",
-  "fk_soc",
-  "date_commande",
-  "total_ht",
-  "total_ttc",
-  "entity"
-],
-    "m38h_product": [
-      "ref",
-      "label",
-      "stock",
-      "entity"
-    ],
-    "m38h_paiement_facture": [
-      "fk_facture",
-      "amount",
-        "datep"
-    ]
+    "m38h_facture": ["ref", "total_ht", "total_ttc", "datef", "fk_soc", "entity", "rowid", "fk_statut"],
+    "m38h_facturedet": ["rowid", "fk_facture", "fk_product", "qty", "total_ht", "total_ttc", "entity"],
+    "m38h_societe": ["rowid", "nom", "entity", "email", "phone"],
+    "m38h_commande": ["rowid", "fk_soc", "date_commande", "total_ht", "total_ttc", "entity", "statut", "ref"],
+    "m38h_commandedet": ["rowid", "fk_commande", "fk_product", "qty", "total_ht", "total_ttc", "entity"],
+    "m38h_product": ["ref", "label", "stock", "entity", "rowid"],
+    "m38h_paiement_facture": ["fk_facture", "amount", "rowid"],
+    "m38h_paiement": ["rowid", "datep", "amount", "fk_bank", "entity"]
   },
 
   "allowed_joins": [
-    ["m38h_facture", "m38h_societe"],
-    ["m38h_societe", "m38h_commande"],
-    ["m38h_facture", "m38h_paiement_facture"]
+    ["m38h_facture",  "m38h_societe"],
+    ["m38h_societe",  "m38h_commande"],
+    ["m38h_facture",  "m38h_paiement_facture"],
+    ["m38h_product",  "m38h_commandedet"],
+    ["m38h_commande", "m38h_commandedet"],
+    ["m38h_facture",  "m38h_facturedet"],
+    ["m38h_product",  "m38h_facturedet"]
   ],
 
   "pii_policy": {
     "masked_columns": [],
     "excluded_tables": [
-      "m38h_user",
-      "m38h_usergroup",
-      "m38h_salary",
-      "m38h_holiday",
-      "m38h_accounting_account",
-      "m38h_accounting_bookkeeping",
-      "m38h_bank",
-      "m38h_bank_account"
+      "m38h_user", "m38h_usergroup", "m38h_salary", "m38h_holiday",
+      "m38h_accounting_account", "m38h_accounting_bookkeeping",
+      "m38h_bank", "m38h_bank_account"
     ],
-    "note": "Aucune colonne sensible (password, pass, salary, iban) n'est accessible via le chatbot. Les tables RH et comptabilité sont exclues."
+    "note": "Aucune colonne sensible (password, pass, salary, iban) n'est accessible via le chatbot."
   },
 
   "changelog": [
+    {
+      "version": "v1.1",
+      "date": "2026-04-20",
+      "author": "Bochra Ben Yedder",
+      "changes": [
+        "Ajout 9 tables : m38h_facturedet, m38h_commandedet, m38h_product_stock, m38h_stock_mouvement, m38h_entrepot, m38h_paiement, m38h_socpeople, m38h_projet, m38h_projet_task",
+        "Ajout jointures : product/commandedet, commande/commandedet, facture/facturedet, product/facturedet",
+        "Synchronisation complète avec db_whitelist.py v3.1.0"
+      ]
+    },
     {
       "version": "v1.0",
       "date": "2026-03-23",
       "author": "Bochra Ben Yedder",
       "changes": [
-        "Version initiale",
-        "5 tables autorisées : m38h_facture, m38h_societe, m38h_commande, m38h_product, m38h_paiement_facture",
-        "3 jointures autorisées",
-        "Exclusion explicite des tables sensibles (user, salary, accounting, bank)",
-        "Politique PII documentée"
+        "Version initiale — 5 tables, 3 jointures, politique PII documentée"
       ]
     }
   ]

@@ -1,9 +1,4 @@
-"""
-Interface Admin — Gestion des Templates SQL
-Chatbot Dolibarr (PFE Bochra Ben Yedder)
-
-Lancement : streamlit run admin_templates.py
-"""
+# ui/admin_templates.py
 
 import streamlit as st
 import json
@@ -170,6 +165,49 @@ st.markdown("""
     }
 
     hr { border-color: #1e293b; }
+    
+    /* Scroll table styles pour Cache & Audit */
+    .scroll-table, .fb-scroll {
+        background: #f9fafb !important;
+        border: 1px solid #e5e7eb !important;
+        border-radius: 10px;
+        max-height: 350px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 transparent;
+    }
+    .scroll-table::-webkit-scrollbar, .fb-scroll::-webkit-scrollbar { width: 5px; }
+    .scroll-table::-webkit-scrollbar-thumb, .fb-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 10px;
+    }
+    .scroll-table-header, .fb-header {
+        display: flex;
+        background: #f1f3f5 !important;
+        padding: 6px 10px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #111 !important;
+        border-bottom: 1px solid #dee2e6;
+        position: sticky;
+        top: 0;
+        z-index: 2;
+    }
+    .scroll-table-row {
+        display: flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-bottom: 1px solid #e5e7eb;
+        font-size: 0.83rem;
+        background: #ffffff !important;
+        color: #111 !important;
+    }
+    .scroll-table-row:nth-child(even) { background: #f3f4f6 !important; }
+    .scroll-table-row:hover { background: #e5e7eb !important; }
+    .scroll-table-row span, .scroll-table-header span, .fb-header span { color: #111 !important; }
+    .col-rank  { width: 8%;  text-align: center; font-weight: 600; }
+    .col-ques  { width: 76%; }
+    .col-count { width: 16%; text-align: center; font-weight: 600; color: #2e7d32; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -251,6 +289,18 @@ def call_hybrid_api(endpoint: str) -> dict:
         return {}
 
 
+def call_api_endpoint(endpoint: str, method: str = "GET") -> dict:
+    """Appelle l'API principale (port 8000) pour cache/audit."""
+    API_USER = "admin"
+    API_PASS = "1234"
+    try:
+        fn = req.get if method == "GET" else req.post
+        r = fn(f"http://localhost:8000{endpoint}", auth=(API_USER, API_PASS), timeout=10)
+        return r.json() if r.status_code == 200 else {}
+    except Exception:
+        return {}
+
+
 # ─── Initialisation session state ─────────────────────────────────────────────
 if "data" not in st.session_state:
     st.session_state.data = load_templates()
@@ -270,7 +320,9 @@ with st.sidebar:
             "➕ Nouveau template",
             "🔍 Tester un template",
             "📊 Statistiques",
-            "📈 Analytics hybride",
+            "📈 Analytics (hybride)",
+            "⚙️ Cache & Audit",
+            "📈 Analytics (requêtes)",
             "⚙️ Paramètres",
         ],
         label_visibility="collapsed"
@@ -664,9 +716,9 @@ elif page == "📊 Statistiques":
 
 
 # ════════════════════════════════════════════════════════════════════════════════
-# PAGE 5 — Analytics hybride (NOUVEAU)
+# PAGE 5 — Analytics hybride (renommé et fusionné)
 # ════════════════════════════════════════════════════════════════════════════════
-elif page == "📈 Analytics hybride":
+elif page == "📈 Analytics (hybride)":
 
     st.subheader("📈 Analytics — Moteur hybride NL2SQL")
     st.caption("Statistiques sur les requêtes traitées par le moteur hybride (port 8001)")
@@ -797,7 +849,355 @@ elif page == "📈 Analytics hybride":
 
 
 # ════════════════════════════════════════════════════════════════════════════════
-# PAGE 6 — Paramètres
+# PAGE 6 — Cache & Audit (nouvel onglet déplacé depuis app.py)
+# ════════════════════════════════════════════════════════════════════════════════
+elif page == "⚙️ Cache & Audit":
+
+    st.markdown("### ⚙️ Monitoring — Cache & Audit")
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.markdown("#### Cache")
+        if st.button("🔄 Actualiser", key="btn_cache_refresh"):
+            stats = call_api_endpoint("/cache/stats")
+            if stats:
+                st.metric("Taille", f"{stats.get('size', 0)} / {stats.get('max_size', 100)}")
+                st.metric("Hit rate", f"{stats.get('hit_rate', 0)}%")
+                col_a, col_b = st.columns(2)
+                col_a.metric("Hits",   stats.get("hits", 0))
+                col_b.metric("Misses", stats.get("misses", 0))
+                by_tpl = stats.get("by_template", {})
+                if by_tpl:
+                    st.dataframe(pd.DataFrame(list(by_tpl.items()),
+                                              columns=["Template", "Entrées"]))
+            else:
+                st.info("API non disponible.")
+        if st.button("🗑 Vider le cache", type="secondary", key="btn_cache_clear"):
+            call_api_endpoint("/cache/clear", method="POST")
+            st.success("Cache vidé.")
+
+    with c2:
+        st.markdown("#### Audit")
+        audit = call_api_endpoint("/audit")
+        if audit and "total_requests" in audit:
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Total requêtes", audit.get("total_requests", 0))
+            m2.metric("Succès",         audit.get("success_count", 0))
+            m3.metric("Erreurs",        audit.get("error_count", 0))
+            m4.metric("Rejetées",       audit.get("rejected_count", 0))
+
+            st.markdown("**Latence (ms)**")
+            latency = audit.get("latency", {})
+            lc1, lc2, lc3, lc4 = st.columns(4)
+            lc1.metric("Moyenne", f"{latency.get('mean_ms', 0):.0f} ms")
+            lc2.metric("Médiane", f"{latency.get('median_ms', 0):.0f} ms")
+            lc3.metric("P95",     f"{latency.get('p95_ms', 0):.0f} ms")
+            lc4.metric("P99",     f"{latency.get('p99_ms', 0):.0f} ms")
+
+            st.markdown("**Cache**")
+            cache = audit.get("cache", {})
+            cc1, cc2, cc3 = st.columns(3)
+            cc1.metric("Hit rate", f"{cache.get('hit_rate_pct', 0):.1f}%")
+            cc2.metric("Hits",     cache.get("cache_hits", 0))
+            cc3.metric("Misses",   cache.get("cache_misses", 0))
+
+            alerts = audit.get("alerts", [])
+            if alerts:
+                st.markdown("**Alertes**")
+                for alert in alerts:
+                    level = alert.get("level", "warning")
+                    msg   = alert.get("message", "")
+                    if level == "critical":
+                        st.error(f"🔴 {msg}")
+                    else:
+                        st.warning(f"🟡 {msg}")
+            else:
+                st.success("✅ Aucune alerte — système nominal")
+
+            trends = audit.get("trends", {})
+            if trends.get("recent_24h", {}).get("count", 0) > 0:
+                st.markdown("**Tendance 24h**")
+                delta = trends.get("delta_pct", 0)
+                trend = trends.get("trend", "stable")
+                tc1, tc2 = st.columns(2)
+                tc1.metric(
+                    "Requêtes dernières 24h",
+                    trends["recent_24h"]["count"],
+                    delta=f"{trends['recent_24h']['mean_ms']:.0f} ms moy."
+                )
+                tc2.metric(
+                    "Tendance latence",
+                    trend.capitalize(),
+                    delta=f"{delta:+.1f}%"
+                )
+
+            top_q = audit.get("top_questions", {})
+            if top_q:
+                st.markdown("**Top questions**")
+                header = (
+                    '<div class="scroll-table">'
+                    '<div class="scroll-table-header">'
+                    '<span class="col-rank">#</span>'
+                    '<span class="col-ques">Question</span>'
+                    '<span class="col-count">Nb</span>'
+                    '</div>'
+                )
+                rows_html = ""
+                for rank, (q_text, cnt) in enumerate(
+                        sorted(top_q.items(), key=lambda x: -x[1]), 1):
+                    q_esc = q_text[:70] + ("…" if len(q_text) > 70 else "")
+                    rows_html += (
+                        f'<div class="scroll-table-row">'
+                        f'<span class="col-rank">{rank}</span>'
+                        f'<span class="col-ques">{q_esc}</span>'
+                        f'<span class="col-count">{cnt}</span>'
+                        f'</div>'
+                    )
+                st.markdown(header + rows_html + "</div>", unsafe_allow_html=True)
+        else:
+            st.info("API non disponible.")
+
+    # ── Feedback utilisateurs (déplacé depuis app.py) ──
+    st.markdown("---")
+    st.markdown("#### Feedback utilisateurs")
+
+    FEEDBACK_FILE_ADMIN = "logs/feedback.jsonl"
+
+    def load_feedbacks_admin() -> list:
+        if not os.path.exists(FEEDBACK_FILE_ADMIN):
+            return []
+        items = []
+        with open(FEEDBACK_FILE_ADMIN, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        items.append(json.loads(line))
+                    except Exception:
+                        pass
+        return items    
+
+    def save_feedbacks_admin(items: list):
+        os.makedirs("logs", exist_ok=True)
+        with open(FEEDBACK_FILE_ADMIN, "w", encoding="utf-8") as f:
+            for item in items:
+                f.write(json.dumps(item, ensure_ascii=False) + "\n")
+
+    # Initialisation du state pour suppression
+    if "delete_fb_idx_admin" not in st.session_state:
+        st.session_state.delete_fb_idx_admin = -1
+
+    # Traitement suppression
+    if st.session_state.delete_fb_idx_admin >= 0:
+        feedbacks_tmp = load_feedbacks_admin()
+        idx = st.session_state.delete_fb_idx_admin
+        if 0 <= idx < len(feedbacks_tmp):
+            feedbacks_tmp.pop(idx)
+            save_feedbacks_admin(feedbacks_tmp)
+        st.session_state.delete_fb_idx_admin = -1
+        st.rerun()
+
+    feedbacks = load_feedbacks_admin()
+
+    if not feedbacks:
+        st.info("Aucun feedback enregistré. Utilisez 👍/👎 dans l'onglet Chatbot.")
+    else:
+        pos = sum(1 for f in feedbacks if f.get("rating") == "positive")
+        neg = sum(1 for f in feedbacks if f.get("rating") == "negative")
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Total",       len(feedbacks))
+        m2.metric("👍 Positifs", pos)
+        m3.metric("👎 Négatifs", neg)
+
+        df_fb = pd.DataFrame(feedbacks)
+
+        def df_to_csv_bytes_fb(df: pd.DataFrame) -> bytes:
+            return df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
+
+        st.download_button("⬇ Exporter tout en CSV",
+                           data=df_to_csv_bytes_fb(df_fb),
+                           file_name="feedbacks.csv", mime="text/csv",
+                           key="btn_export_fb_admin")
+
+        st.markdown("##### Liste des feedbacks")
+        st.markdown(
+            '<div class="fb-scroll">'
+            '<div class="fb-header">'
+            '<span style="width:6%;text-align:center;">Note</span>'
+            '<span style="width:14%;">Date</span>'
+            '<span style="width:40%;">Question</span>'
+            '<span style="width:30%;font-style:italic;">Commentaire</span>'
+            '<span style="width:10%;text-align:center;">Suppr.</span>'
+            '</div></div>',
+            unsafe_allow_html=True
+        )
+
+        for i, fb in enumerate(feedbacks):
+            icon    = "👍" if fb.get("rating") == "positive" else "👎"
+            ts      = fb.get("timestamp", "")[:16].replace("T", " ")
+            q_text  = fb.get("question", "")[:60]
+            comment = (fb.get("comment", "") or "—")[:50]
+
+            rc = st.columns([0.06, 0.13, 0.40, 0.30, 0.11])
+            rc[0].markdown(f"<div style='text-align:center;font-size:1rem;'>{icon}</div>",
+                           unsafe_allow_html=True)
+            rc[1].caption(ts)
+            rc[2].markdown(f"<small style='color:#111;'>{q_text}</small>",
+                           unsafe_allow_html=True)
+            rc[3].markdown(f"<small style='color:#666;font-style:italic;'>{comment}</small>",
+                           unsafe_allow_html=True)
+            if rc[4].button("🗑", key=f"del_admin_{i}", help="Supprimer ce feedback"):
+                st.session_state.delete_fb_idx_admin = i
+                st.rerun()
+
+        st.markdown("")
+        if st.button("🗑 Supprimer tous les feedbacks", type="secondary",
+                     key="btn_delete_all_fb_admin"):
+            save_feedbacks_admin([])
+            st.success("Tous les feedbacks supprimés.")
+            st.rerun()
+
+# ════════════════════════════════════════════════════════════════════════════════
+# PAGE 7 — Analytics (requêtes) - déplacé depuis app.py
+# ════════════════════════════════════════════════════════════════════════════════
+elif page == "📈 Analytics (requêtes)":
+
+    st.markdown("### 📈 Analytics — Requêtes utilisateurs")
+    st.caption("Analyse comportementale basée sur les logs de production")
+
+    data = call_api_endpoint("/analytics")
+
+    if not data or data.get("empty"):
+        st.info("Aucune donnée disponible. Posez quelques questions d'abord.")
+    else:
+        total = data.get("total_requests", 0)
+        sr    = data.get("success_rate", 0)
+        gmean = data.get("global_mean_ms", 0)
+        cache = data.get("cache", {})
+
+        r1, r2, r3, r4 = st.columns(4)
+        r1.metric("Total requêtes", total)
+        r2.metric("Taux de succès", f"{sr}%")
+        r3.metric("Latence moy.",   f"{gmean:.0f} ms")
+        r4.metric("Cache hit rate", f"{cache.get('hit_rate', 0)}%")
+
+        st.markdown("---")
+        col_left, col_right = st.columns(2)
+
+        with col_left:
+            st.markdown("#### Répartition par template")
+            tpl_counts = data.get("template_counts", {})
+            if tpl_counts:
+                fig1, ax1 = plt.subplots(figsize=(6, 4))
+                labels = [k.replace("get_", "") for k in tpl_counts.keys()]
+                values = list(tpl_counts.values())
+                colors = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0",
+                          "#e53935", "#00BCD4", "#FF5722", "#795548",
+                          "#607D8B", "#E91E63"]
+                ax1.barh(labels, values, color=colors[:len(labels)], alpha=0.85)
+                ax1.set_xlabel("Nb requêtes")
+                ax1.set_title("Templates les plus utilisés")
+                for i, v in enumerate(values):
+                    ax1.text(v + 0.3, i, str(v), va="center", fontsize=9)
+                fig1.tight_layout()
+                st.pyplot(fig1)
+                plt.close(fig1)
+
+        with col_right:
+            st.markdown("#### Volume journalier (7 derniers jours)")
+            daily = data.get("daily_volume", {})
+            if daily:
+                fig2, ax2 = plt.subplots(figsize=(6, 4))
+                days   = list(daily.keys())
+                counts = list(daily.values())
+                ax2.plot(days, counts, color="#2196F3", marker="o", linewidth=2, markersize=6)
+                ax2.fill_between(days, counts, alpha=0.15, color="#2196F3")
+                ax2.set_ylabel("Requêtes")
+                ax2.set_title("Évolution du volume journalier")
+                ax2.tick_params(axis="x", rotation=30)
+                for i, v in enumerate(counts):
+                    ax2.annotate(str(v), (days[i], counts[i]),
+                                 textcoords="offset points",
+                                 xytext=(0, 8), ha="center", fontsize=9)
+                fig2.tight_layout()
+                st.pyplot(fig2)
+                plt.close(fig2)
+
+        st.markdown("---")
+        col_l2, col_r2 = st.columns(2)
+
+        with col_l2:
+            st.markdown("#### Latence par template (sans cache)")
+            lat_tpl = data.get("latency_by_template", {})
+            if lat_tpl:
+                fig3, ax3 = plt.subplots(figsize=(6, 4))
+                tpls  = [k.replace("get_", "") for k in lat_tpl.keys()]
+                means = [v["mean"] for v in lat_tpl.values()]
+                p95s  = [v["p95"]  for v in lat_tpl.values()]
+                x = range(len(tpls))
+                w = 0.35
+                ax3.bar([i - w/2 for i in x], means,
+                        width=w, color="#4CAF50", alpha=0.85, label="Moyenne")
+                ax3.bar([i + w/2 for i in x], p95s,
+                        width=w, color="#FF9800", alpha=0.85, label="P95")
+                ax3.set_xticks(list(x))
+                ax3.set_xticklabels(tpls, rotation=30, ha="right", fontsize=8)
+                ax3.set_ylabel("ms")
+                ax3.set_title("Latence moyenne vs P95 par template")
+                ax3.legend(fontsize=9)
+                fig3.tight_layout()
+                st.pyplot(fig3)
+                plt.close(fig3)
+
+        with col_r2:
+            st.markdown("#### Impact du cache sur la latence")
+            cold_m = cache.get("cold_mean", 0)
+            warm_m = cache.get("warm_mean", 0)
+            if cold_m > 0 or warm_m > 0:
+                fig4, ax4 = plt.subplots(figsize=(6, 4))
+                cats = ["Sans cache\n(cold)", "Avec cache\n(warm)"]
+                vals = [cold_m, warm_m]
+                bars = ax4.bar(cats, vals, color=["#FF9800", "#4CAF50"], alpha=0.85, width=0.4)
+                ax4.set_ylabel("Latence moy. (ms)")
+                ax4.set_title("Comparaison latence cache hit vs miss")
+                for bar, val in zip(bars, vals):
+                    ax4.text(bar.get_x() + bar.get_width() / 2,
+                             bar.get_height() + 5,
+                             f"{val:.0f} ms",
+                             ha="center", fontsize=11, fontweight="bold")
+                if cold_m > 0 and warm_m < cold_m:
+                    gain = round((1 - warm_m / cold_m) * 100, 1)
+                    ax4.set_title(f"Gain cache : {gain}% de réduction de latence", fontsize=11)
+                fig4.tight_layout()
+                st.pyplot(fig4)
+                plt.close(fig4)
+            else:
+                st.info("Pas encore de données cache warm.")
+
+        st.markdown("---")
+
+        st.markdown("#### Top 10 questions les plus posées")
+        top_q = data.get("top_questions", {})
+        if top_q:
+            df_topq = pd.DataFrame([
+                {"Question": q[:80], "Nb": n}
+                for q, n in top_q.items()
+            ])
+            st.dataframe(df_topq, use_container_width=True, hide_index=True)
+
+        st.markdown("#### Taux de succès par template")
+        sbt = data.get("success_by_template", {})
+        if sbt:
+            df_sbt = pd.DataFrame([
+                {"Template": k.replace("get_", ""), "Taux succès (%)": v}
+                for k, v in sorted(sbt.items(), key=lambda x: -x[1])
+            ])
+            st.dataframe(df_sbt, use_container_width=True, hide_index=True)
+
+
+# ════════════════════════════════════════════════════════════════════════════════
+# PAGE 8 — Paramètres
 # ════════════════════════════════════════════════════════════════════════════════
 elif page == "⚙️ Paramètres":
 

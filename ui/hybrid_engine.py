@@ -41,7 +41,7 @@ def call_ollama(prompt: str, model: str = "mistral") -> str:
 
     except Exception as e:
         logger.error(f"Ollama error: {e}")
-        return ""
+        return f"ERROR: {str(e)}"
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ ALLOWED_TABLES = {
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 MAX_ROWS = 200
-LLM_CONFIDENCE_THRESHOLD = 0.0  # fallback déclenché si templates échouent
+LLM_CONFIDENCE_THRESHOLD = 0.6  # fallback déclenché si templates échouent
 TEMPLATE_EMBEDDINGS = {}
 # ─── Dataclasses ──────────────────────────────────────────────────────────────
 
@@ -115,6 +115,15 @@ def validate_sql_security(sql: str) -> tuple[bool, str]:
     """
     sql_upper = sql.upper().strip()
 
+    if "UNION" in sql_upper:
+        return False, "UNION interdit."
+
+    if ";" in sql.strip()[:-1]:
+        return False, "Plusieurs requêtes interdites."
+
+    if "--" in sql or "/*" in sql:
+        return False, "Commentaires SQL interdits."
+
     # 1. Doit commencer par SELECT
     if not sql_upper.startswith("SELECT"):
         return False, "La requête doit commencer par SELECT."
@@ -145,12 +154,30 @@ def validate_sql_security(sql: str) -> tuple[bool, str]:
 
     return True, "OK"
 
+def enforce_business_rules(sql: str) -> str:
+    """
+    Enforce règles métier critiques après génération LLM
+    """
+    sql_lower = sql.lower()
+
+    if "entity = 1" not in sql_lower:
+        raise ValueError("Filtre entity = 1 manquant.")
+
+    if "limit" not in sql_lower:
+        sql += " LIMIT 200"
+
+    return sql
+
+def sanitize(value: str) -> str:
+    return value.replace("'", "''")
 
 def inject_params(sql: str, params: dict) -> str:
-    """Remplace les :param par leurs valeurs (strings entre guillemets)."""
     result = sql
     for key, value in params.items():
-        result = result.replace(f":{key}", f"'{value}'")
+        if str(value).isdigit():
+            result = result.replace(f":{key}", str(value))
+        else:
+            result = result.replace(f":{key}", f"'{sanitize(value)}'")
     return result
 
 
@@ -165,68 +192,83 @@ def load_templates(templates_file: str = "templates.json") -> dict:
 
     templates = data.get("templates", {})
 
-    # 🔥 AJOUT IMPORTANT
-    build_template_embeddings(templates)
-
     return templates
 
 
 def match_template(question: str, templates: dict):
     """
-    Matching sémantique via embeddings (SentenceTransformer)
+    Matching sémantique via embeddings + fallback mots-clés
     """
+    if not templates:
+        return None, None, {}
 
+    question_lower = question.lower()
+
+    # ── Fallback 1 : matching par mots-clés exact (prioritaire) ──
+    for tid, t in templates.items():
+        if not t.get("active", True):
+            continue
+        keywords = t.get("keywords", [])
+        if not keywords:
+            continue
+        matches = sum(1 for kw in keywords if kw.lower() in question_lower)
+        # Si au moins 2 mots-clés matchent → c'est ce template
+        ratio = matches / len(keywords)
+        if ratio >= 0.6:
+            params = extract_params_from_question(question, t.get("params", []))
+            logger.info(f"[KEYWORD MATCH] tid={tid} matches={matches}")
+            return tid, t, params
+        # Si 1 seul mot-clé mais très spécifique (> 6 chars) → aussi valide
+        if matches == 1:
+            matching_kw = [kw for kw in keywords if kw.lower() in question_lower]
+            if matching_kw and len(matching_kw[0]) > 6:
+                params = extract_params_from_question(question, t.get("params", []))
+                logger.info(f"[KEYWORD MATCH SINGLE] tid={tid} kw={matching_kw[0]}")
+                return tid, t, params
+
+    # ── Fallback 2 : embeddings avec seuil abaissé ──
     if not TEMPLATE_EMBEDDINGS:
         return None, None, {}
 
     q_emb = embedding_model.encode(question, normalize_embeddings=True)
-
     best_score = -1
     best_tid = None
 
     for tid, t_emb in TEMPLATE_EMBEDDINGS.items():
         score = util.cos_sim(q_emb, t_emb)[0][0].item()
-        print(f"[EMBEDDING DEBUG] template={tid} score={score}")
-
         if score > best_score:
             best_score = score
             best_tid = tid
 
-    # seuil de confiance
-    THRESHOLD = 0.70
+    # ── Seuil abaissé de 0.70 à 0.55 ──
+    THRESHOLD = 0.55
 
     if best_score < THRESHOLD:
         return None, None, {}
 
-    logger.info(
-    f"[EMBEDDINGS MATCH] question='{question}' | "
-    f"best_tid={best_tid} | score={round(best_score, 3)}"
-    )
-    
     template = templates.get(best_tid, {})
+    params = extract_params_from_question(question, template.get("params", []))
 
-    params = extract_params_from_question(
-        question,
-        template.get("params", [])
-    )
-
-
-    print(f"\n[EMBEDDING RESULT]")
-    print(f"Question: {question}")
-    print(f"Best template: {best_tid}")
-    print(f"Best score: {best_score}\n")
-
+    logger.info(f"[EMBEDDING MATCH] tid={best_tid} score={round(best_score, 3)}")
     return best_tid, template, params
 
 def extract_params_from_question(question: str, param_names: list) -> dict:
-    """Extraction basique des paramètres depuis la question (regex)."""
+    """Extraction des paramètres depuis la question (regex améliorée)."""
     params = {}
     q = question.lower()
+
+    MOIS_MAP = {
+        "janvier": "01", "février": "02", "fevrier": "02",
+        "mars": "03", "avril": "04", "mai": "05", "juin": "06",
+        "juillet": "07", "août": "08", "aout": "08",
+        "septembre": "09", "octobre": "10", "novembre": "11",
+        "décembre": "12", "decembre": "12",
+    }
 
     for p in param_names:
         p_lower = p.lower()
 
-        # Dates (format YYYY-MM-DD ou DD/MM/YYYY)
+        # ── Dates (format YYYY-MM-DD ou DD/MM/YYYY) ──
         if "date" in p_lower or "debut" in p_lower or "fin" in p_lower:
             dates = re.findall(r'\d{4}-\d{2}-\d{2}|\d{2}/\d{2}/\d{4}', question)
             if "debut" in p_lower and len(dates) >= 1:
@@ -236,31 +278,57 @@ def extract_params_from_question(question: str, param_names: list) -> dict:
             elif dates:
                 params[p] = dates[0]
 
-        # Année
-        elif "annee" in p_lower or "year" in p_lower:
+        # ── Année ──
+        elif p_lower in ("annee", "year", "annee_commande", "annee_facture"):
             years = re.findall(r'\b(20\d{2})\b', question)
             if years:
                 params[p] = years[0]
-
-        # Seuil / limite numérique
-        elif "seuil" in p_lower or "limit" in p_lower or "nb" in p_lower or "top" in p_lower:
-            numbers = re.findall(r'\b(\d+)\b', question)
-            if numbers:
-                params[p] = numbers[0]
             else:
-                params[p] = "200" if "limit" in p_lower else "10"
+                from datetime import datetime
+                params[p] = str(datetime.today().year)
 
-        # Mois en texte
-        elif "mois" in p_lower:
-            mois_map = {
-                "janvier": "01", "février": "02", "mars": "03", "avril": "04",
-                "mai": "05", "juin": "06", "juillet": "07", "août": "08",
-                "septembre": "09", "octobre": "10", "novembre": "11", "décembre": "12",
-            }
-            for mois_nom, mois_num in mois_map.items():
+        # ── Mois numérique (ex: :mois) ──
+        elif p_lower in ("mois", "month", "mois_commande", "mois_facture"):
+            # Cherche d'abord un mois en texte
+            for mois_nom, mois_num in MOIS_MAP.items():
                 if mois_nom in q:
                     params[p] = mois_num
                     break
+            # Sinon cherche un format YYYY-MM
+            if p not in params:
+                ym = re.search(r'\d{4}-(\d{2})', question)
+                if ym:
+                    params[p] = ym.group(1)
+            # Sinon mois courant
+            if p not in params:
+                from datetime import datetime
+                params[p] = str(datetime.today().month).zfill(2)
+
+        # ── Seuil / limite / client / nom ──
+        elif p_lower in ("seuil", "seuil_stock"):
+            numbers = re.findall(r'\b(\d+)\b', question)
+            params[p] = numbers[0] if numbers else "10"
+
+        elif p_lower in ("limit", "nb", "top", "nombre"):
+            numbers = re.findall(r'\b(\d+)\b', question)
+            params[p] = numbers[0] if numbers else "10"
+
+        elif p_lower == "client":
+            # Cherche un nom propre après "client" ou "pour"
+            match = re.search(
+                r'(?:client|pour|de)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-]{1,40})',
+                question, re.IGNORECASE
+            )
+            if match:
+                params[p] = f"%{match.group(1).strip()}%"
+            else:
+                params[p] = "%"
+
+        # ── Fallback générique ──
+        else:
+            numbers = re.findall(r'\b(\d+)\b', question)
+            if numbers:
+                params[p] = numbers[0]
 
     return params
 
@@ -413,22 +481,12 @@ Identifie l'intent et extrais les paramètres.
 
     except Exception as e:
         logger.error(f"LLM JSON invalide (router): {raw}")
-    
-        return {
-        "intent": "unknown",
-        "confidence": 0,
-        "params": {},
-        "needs_sql_generation": True,
-        "reason": "invalid_json"
-    }
 
-    # tentative de correction simple
         raw_fixed = raw.replace(",}", "}").replace(",]", "]")
 
         try:
             return json.loads(raw_fixed)
         except Exception:
-        # fallback intelligent (ne casse pas le pipeline)
             return {
             "intent": "unknown",
             "confidence": 0,
@@ -437,14 +495,18 @@ Identifie l'intent et extrais les paramètres.
             "reason": "fallback JSON parsing failed"
         }
 
-
 def llm_generate_sql(question: str, cache: dict = None) -> dict:    
     """
     Génère du SQL via Ollama (robuste, sans dépendance stricte au JSON)
     """
+    
+    cache_key = re.sub(r"\s+", " ", question.strip().lower())
+
+    if cache and cache_key in cache:
+        logger.info("[LLM CACHE HIT]")
+        return cache[cache_key]
 
     user_msg = f'Génère une requête SQL pour : "{question}"'
-    cache_key = question.strip().lower()
 
     # ── Étape 1 : appel Ollama ──
     try:
@@ -473,35 +535,36 @@ def llm_generate_sql(question: str, cache: dict = None) -> dict:
 
     raw_clean = clean_llm_json(raw)
 
-    # ── Étape 3 : 🔥 extraction robuste SQL (clé pour Ollama) ──
+    # ── Étape 3 : extraction robuste SQL ──
     if not sql or not isinstance(sql, str):
-
-        import re
 
         logger.warning("Extraction SQL depuis texte brut...")
 
-        # Cas idéal : SELECT ... LIMIT
-        match = re.search(
-            r"(SELECT .*? LIMIT \d+)",
-            raw,
-            re.IGNORECASE | re.DOTALL
-        )
+        try:
+            parsed = sqlglot.parse_one(raw, dialect="mysql")
+            sql = parsed.sql()
 
-        if match:
-            sql = match.group(1)
-
-        else:
-            # fallback : SELECT ... ;
+        except Exception:
+            # fallback regex : SELECT ... LIMIT
             match = re.search(
-                r"(SELECT .*?;)",
+                r"(?i)(SELECT[\s\S]*?LIMIT\s+\d+)",
                 raw,
                 re.IGNORECASE | re.DOTALL
             )
 
             if match:
                 sql = match.group(1)
+            else:
+                # fallback : SELECT ... ;
+                match = re.search(
+                    r"(SELECT .*?;)",
+                    raw,
+                    re.IGNORECASE | re.DOTALL
+                )
+                if match:
+                    sql = match.group(1)
 
-        # fallback ultime : tout ce qui commence par SELECT
+        # fallback ultime
         if not sql:
             match = re.search(
                 r"(SELECT .*)",
@@ -521,6 +584,16 @@ def llm_generate_sql(question: str, cache: dict = None) -> dict:
         }
 
     sql = sql.strip()
+
+    try:
+        sql = enforce_business_rules(sql)
+    except Exception as e:
+        return {
+        "sql": "",
+        "explanation": str(e),
+        "confidence": 0
+    }
+
 
     # ── Étape 5 : sécurisation LIMIT ──
     if "LIMIT" not in sql.upper():
@@ -573,30 +646,48 @@ class HybridEngine:
         if tid and template:
             sql_template = template.get("sql", "")
             required_params = template.get("params", [])
+
+
+    # ── Vérifier les paramètres manquants ──
             missing = [p for p in required_params if p not in params]
+            if missing:
+                logger.warning(
+            f"Template {tid} : paramètres manquants {missing} "
+            f"— tentative avec valeurs par défaut"
+        )
+        # Valeurs par défaut pour les paramètres manquants
+                from datetime import datetime
+                defaults_map = {
+            "limit":  "10",
+            "annee":  str(datetime.today().year),
+            "mois":   str(datetime.today().month).zfill(2),
+            "seuil":  "10",
+            "seuil_stock": "10",
+            "client": "%",
+        }
+                for m in missing:
+                    if m.lower() in defaults_map:
+                        params[m] = defaults_map[m.lower()]
+                    else:
+                        params[m] = "10"  # fallback numérique
 
-            if not missing:
-                sql_final = inject_params(sql_template, params)
-                valid, err = validate_sql_security(sql_final)
+            sql_final = inject_params(sql_template, params)
+            valid, err = validate_sql_security(sql_final)
 
-                if valid:
-                    return HybridResult(
-                    question=question,
-                    mode="template",
-                    intent=template.get("intent", tid),
-                    sql=sql_final,
-                    params=params,
-                    valid=True,
-                    error=None,
-                    llm_called=False,
-                    duration_ms=round((time.time() - start) * 1000, 2),
-                )
-                else:
-                    logger.warning(f"Template {tid} SQL invalide : {err}")
+            if valid:
+                return HybridResult(
+            question=question,
+            mode="template",
+            intent=template.get("intent", tid),
+            sql=sql_final,
+            params=params,
+            valid=True,
+            error=None,
+            llm_called=False,
+            duration_ms=round((time.time() - start) * 1000, 2),
+        )
             else:
-                logger.info(
-                f"Template {tid} : paramètres manquants {missing} — passage au LLM"
-            )
+                logger.warning(f"Template {tid} SQL invalide après injection : {err}")
 
     # ── Étape 2 : LLM Router ──────────────────────────────
         llm_classification = {
@@ -630,6 +721,8 @@ class HybridEngine:
 
     # ── Étape 3 : LLM génère le SQL directement ───────────────────
         if needs_sql:
+            valid = False
+            err = None      
             try:
                 llm_sql_result = llm_generate_sql(question, self._llm_cache)
                 generated_sql = llm_sql_result.get("sql", "")
@@ -662,13 +755,13 @@ class HybridEngine:
                         "janvier": 1, "février": 2, "mars": 3, "avril": 4,
                         "mai": 5, "juin": 6, "juillet": 7, "août": 8,
                         "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12
-                    }
+                        }
 
                         mois = None
-                    for nom, num in mois_map.items():
-                        if nom in q:
-                            mois = num
-                            break
+                        for nom, num in mois_map.items():
+                            if nom in q:
+                                mois = num
+                                break
 
                         year_match = re.search(r"(20\d{2})", q)
                         annee = year_match.group(1) if year_match else "2026"
@@ -727,6 +820,15 @@ LIMIT 200
                 llm_called=True,
                 duration_ms=round((time.time() - start) * 1000, 2),
             )
+
+        if 'generated_sql' in locals():
+            logger.info(json.dumps({
+        "question": question,
+        "mode": "llm_sql",
+        "sql": generated_sql,
+        "valid": valid,
+        "duration_ms": round((time.time() - start) * 1000, 2)
+    }))
 
     # ── Étape 4 : Aucune solution trouvée ────────────────────────────────
         return HybridResult(

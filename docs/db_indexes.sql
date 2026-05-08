@@ -63,6 +63,36 @@ CREATE INDEX IF NOT EXISTS idx_commande_fk_soc
 CREATE INDEX IF NOT EXISTS idx_product_stock
     ON m38h_product (stock);
 
+
+-- ═══════════════════════════════════════════════════════════
+-- Index manquants identifiés par EXPLAIN — avril 2026
+-- ═══════════════════════════════════════════════════════════
+
+-- ── Requête 2 : factures_non_payees ──
+-- Problème : full scan sur m38h_facture (323 lignes, no index)
+-- Solution : index sur (entity) pour filtrer d'abord
+CREATE INDEX IF NOT EXISTS idx_facture_entity
+    ON m38h_facture (entity);
+
+-- ── Requête 3 : ca_mensuel ──
+-- Problème : YEAR(datef) désactive idx_facture_datef existant
+-- Solution : index composé (entity, datef) pour couvrir les deux filtres
+CREATE INDEX IF NOT EXISTS idx_facture_entity_datef
+    ON m38h_facture (entity, datef);
+
+-- ── Requête 5 : commandes_mois ──
+-- Problème : full scan sur m38h_commande (62 lignes, no index)
+-- Solution : index sur (entity, date_commande) pour WHERE + GROUP BY
+CREATE INDEX IF NOT EXISTS idx_commande_entity_date
+    ON m38h_commande (entity, date_commande);
+
+-- ── Requête 4 : stock_faible (amélioration) ──
+-- Problème : filesort résiduel sur ORDER BY stock
+-- Solution : index composé (entity, stock) pour couvrir WHERE + ORDER BY
+CREATE INDEX IF NOT EXISTS idx_product_entity_stock
+    ON m38h_product (entity, stock);
+
+    
 -- ============================================================
 -- Vérification après application
 -- ============================================================

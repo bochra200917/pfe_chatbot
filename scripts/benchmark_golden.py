@@ -177,7 +177,7 @@ def save_summary(stats, path):
 | Niveau | Nb appels | % |
 |---|---|---|
 | V1/V2 templates (sans LLM) | {stats['v1v2_calls']} | {round(stats['v1v2_calls']/stats['total']*100, 1)}% |
-| LLM (Gemini) | {stats['llm_calls']} | {round(stats['llm_calls']/stats['total']*100, 1)}% |
+| LLM (Ollama/Mistral) | {stats['llm_calls']} | {round(stats['llm_calls']/stats['total']*100, 1)}% |
 | Sécurité / Clarification | {stats['other_calls']} | {round(stats['other_calls']/stats['total']*100, 1)}% |
 
 ## Overhead LLM

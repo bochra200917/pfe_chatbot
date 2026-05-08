@@ -19,7 +19,7 @@ Un golden set est un ensemble de questions de référence avec les résultats at
 
 Le golden set a été construit manuellement selon les principes suivants :
 
-**Diversité :** les questions couvrent les 8 templates disponibles avec des formulations variées (directes, synonymes, abréviations, formulations interrogatives).
+**Diversité :** les questions couvrent les 12 templates disponibles avec des formulations variées (directes, synonymes, abréviations, formulations interrogatives).
 
 **Balancement :** chaque catégorie est représentée proportionnellement.
 
@@ -111,7 +111,7 @@ La V3 atteint 100% d'accuracy sur les deux golden sets. Le fait que 0% des requ�
 | Taux rejet injections | 100% | 100% | 100% |
 | Flexibilité linguistique | Faible | Moyenne | Élevée |
 | Appel LLM | Non | Non | Non (0% sur golden set) |
-| Latence moyenne | ~180 ms | ~180 ms | ~180 ms (local) |
+| Latence moyenne | ~180 ms (local) | ~180 ms (local) | ~180 ms (local) / ~2 200 ms (distant) |
 | Complexité supportée | Simple | Intermédiaire | Avancée |
 | Coût par requête | 0€ | 0€ | ~0.000004$ |
 | Maintenance | Faible | Moyenne | Faible |
@@ -158,7 +158,7 @@ L'overhead LLM nul garantit :
 
 Lors des tests de développement, les erreurs LLM observées étaient de deux types :
 
-**Type 1 — Mauvais intent :** Le LLM retourne un intent non présent dans les 8 templates (ex: `"get_all_factures"` au lieu de `"get_factures_non_payees"`). Mitigation : validation Pydantic stricte qui rejette tout intent inconnu.
+**Type 1 — Mauvais intent :** Le LLM retourne un intent non présent dans les 12 templates (ex: `"get_all_factures"` au lieu de `"get_factures_non_payees"`). Mitigation : validation Pydantic stricte qui rejette tout intent inconnu.
 
 **Type 2 — Mauvais nom de table :** Le LLM retourne `"factures"` au lieu de `"m38h_facture"`. Mitigation : validator Pydantic `validate_tables` qui rejette toute table hors whitelist.
 

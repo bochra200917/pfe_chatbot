@@ -33,6 +33,32 @@ def normalize(text: str) -> str:
 def match_question(question: str):
     q = normalize(question)
 
+    # ── NOUVEAU : top produits commandés → template dédié ──
+    if any(w in q for w in ["produit", "article"]) and \
+       any(w in q for w in ["commande", "vendu", "vendu"]) and \
+       any(w in q for w in ["top", "plus", "meilleur", "populaire"]):
+        match_n = re.search(r'\b(\d+)\b', q)
+        limit = int(match_n.group(1)) if match_n else 10
+        return "get_top_produits_commandes", {"limit": limit}
+
+    # ── CA par trimestre ──────────────────────────────────────
+    if "trimestre" in q and any(w in q for w in ["ca", "chiffre", "vente", "depense", "total"]):
+        match_year = re.search(r'\b(20\d{2})\b', q)
+        annee = match_year.group(1) if match_year else "2026"
+        return "get_ca_par_trimestre", {"annee": annee}
+
+    # ── EXCLUSION PRIORITAIRE : questions complexes → LLM ──
+    complex_keywords = [
+        "semestre", "bimestriel",
+        "mais pas", "sauf en", "pas en",
+        "jamais commandé", "n ont jamais", "n a jamais",
+        "depuis plus de", "depuis plus",
+        "comparer", "comparaison",
+    ]
+
+    if any(kw in q for kw in complex_keywords):
+        return None, None  # → force passage au LLM
+    
     # ══════════════════════════════════════════════════════════════════
     # PRIORITÉ HAUTE — patterns spécifiques avant les patterns généraux
     # ══════════════════════════════════════════════════════════════════
@@ -94,6 +120,15 @@ def match_question(question: str):
     if "partiellement pay" in q or "partiel" in q:
         return "get_factures_partiellement_payees", {}
 
+    # ── Factures non payées depuis N jours — PRIORITÉ SUR le template générique ──
+    match_jours = re.search(r'(\d+)\s*jours?', q)
+    if match_jours and any(w in q for w in ["non pay", "impaye", "non regle", "retard"]):
+        return "get_factures_non_payees_30j", {}
+    
+    if "30 jours" in q or "trente jours" in q or "depuis plus" in q:
+        if any(w in q for w in ["non pay", "impaye", "non regle", "retard", "facture"]):
+            return "get_factures_non_payees_30j", {}
+    
     if ("non pay" in q or "impaye" in q or "non regle" in q
             or "pas regle" in q or "pas ete regle" in q
             or "n ont pas" in q or "montant restant" in q):
@@ -246,6 +281,12 @@ def _execute_template(question: str, template_name: str,
         duration    = round((time.time() - start_time) * 1000, 2)
         result_rows = [dict(zip(columns, row)) for row in rows]
 
+        if template_name == "get_top_produits_commandes" and "limit" in params:
+            try:
+                result_rows = result_rows[:int(params["limit"])]
+            except (ValueError, TypeError):
+                pass
+
         # ── Troncature top N côté Python ──
         # Le SQL retourne jusqu'à 200 lignes (garde-fou DB),
         # on tronque ici au nombre demandé par l'utilisateur.
@@ -315,10 +356,9 @@ def reload_templates():
 
 
 def get_response(question: str) -> dict:
-
     start_time = time.time()
 
-    # ── 1. Couche sécurité ──
+    # ── 1. Sécurité ──
     try:
         detect_injection(question)
     except Exception:
@@ -327,6 +367,39 @@ def get_response(question: str) -> dict:
             "summary": "Requête rejetée pour des raisons de sécurité.",
             "metadata": {"status": "rejected", "suggestions": []}
         }
+
+    q_lower = normalize(question)
+
+    # ── NOUVEAU : questions complexes → LLM directement, skip tout le routing ──
+    complex_keywords = [
+        "semestre",
+        "mais pas", "sauf en", "pas en",
+        "jamais commandé", "n ont jamais", "n a jamais",
+        "depuis plus de", "depuis plus",
+        "les plus commandés", "le plus commandé",
+        "top 3 produits", "top 5 produits",
+        "comparer", "comparaison",
+    ]
+    q_norm = normalize(question)
+    if any(kw in q_norm for kw in complex_keywords):
+        # Passe directement au LLM interne, skip ambiguités + mapping + routing
+        try:
+            result = run_llm_pipeline(question)
+            intent = result["metadata"].get("template", "")
+            p = result["metadata"].get("params", {})
+            result["metadata"]["suggestions"] = generate_suggestions(intent, p)
+            return {
+                "table":    result["table"],
+                "summary":  f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
+                "metadata": result["metadata"]
+            }
+        except Exception as e:
+            print("LLM ERROR:", e)
+            return {
+                "table": [],
+                "summary": "Je ne peux pas répondre à cette question.",
+                "metadata": {"status": "error", "suggestions": []}
+            }
 
     q_lower = normalize(question)
 
@@ -390,8 +463,10 @@ def get_response(question: str) -> dict:
 
     # ── 3. EARLY MATCH (PRIORITÉ ABSOLUE) ──
     early_match, early_params = match_question(question)
-    if early_match in ("get_top_clients_ca", "get_commandes_par_mois", "liste_clients_simple"):
+    if early_match in ("get_top_clients_ca", "get_commandes_par_mois", "liste_clients_simple","get_top_produits_commandes","get_ca_par_trimestre",):
         return _execute_template(question, early_match, early_params, start_time)
+
+    print("🔍 MAPPING RESULT:", apply_mapping_rules(question))
 
     # ── 4. Mapping rules ──
     mapping_result = apply_mapping_rules(question)
@@ -421,27 +496,28 @@ def get_response(question: str) -> dict:
     template_name, params = match_question(question)
 
     # ── 6. LLM fallback ──
+    # Couche 4 : LLM fallback
     if template_name is None:
         try:
-            result = run_llm_pipeline(question)
-            intent = result["metadata"].get("template", "")
-            p = result["metadata"].get("params", {})
+            result      = run_llm_pipeline(question)
+            intent      = result["metadata"].get("template", "")
+            p           = result["metadata"].get("params", {})
             suggestions = generate_suggestions(intent, p)
             result["metadata"]["suggestions"] = suggestions
-
             return {
-                "table": result["table"],
-                "summary": f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
-                "metadata": result["metadata"]
-            }
-
+            "table":    result["table"],
+            "summary":  f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
+            "metadata": result["metadata"]
+        }
         except Exception as e:
             print("LLM ERROR:", e)
             return {
-                "table": [],
-                "summary": "Je ne peux pas répondre à cette question.",
-                "metadata": {"status": "rejected", "suggestions": []}
-            }
+            "table": [],
+            "summary": "Je ne peux pas répondre à cette question.",
+            "metadata": {"status": "error", "suggestions": []}
+            # ↑ "error" au lieu de "rejected"
+            # "error" → call_api passera au LLM hybride port 8001
+        }
 
     # ── 7. Exécution SQL ──
     return _execute_template(question, template_name, params, start_time)

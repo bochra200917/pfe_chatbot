@@ -112,7 +112,7 @@ Le champ `summary` retourné à l'utilisateur ne contient **jamais** de données
 | Permissions | `GRANT SELECT` uniquement |
 | Écriture | Impossible (INSERT/UPDATE/DELETE/DROP bloqués) |
 | Timeout requêtes | 5 secondes |
-| Limite lignes | 100 lignes maximum |
+| Limite lignes | 200 lignes maximum |
 
 ---
 
@@ -123,7 +123,7 @@ Le champ `summary` retourné à l'utilisateur ne contient **jamais** de données
 | Quota journalier | 100 appels/jour |
 | Max tokens | 200 |
 | Température | 0 (déterministe) |
-| Modèle | `google/gemini-2.0-flash-lite-001` |
+| Modèle | `Ollama (Mistral 7B) — local / configurable via OpenRouter en production` |
 | Priorité | LLM appelé uniquement si V1/V2 échouent |
 
 ---
@@ -152,3 +152,4 @@ Le dashboard d'audit est accessible via `GET /audit`.
 | Version | Date | Changements |
 |---|---|---|
 | `v1.0` | 2026-03-23 | Version initiale — 5 tables, 3 jointures, politique PII |
+| `v1.1` | 2026-04-20 | Ajout 9 tables (commandedet, facturedet, product_stock...) — sync db_whitelist.py |

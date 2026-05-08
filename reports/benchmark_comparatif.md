@@ -4,7 +4,7 @@
 
 ## Méthodologie
 
-- **Notre système (ZAI V3)** : mesures réelles sur golden set de 14 questions (11 fonctionnelles + 3 injections SQL), exécutées en local via l'API FastAPI.
+- **Notre système (ZAI V3)** : mesures réelles sur golden set de 60 questions (30 fonctionnelles + 15 clarifications + 15 injections SQL), exécutées en local via l'API FastAPI.
 - **Autres solutions** : données issues de la littérature académique (benchmarks Spider / BIRD) et des tarifs publics des APIs. Ces systèmes n'ont pas été déployés localement — les valeurs sont des références documentées, clairement étiquetées.
 - **Dimensions évaluées** : exactitude (exact match), validité SQL, sécurité (rejet injections), latence, coût opérationnel.
 
@@ -18,6 +18,9 @@
 | DAIL-SQL (GPT-4, Spider) | 86.6% | 96.3% | N/A | 3500 ms | 25.00$ | Oui | Non |
 | DIN-SQL (GPT-4, Spider) | 82.8% | 94.1% | N/A | 4200 ms | 28.00$ | Oui | Non |
 | C3 (ChatGPT, Spider) | 81.8% | 93.5% | N/A | 3100 ms | 12.00$ | Oui | Non |
+
+> Note : 2 183 ms = latence mesurée sous charge réseau (DB distante Infomaniak).  
+> 116 ms = latence mesurée en local (golden set, DB locale).
 
 ## Sources des données de référence
 

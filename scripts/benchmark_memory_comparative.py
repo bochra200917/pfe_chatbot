@@ -402,7 +402,7 @@ def save_comparative_report(comparative, mem_results):
 ### 3.1 Sécurité by design
 
 Contrairement aux approches LLM pures, notre système ne génère **jamais de SQL libre** :
-- Le LLM identifie uniquement l'*intent* (parmi 8 templates connus)
+- Le LLM identifie uniquement l'*intent* (parmi 12 templates connus)
 - Le SQL est entièrement construit côté serveur
 - Validation AST via sqlglot avant toute exécution
 - Compte DB read-only : `GRANT SELECT` uniquement
@@ -423,7 +423,7 @@ Avec cache, la latence sur les requêtes répétées descend encore davantage.
 
 ### 3.4 Déterminisme
 
-Les approches LLM pures souffrent de **variabilité** : la même question peut produire un SQL différent d'un appel à l'autre (température > 0). Notre architecture est **100% déterministe** sur les 8 templates.
+Les approches LLM pures souffrent de **variabilité** : la même question peut produire un SQL différent d'un appel à l'autre (température > 0). Notre architecture est **100% déterministe** sur les 12 templates.
 
 ---
 
@@ -431,7 +431,7 @@ Les approches LLM pures souffrent de **variabilité** : la même question peut p
 
 | Limite | Impact | Mitigation envisagée |
 |---|---|---|
-| 8 templates fixes | Couverture limitée aux cas définis | Ajout de templates + LLM pour cas complexes |
+| 12 templates fixes | Couverture limitée aux cas définis | Ajout de templates + LLM pour cas complexes |
 | Whitelist à maintenir | Évolution du schéma DB coûteuse | Versionnement + changelog automatisé |
 | Mono-langue (français) | Pas d'internationalisation | Extension dictionnaire MONTHS + patterns |
 | Cache en mémoire | Perdu au redémarrage | Migration vers Redis pour persistance |

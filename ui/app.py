@@ -6,6 +6,10 @@ import html
 import io
 import json
 import os
+import streamlit.components.v1 as components
+import matplotlib.pyplot as plt  # Déjà présent
+import numpy as np  # À ajouter si pas déjà présent
+
 from datetime import datetime, date
 try:
     import importlib.util, os as _os
@@ -27,6 +31,7 @@ API_USER       = "admin"
 API_PASS       = "1234"
 HYBRID_API_URL = "http://localhost:8001/ask"
 EXECUTE_URL    = "http://localhost:8000/execute"
+DOLIBARR_BASE_URL = "https://demonstration.cieloo.io"
 
 st.set_page_config(
     page_title="Chatbot ZAI Informatique",
@@ -34,12 +39,16 @@ st.set_page_config(
     layout="wide"
 )
 
+# ─────────────────────────────────────────────
+# Fonctions utilitaires
+# ─────────────────────────────────────────────
+
 def month_name(m):
     names = {
-        "01": "janvier",  "02": "février",  "03": "mars",
-        "04": "avril",    "05": "mai",       "06": "juin",
-        "07": "juillet",  "08": "août",      "09": "septembre",
-        "10": "octobre",  "11": "novembre",  "12": "décembre"
+        "01": "janvier", "02": "février", "03": "mars",
+        "04": "avril",   "05": "mai",     "06": "juin",
+        "07": "juillet", "08": "août",    "09": "septembre",
+        "10": "octobre", "11": "novembre","12": "décembre"
     }
     return names.get(m, m)
 
@@ -55,6 +64,108 @@ st.markdown("""
 
 st.markdown("""
 <style>
+/* ── Assistant flottant ── */
+.floating-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.4);
+    z-index: 9999;
+    font-size: 1.5rem;
+    border: none;
+    color: white;
+    transition: transform 0.2s;
+}
+.floating-btn:hover { transform: scale(1.1); }
+.popup-overlay {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    width: 280px;
+    max-width: 85%;
+    
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 9998;
+    
+    padding: 0.75rem;
+    border: 1px solid #e5e7eb;
+    
+    animation: fadeIn 0.2s ease;
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.popup-header {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.popup-category {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #6d28d9;
+    margin: 0.4rem 0 0.2rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.popup-prompt {
+    background: #f8f7ff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.75rem;
+    color: #374151;
+    cursor: pointer;
+    margin-bottom: 0.25rem;
+    transition: all 0.15s;
+    display: block;
+    width: 100%;
+    text-align: left;
+}
+.popup-prompt:hover {
+    background: #ede9fe;
+    border-color: #7c3aed;
+    color: #4c1d95;
+}
+.popup-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    color: #9ca3af;
+    cursor: pointer;
+    line-height: 1;
+}
+.popup-close:hover { color: #374151; }
+.popup-input-area {
+    margin-top: 0.6rem;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.6rem;
+}
+.popup-input-label {
+    font-size: 0.7rem;
+    color: #6b7280;
+    margin-bottom: 0.25rem;
+}
 .main { background-color: #f8f9fa; }
 .chat-title { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.2rem; }
 .chat-subtitle { font-size: 0.95rem; color: #6c757d; margin-bottom: 1.5rem; }
@@ -125,6 +236,18 @@ st.markdown("""
 .col-rank  { width: 8%;  text-align: center; font-weight: 600; }
 .col-ques  { width: 76%; }
 .col-count { width: 16%; text-align: center; font-weight: 600; color: #2e7d32; }
+.custom-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px;
+    max-width: 85%;
+    padding: 16px;
+    background: white;
+    border-radius: 12px;
+    z-index: 9999;
+}
 .fb-row-wrapper {
     border-bottom: 1px solid #e5e7eb; padding: 4px 0;
     background: white; font-size: 0.83rem; color: #111;
@@ -133,26 +256,80 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+
 # ═══════════════════════════════════════════════════════════════════════
 # SESSION STATE
 # ═══════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────
+# SESSION STATE
+# ─────────────────────────────────────────────
 defaults = {
-    "history":          [],
-    "feedback":         {},
-    "pending_question": "",
-    "last_result":      None,
-    "last_question":    "",
-    "result_context":   "chatbot",
-    "guided_form_key":  0,
-    "form_question":    "",
-    "active_tab":       0,
-    "delete_fb_idx":    -1,
-    "do_clear_form":    False,
+    "history":            [],
+    "feedback":           {},
+    "pending_question":   "",
+    "last_result":        None,
+    "last_question":      "",
+    "result_context":     "chatbot",
+    "guided_form_key":    0,
+    "form_question":      "",
+    "active_tab":         0,
+    "delete_fb_idx":      -1,
+    "do_clear_form":      False,
+    "popup_should_open":  False,   # ← ici dans defaults
+    "popup_text":         "",
+    "popup_counter":      0,
 }
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
+# Récupération question depuis le pop-up HTML
+query_params = st.query_params
+if "popup_q" in query_params:
+    q_from_popup = query_params["popup_q"]
+    if q_from_popup and q_from_popup != st.session_state.get("last_popup_q", ""):
+        st.session_state.pending_question = q_from_popup
+        st.session_state.result_context   = "chatbot"
+        st.session_state.active_tab       = 0
+        st.session_state.last_popup_q     = q_from_popup
+        st.query_params.clear()
+        st.rerun()
+
+# ── Pop-up : toujours affiché à l'ouverture / rechargement ──
+# On utilise une clé séparée non incluse dans defaults
+# pour qu'elle soit réinitialisée à True à chaque nouveau chargement
+# ── Afficher le popup UNE seule fois au chargement ──
+
+
+
+# ─────────────────────────────────────────────
+# Chargement des prompts assistant
+# ─────────────────────────────────────────────
+
+PROMPTS_CONFIG_PATH = "config/assistant_prompts.json"
+
+def load_assistant_prompts() -> dict:
+    try:
+        with open(PROMPTS_CONFIG_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {
+            "greeting": "Que voulez-vous faire aujourd'hui ?",
+            "categories": {
+                "📈 Ventes": [
+                    "Quel est mon chiffre d'affaires de ce mois ?",
+                    "Quels sont mes meilleurs clients par CA en 2026 ?",
+                ],
+                "🧾 Factures": [
+                    "Quelles factures ne sont pas encore payées ?",
+                    "Factures entre 2026-01-01 et 2026-03-31",
+                ],
+                "📦 Stock": [
+                    "Quels produits ont un stock inférieur à 5 ?",
+                ],
+            }
+        }
+    
 # ═══════════════════════════════════════════════════════════════════════
 # SUPPRESSION FEEDBACK — traitée AVANT tout rendu
 # ═══════════════════════════════════════════════════════════════════════
@@ -216,7 +393,7 @@ def call_hybrid_fallback(question: str) -> dict | None:
         r = requests.post(
             HYBRID_API_URL,
             json={"question": question, "force_llm": False},
-            timeout=60
+            timeout=120
         )
         
         print(f"\n🔵 HYBRID API STATUS: {r.status_code}")
@@ -294,7 +471,7 @@ def call_hybrid_fallback(question: str) -> dict | None:
                 EXECUTE_URL,
                 json={"sql": sql},
                 auth=(API_USER, API_PASS),
-                timeout=30
+                timeout=60
             )
             
             print(f"🟢 EXECUTE STATUS: {exec_response.status_code}")
@@ -370,9 +547,10 @@ def call_api(question: str) -> dict:
     """
     Stratégie en 3 étapes :
     1. Port 8000 — templates V1/V2 (rapide, sans LLM)
-       → Si résultat avec données : retour direct
-       → Si rejeté pour sécurité  : retour direct (pas de LLM)
-       → Tous les autres cas       : passer au LLM
+       → success + données  : retour direct
+       → rejected           : retour direct (sécurité)
+       → clarification      : retour direct (ambiguïté)
+       → tous les autres    : passe au LLM (port 8001)
     2. Port 8001 — moteur hybride LLM (fallback)
     3. Aucune solution trouvée
     """
@@ -382,36 +560,41 @@ def call_api(question: str) -> dict:
             API_URL,
             json={"question": question},
             auth=(API_USER, API_PASS),
-            timeout=30
+            timeout=60  # augmenté de 30 à 60s
         )
         if r.status_code == 200:
             result = r.json()
             status = result.get("metadata", {}).get("status", "")
             table  = result.get("table", [])
 
-            # ✅ Résultat avec données → retour direct sans LLM
+            # ✅ Template trouvé avec données → retour direct
             if status == "success" and table:
                 return result
 
-            # 🔒 Rejeté pour sécurité (injection SQL) → retour sans LLM
+            # 🔒 Injection SQL détectée → stop, pas de LLM
             if status == "rejected":
                 return result
 
-            # Tous les autres cas (clarification, success vide, erreur)
-            # → on laisse tomber vers le LLM
+            # ❓ Question ambiguë → stop, demander clarification
+            if status == "clarification_required":
+                return result
+
+            # Tous les autres cas tombent vers le LLM :
+            # - success mais table vide (0 résultats)
+            # - error (LLM interne échoue)
+            # - status inconnu
 
     except requests.exceptions.ConnectionError:
-        return {
-            "table":    [],
-            "summary":  "Serveur inaccessible (port 8000).",
-            "metadata": {"status": "error", "suggestions": []},
-        }
-    except Exception as e:
-        return {
-            "table":    [],
-            "summary":  str(e),
-            "metadata": {"status": "error", "suggestions": []},
-        }
+        # Port 8000 inaccessible → essayer quand même le LLM
+        pass
+
+    except requests.exceptions.Timeout:
+        # Port 8000 timeout → essayer le LLM
+        pass
+
+    except Exception:
+        # Toute autre erreur réseau → essayer le LLM
+        pass
 
     # ── Étape 2 : LLM fallback (port 8001) ──
     with st.spinner("🤖 Analyse en cours avec l'IA…"):
@@ -426,7 +609,6 @@ def call_api(question: str) -> dict:
         "summary":  "Je ne peux pas répondre à cette question. Essayez de la reformuler.",
         "metadata": {"status": "error", "suggestions": []},
     }
-
 
 def call_api_endpoint(endpoint: str, method: str = "GET") -> dict:
     try:
@@ -597,6 +779,156 @@ def get_etats_standards() -> list:
 # render_result
 # ═══════════════════════════════════════════════════════════════════════
 
+# ── Mapping : colonne id → URL Dolibarr ─────────────────────────────────────
+# Détecté automatiquement selon les colonnes présentes dans le DataFrame.
+DOLIBARR_LINKS = {
+    # (colonne_id,   colonne_label,   url_template)
+    "facture": (
+        "id", "facture_ref",
+        DOLIBARR_BASE_URL + "/compta/facture/card.php?id={id}&save_lastsearch_values=1"
+    ),
+    "client": (
+        "id", "client",
+        DOLIBARR_BASE_URL + "/societe/card.php?socid={id}&save_lastsearch_values=1"
+    ),
+    "client_nom": (
+        "id", "client_nom",
+        DOLIBARR_BASE_URL + "/societe/card.php?socid={id}&save_lastsearch_values=1"
+    ),
+    "produit": (
+        "id", "produit_nom",
+        DOLIBARR_BASE_URL + "/product/card.php?id={id}&save_lastsearch_values=1"
+    ),
+    "commande_client": (
+        "id", "commande_ref",
+        DOLIBARR_BASE_URL + "/commande/card.php?id={id}&save_lastsearch_values=1"
+    ),
+    "commande_fournisseur": (
+        "id", "commande_ref",
+        DOLIBARR_BASE_URL + "/fourn/commande/card.php?id={id}&save_lastsearch_values=1"
+    ),
+}
+ 
+def detect_entity_type(df: pd.DataFrame) -> str | None:
+    """
+    Détecte automatiquement le type d'entité à partir des colonnes du DataFrame.
+    Retourne la clé de DOLIBARR_LINKS ou None si non détectable.
+    """
+    cols = set(df.columns)
+    if "id" not in cols:
+        return None
+    if "facture_ref" in cols:
+        return "facture"
+    if "client_nom" in cols:
+        return "client_nom"
+    if "client" in cols and "nb_factures" in cols:
+        return "client"       # top clients CA
+    if "client" in cols and "nb_commandes" not in cols:
+        return "client"       # liste clients simple
+    if "produit_nom" in cols:
+        return "produit"
+    if "commande_ref" in cols:
+        # distinction commande client vs fournisseur par nom de colonne supplémentaire
+        return "commande_fournisseur" if "fournisseur" in cols else "commande_client"
+    return None
+ 
+ 
+def render_dataframe_with_links(df: pd.DataFrame, entity_type: str) -> None:
+    """
+    Affiche un DataFrame HTML avec la colonne label transformée en lien cliquable.
+    La colonne 'id' est masquée dans l'affichage final.
+    """
+    id_col, label_col, url_tpl = DOLIBARR_LINKS[entity_type]
+ 
+    if id_col not in df.columns or label_col not in df.columns:
+        st.dataframe(df, use_container_width=True)
+        return
+ 
+    df_display = df.copy()
+ 
+    # Générer les liens HTML pour la colonne label
+    def make_link(row):
+        try:
+            doc_id = int(row[id_col])
+        except (ValueError, TypeError):
+            return str(row[label_col])
+        url = url_tpl.replace("{id}", str(doc_id))
+        label = html.escape(str(row[label_col]))
+        return (
+            f'<a href="{url}" target="_blank" '
+            f'style="color:#1565c0;text-decoration:underline;font-weight:600;" '
+            f'title="Ouvrir dans Dolibarr">{label} ↗</a>'
+        )
+ 
+    df_display[label_col] = df_display.apply(make_link, axis=1)
+ 
+    # Masquer la colonne id dans l'affichage
+    display_cols = [c for c in df_display.columns if c != id_col]
+    df_display = df_display[display_cols]
+ 
+    # Rendu HTML
+    table_html = df_display.to_html(
+        escape=False,
+        index=False,
+        classes="dolibarr-table",
+        border=0
+    )
+ 
+    st.markdown("""
+    <style>
+    .dolibarr-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+        font-family: sans-serif;
+    }
+    .dolibarr-table th {
+        background: #f1f3f5;
+        color: #111;
+        padding: 8px 12px;
+        text-align: left;
+        border-bottom: 2px solid #dee2e6;
+        position: sticky;
+        top: 0;
+        font-weight: 600;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+    }
+    .dolibarr-table td {
+        padding: 7px 12px;
+        border-bottom: 1px solid #e5e7eb;
+        color: #222;
+        vertical-align: middle;
+    }
+    .dolibarr-table tr:nth-child(even) td { background: #f9fafb; }
+    .dolibarr-table tr:hover td { background: #ede9fe; }
+    .dolibarr-table-wrapper {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 transparent;
+    }
+    .dolibarr-table-wrapper::-webkit-scrollbar { width: 5px; }
+    .dolibarr-table-wrapper::-webkit-scrollbar-thumb {
+        background: #cbd5e0; border-radius: 10px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+ 
+    st.markdown(
+        f'<div class="dolibarr-table-wrapper">{table_html}</div>',
+        unsafe_allow_html=True
+    )
+ 
+    # Légende
+    st.caption(f"💡 Cliquez sur un lien pour ouvrir la fiche dans Dolibarr ({DOLIBARR_BASE_URL})")
+ 
+ 
+# ── 2. Remplacer la fonction render_result complète ─────────────────────────
+ 
 def render_result(result: dict, question: str, context: str = "main"):
     status      = result.get("metadata", {}).get("status", "")
     summary     = result.get("summary", "")
@@ -610,7 +942,7 @@ def render_result(result: dict, question: str, context: str = "main"):
     warning     = meta.get("warning", "")
     llm_mode    = meta.get("llm_mode", "")
     pfx         = f"{context}_{logs_id}"
-
+ 
     if status == "rejected":
         st.markdown(
             f'<div class="rejected-box">🔒 <strong>Requête rejetée</strong><br>'
@@ -624,12 +956,11 @@ def render_result(result: dict, question: str, context: str = "main"):
     if status == "error":
         st.error(f"⚠️ {summary}")
         return
-
+ 
     duration  = meta.get("duration_ms", 0)
     row_count = meta.get("row_count", 0)
     cache_tag = " · cache ⚡" if from_cache else ""
-
-    # Badge LLM si la réponse vient du moteur hybride
+ 
     is_llm = bool(llm_mode) or str(template).startswith("llm:")
     if is_llm:
         st.markdown(
@@ -637,13 +968,13 @@ def render_result(result: dict, question: str, context: str = "main"):
             '— SQL validé et exécuté de manière sécurisée</div>',
             unsafe_allow_html=True
         )
-
+ 
     chip_template = (
         f'<span class="meta-chip-llm">🤖 {html.escape(str(template))}</span>'
         if is_llm else
         f'<span class="meta-chip">📋 {html.escape(str(template))}</span>'
     )
-
+ 
     st.markdown(f"""
     <div class="result-box">
         ✅ <strong>{html.escape(summary)}</strong><br><br>
@@ -655,20 +986,30 @@ def render_result(result: dict, question: str, context: str = "main"):
         </span>
     </div>
     """, unsafe_allow_html=True)
-
-    # Avertissement LLM si présent
+ 
     if warning:
         st.warning(f"⚠️ {warning}")
-
+ 
     if table_data:
         df = pd.DataFrame(table_data)
+ 
         st.markdown("#### Résultats")
-        st.dataframe(df, use_container_width=True, height=min(400, 50 + 35 * len(df)))
-
+ 
+        # ── Détection entité + affichage avec liens ──────────────────────────
+        entity_type = detect_entity_type(df)
+ 
+        if entity_type and entity_type in DOLIBARR_LINKS:
+            render_dataframe_with_links(df, entity_type)
+        else:
+            # Affichage standard si pas de liens détectés
+            st.dataframe(df, use_container_width=True, height=min(400, 50 + 35 * len(df)))
+ 
+        # ── Export ────────────────────────────────────────────────────────────
         st.markdown("#### Exporter")
         ts  = datetime.now().strftime("%Y%m%d_%H%M%S")
         fig = auto_chart(df, template)
-
+ 
+        # Pour l'export CSV/Excel/PDF on garde le df complet (avec id)
         col_csv, col_xlsx, col_pdf, _ = st.columns([1, 1, 1, 2])
         with col_csv:
             st.download_button("⬇ CSV", data=df_to_csv_bytes(df),
@@ -709,16 +1050,17 @@ def render_result(result: dict, question: str, context: str = "main"):
                     )
                 except Exception as e:
                     st.caption(f"PDF indisponible : {e}")
-
+ 
         if sql_query:
             with st.expander("🔍 Voir la requête SQL générée"):
                 st.code(sql_query, language="sql")
-
-    # ── Suggestions ──
+ 
+    # ── Suggestions ───────────────────────────────────────────────────────────
     if suggestions:
         st.markdown("---")
         st.markdown(
-            '<div class="suggestion-box"><span style="color:#111;">💡 <strong>Que souhaitez-vous faire ensuite ?</strong></span></div>',
+            '<div class="suggestion-box"><span style="color:#111;">💡 '
+            '<strong>Que souhaitez-vous faire ensuite ?</strong></span></div>',
             unsafe_allow_html=True)
         st.markdown("")
         sug_cols = st.columns(min(len(suggestions), 2))
@@ -729,17 +1071,17 @@ def render_result(result: dict, question: str, context: str = "main"):
                 if context == "guided":
                     st.session_state.guided_form_key += 1
                 st.rerun()
-
-    # ── Feedback ──
+ 
+    # ── Feedback ──────────────────────────────────────────────────────────────
     if logs_id == "noid":
         return
-
+ 
     fb_done_key = f"fb_done_{pfx}"
     st.markdown("---")
-
+ 
     if st.session_state.get(fb_done_key, False):
         return
-
+ 
     st.markdown("#### Évaluer cette réponse")
     fcol1, fcol2, fcol3 = st.columns([1, 1, 4])
     comment_key = f"comment_{pfx}"
@@ -751,7 +1093,7 @@ def render_result(result: dict, question: str, context: str = "main"):
     )
     if comment and not st.session_state.get(f"clicked_{pfx}", False):
         st.warning("⚠️ Veuillez choisir 👍 ou 👎 pour valider votre commentaire.")
-
+ 
     with fcol1:
         if st.button("👍 Correcte", key=f"ok_{pfx}", use_container_width=True):
             if not comment.strip():
@@ -769,12 +1111,103 @@ def render_result(result: dict, question: str, context: str = "main"):
                 st.session_state[fb_done_key] = True
                 st.rerun()
 
+# ═══════════════════════════════════════════════════════════════════════
+# POP-UP ASSISTANT — s'ouvre UNE SEULE FOIS au démarrage
+# ═══════════════════════════════════════════════════════════════════════
+
+assistant_prompts = load_assistant_prompts()
+
+
+@st.dialog("💬 Assistant ZAI — Que voulez-vous faire ?", width="large")
+def show_assistant_popup():
+    prompts_by_cat = assistant_prompts.get("categories", {})
+
+    st.markdown(
+        "<p style='color:#6b7280;font-size:0.88rem;margin-bottom:0.5rem;'>"
+        "Cliquez sur un exemple pour le copier dans la zone de texte, "
+        "modifiez-le si besoin, puis cliquez sur <strong>Envoyer</strong>.</p>",
+        unsafe_allow_html=True
+    )
+
+    for cat, prompts in prompts_by_cat.items():
+        st.markdown(
+            f"<p style='font-size:0.75rem;font-weight:600;color:#9ca3af;"
+            f"text-transform:uppercase;letter-spacing:0.06em;"
+            f"margin:0.8rem 0 0.25rem 0'>{cat}</p>",
+            unsafe_allow_html=True
+        )
+        nb_cols = min(len(prompts), 3)
+        cols = st.columns(nb_cols)
+        for i, p in enumerate(prompts):
+            with cols[i % nb_cols]:
+                if st.button(p, key=f"popup_pick_{cat}_{i}", use_container_width=True):
+                    st.session_state.popup_text    = p
+                    st.session_state.popup_counter += 1
+                    st.rerun()
+
+    st.markdown("---")
+    st.markdown(
+        "<p style='font-size:0.82rem;color:#374151;margin-bottom:0.3rem;'>"
+        "✏️ <strong>Modifiez votre question si besoin :</strong></p>",
+        unsafe_allow_html=True
+    )
+
+    textarea_key = f"popup_textarea_{st.session_state.popup_counter}"
+    q_popup = st.text_area(
+        label="question_popup",
+        value=st.session_state.popup_text,
+        placeholder="Cliquez sur un exemple ci-dessus ou écrivez directement ici…",
+        height=90,
+        label_visibility="collapsed",
+        key=textarea_key
+    )
+
+    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+    col_send, col_close = st.columns([3, 1])
+
+    with col_send:
+        valeur = st.session_state.get(textarea_key, "").strip()
+        if st.button(
+            "➤ Envoyer",
+            type="primary",
+            use_container_width=True,
+            key="popup_send_btn",
+            disabled=not valeur
+        ):
+            st.session_state.pending_question  = valeur
+            st.session_state.result_context    = "chatbot"
+            st.session_state.active_tab        = 0
+            st.session_state.popup_text        = ""
+            st.session_state.popup_counter     = 0
+            st.session_state.popup_should_open = False  # ← ferme définitivement
+            st.rerun()
+
+    with col_close:
+        if st.button("✕ Fermer", use_container_width=True, key="popup_close_btn"):
+            st.session_state.popup_text        = ""
+            st.session_state.popup_counter     = 0
+            st.session_state.popup_should_open = False  # ← ferme définitivement
+            st.rerun()
+
+
+# ── Ouvrir le popup UNE SEULE FOIS (quand popup_should_open est True) ──
+if st.session_state.popup_should_open:
+    show_assistant_popup()
+
+# ── Bouton flottant pour rouvrir manuellement ──
+if st.button(
+    "💬",
+    key="btn_reopen_popup",
+    help="Ouvrir l'assistant",
+    type="secondary"
+):
+    st.session_state.popup_should_open = True
+    st.rerun()
 
 # ─────────────────────────────────────────────
 # Layout — onglets (radio horizontal)
 # ─────────────────────────────────────────────
-tab_labels = ["💬 Chatbot", "🎯 Assistant guidé", "📊 Analyse prédictive",
-              "⚙️ Cache & Audit", "📈 Analytics"]
+tab_labels = ["💬 Chatbot", "🎯 Assistant guidé", "📊 Analyse prédictive"]
 
 selected_tab = st.radio(
     "",
@@ -954,356 +1387,182 @@ elif selected_tab == "🎯 Assistant guidé":
                       context="guided")
 
 # ═══════════════════════════════════════════
-# Onglet 3 — Analyse prédictive
+# Onglet 3 — Analyse prédictive (VRAIE PRÉDICTION)
 # ═══════════════════════════════════════════
 elif selected_tab == "📊 Analyse prédictive":
     st.markdown("### 🔮 Analyse prédictive")
-    st.caption("Tendances et prévisions basées sur vos données historiques")
-
-    pred_type = st.selectbox("Type d'analyse",
-                             ["CA mensuel — prévision mois suivant",
-                              "Stock — alertes rupture prévue",
-                              "Clients — fidélité prévue"])
-
-    if st.button("Lancer l'analyse", type="primary", key="btn_predict"):
-        with st.spinner("Analyse en cours..."):
+    st.caption("Prévisions basées sur les données historiques (Machine Learning)")
+    
+    # Importer les fonctions de prédiction
+    import sys
+    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+    from utils.predictive import predict_ca_mensuel, predict_stock_rupture, predict_fidelite_clients
+    
+    pred_type = st.selectbox(
+        "Type d'analyse",
+        ["📈 CA mensuel — prévision", "📦 Stock — alerte rupture", "👥 Clients — fidélité prévue"]
+    )
+    
+    if st.button("🚀 Lancer la prédiction", type="primary", key="btn_predict_real"):
+        with st.spinner("Analyse et prédiction en cours..."):
+            
+            # ─── PRÉDICTION CA MENSUEL ─────────────────────────────────────────
             if "CA mensuel" in pred_type:
-                months = []
-                for y, m in [("2025", "10"), ("2025", "11"), ("2025", "12"),
-                              ("2026", "01"), ("2026", "02"), ("2026", "03")]:
-                    r = call_api(f"chiffre d affaires de {month_name(m)} {y}")
-                    t = r.get("table", [])
-                    if t and "CA_HT" in t[0]:
-                        months.append({"mois": f"{y}-{m}", "CA_HT": float(t[0]["CA_HT"] or 0)})
-                if months:
-                    st.dataframe(pd.DataFrame(months), use_container_width=True)
-                    st.info("💡 Utilisez POST /predict pour la prévision complète.")
-                else:
-                    st.info("Données insuffisantes.")
-            elif "Stock" in pred_type:
-                r = call_api("produits stock inférieur à 10")
-                t = r.get("table", [])
-                if t:
-                    st.warning(f"⚠️ {len(t)} produit(s) à risque")
-                    st.dataframe(pd.DataFrame(t), use_container_width=True)
-                else:
-                    st.success("Aucun produit en risque.")
-            elif "fidélité" in pred_type:
-                r = call_api("clients avec plus de 2 commandes")
-                t = r.get("table", [])
-                if t:
-                    st.metric("Clients fidèles", len(t))
-                    st.dataframe(pd.DataFrame(t), use_container_width=True)
-
-# ═══════════════════════════════════════════
-# Onglet 4 — Cache & Audit
-# ═══════════════════════════════════════════
-elif selected_tab == "⚙️ Cache & Audit":
-    st.markdown("### ⚙️ Monitoring — Cache & Audit")
-    c1, c2 = st.columns(2)
-
-    with c1:
-        st.markdown("#### Cache")
-        if st.button("🔄 Actualiser", key="btn_cache_refresh"):
-            stats = call_api_endpoint("/cache/stats")
-            if stats:
-                st.metric("Taille", f"{stats.get('size', 0)} / {stats.get('max_size', 100)}")
-                st.metric("Hit rate", f"{stats.get('hit_rate', 0)}%")
-                col_a, col_b = st.columns(2)
-                col_a.metric("Hits",   stats.get("hits", 0))
-                col_b.metric("Misses", stats.get("misses", 0))
-                by_tpl = stats.get("by_template", {})
-                if by_tpl:
-                    st.dataframe(pd.DataFrame(list(by_tpl.items()),
-                                              columns=["Template", "Entrées"]))
-            else:
-                st.info("API non disponible.")
-        if st.button("🗑 Vider le cache", type="secondary", key="btn_cache_clear"):
-            call_api_endpoint("/cache/clear", method="POST")
-            st.success("Cache vidé.")
-
-    with c2:
-        st.markdown("#### Audit")
-        audit = call_api_endpoint("/audit")
-        if audit and "total_requests" in audit:
-
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Total requêtes", audit.get("total_requests", 0))
-            m2.metric("Succès",         audit.get("success_count", 0))
-            m3.metric("Erreurs",        audit.get("error_count", 0))
-            m4.metric("Rejetées",       audit.get("rejected_count", 0))
-
-            st.markdown("**Latence (ms)**")
-            latency = audit.get("latency", {})
-            lc1, lc2, lc3, lc4 = st.columns(4)
-            lc1.metric("Moyenne", f"{latency.get('mean_ms', 0):.0f} ms")
-            lc2.metric("Médiane", f"{latency.get('median_ms', 0):.0f} ms")
-            lc3.metric("P95",     f"{latency.get('p95_ms', 0):.0f} ms")
-            lc4.metric("P99",     f"{latency.get('p99_ms', 0):.0f} ms")
-
-            st.markdown("**Cache**")
-            cache = audit.get("cache", {})
-            cc1, cc2, cc3 = st.columns(3)
-            cc1.metric("Hit rate", f"{cache.get('hit_rate_pct', 0):.1f}%")
-            cc2.metric("Hits",     cache.get("cache_hits", 0))
-            cc3.metric("Misses",   cache.get("cache_misses", 0))
-
-            alerts = audit.get("alerts", [])
-            if alerts:
-                st.markdown("**Alertes**")
-                for alert in alerts:
-                    level = alert.get("level", "warning")
-                    msg   = alert.get("message", "")
-                    if level == "critical":
-                        st.error(f"🔴 {msg}")
+                st.markdown("#### 📈 Prédiction du Chiffre d'Affaires")
+                
+                # Récupérer les données historiques (12 derniers mois)
+                months_data = []
+                today = date.today()
+                for i in range(12, 0, -1):
+                    # Calculer le mois (mois courant - i)
+                    year = today.year
+                    month = today.month - i
+                    if month <= 0:
+                        month += 12
+                        year -= 1
+                    
+                    month_name_fr = month_name(str(month).zfill(2))
+                    result = call_api(f"chiffre d affaires de {month_name_fr} {year}")
+                    table = result.get("table", [])
+                    
+                    if table and "CA_HT" in table[0]:
+                        ca_value = table[0].get("CA_HT", 0)
+                        if ca_value is not None and ca_value != "":
+                            months_data.append({
+                                "mois": f"{year}-{str(month).zfill(2)}",
+                                "CA_HT": float(ca_value)
+                            })
+                
+                if len(months_data) >= 3:
+                    # Faire la prédiction
+                    prediction = predict_ca_mensuel(months_data, months_ahead=3)
+                    
+                    if "error" in prediction:
+                        st.error(prediction["error"])
                     else:
-                        st.warning(f"🟡 {msg}")
-            else:
-                st.success("✅ Aucune alerte — système nominal")
-
-            trends = audit.get("trends", {})
-            if trends.get("recent_24h", {}).get("count", 0) > 0:
-                st.markdown("**Tendance 24h**")
-                delta = trends.get("delta_pct", 0)
-                trend = trends.get("trend", "stable")
-                color = "normal" if trend == "stable" else (
-                    "inverse" if trend == "hausse" else "normal"
-                )
-                tc1, tc2 = st.columns(2)
-                tc1.metric(
-                    "Requêtes dernières 24h",
-                    trends["recent_24h"]["count"],
-                    delta=f"{trends['recent_24h']['mean_ms']:.0f} ms moy."
-                )
-                tc2.metric(
-                    "Tendance latence",
-                    trend.capitalize(),
-                    delta=f"{delta:+.1f}%",
-                    delta_color=color
-                )
-
-            top_q = audit.get("top_questions", {})
-            if top_q:
-                st.markdown("**Top questions**")
-                header = (
-                    '<div class="scroll-table">'
-                    '<div class="scroll-table-header">'
-                    '<span class="col-rank">#</span>'
-                    '<span class="col-ques">Question</span>'
-                    '<span class="col-count">Nb</span>'
-                    '</div>'
-                )
-                rows_html = ""
-                for rank, (q_text, cnt) in enumerate(
-                        sorted(top_q.items(), key=lambda x: -x[1]), 1):
-                    q_esc = html.escape(q_text[:70] + ("…" if len(q_text) > 70 else ""))
-                    rows_html += (
-                        f'<div class="scroll-table-row">'
-                        f'<span class="col-rank">{rank}</span>'
-                        f'<span class="col-ques">{q_esc}</span>'
-                        f'<span class="col-count">{cnt}</span>'
-                        f'</div>'
-                    )
-                st.markdown(header + rows_html + "</div>", unsafe_allow_html=True)
-        else:
-            st.info("API non disponible.")
-
-    # ── Feedback utilisateurs ──
-    st.markdown("---")
-    st.markdown("#### Feedback utilisateurs")
-
-    feedbacks = load_feedbacks()
-
-    if not feedbacks:
-        st.info("Aucun feedback enregistré. Utilisez 👍/👎 dans l'onglet Chatbot.")
-    else:
-        pos = sum(1 for f in feedbacks if f.get("rating") == "positive")
-        neg = sum(1 for f in feedbacks if f.get("rating") == "negative")
-        m1, m2, m3 = st.columns(3)
-        m1.metric("Total",       len(feedbacks))
-        m2.metric("👍 Positifs", pos)
-        m3.metric("👎 Négatifs", neg)
-
-        df_fb = pd.DataFrame(feedbacks)
-        st.download_button("⬇ Exporter tout en CSV",
-                           data=df_to_csv_bytes(df_fb),
-                           file_name="feedbacks.csv", mime="text/csv",
-                           key="btn_export_fb")
-
-        st.markdown("##### Liste des feedbacks")
-        st.markdown(
-            '<div class="fb-scroll">'
-            '<div class="fb-header">'
-            '<span style="width:6%;text-align:center;">Note</span>'
-            '<span style="width:14%;">Date</span>'
-            '<span style="width:40%;">Question</span>'
-            '<span style="width:30%;font-style:italic;">Commentaire</span>'
-            '<span style="width:10%;text-align:center;">Suppr.</span>'
-            '</div></div>',
-            unsafe_allow_html=True
-        )
-
-        for i, fb in enumerate(feedbacks):
-            icon    = "👍" if fb.get("rating") == "positive" else "👎"
-            ts      = fb.get("timestamp", "")[:16].replace("T", " ")
-            q_text  = fb.get("question", "")[:60]
-            comment = (fb.get("comment", "") or "—")[:50]
-
-            rc = st.columns([0.06, 0.13, 0.40, 0.30, 0.11])
-            rc[0].markdown(f"<div style='text-align:center;font-size:1rem;'>{icon}</div>",
-                           unsafe_allow_html=True)
-            rc[1].caption(ts)
-            rc[2].markdown(f"<small style='color:#111;'>{html.escape(q_text)}</small>",
-                           unsafe_allow_html=True)
-            rc[3].markdown(f"<small style='color:#666;font-style:italic;'>{html.escape(comment)}</small>",
-                           unsafe_allow_html=True)
-            if rc[4].button("🗑", key=f"del_{i}", help="Supprimer ce feedback"):
-                st.session_state.delete_fb_idx = i
-                st.rerun()
-
-        st.markdown("")
-        if st.button("🗑 Supprimer tous les feedbacks", type="secondary",
-                     key="btn_delete_all_fb"):
-            save_feedbacks([])
-            st.success("Tous les feedbacks supprimés.")
-            st.rerun()
-
-# ═══════════════════════════════════════════
-# Onglet 5 — Analytics
-# ═══════════════════════════════════════════
-elif selected_tab == "📈 Analytics":
-    st.markdown("### 📈 Analytics — Requêtes utilisateurs")
-    st.caption("Analyse comportementale basée sur les logs de production")
-
-    data = call_api_endpoint("/analytics")
-
-    if not data or data.get("empty"):
-        st.info("Aucune donnée disponible. Posez quelques questions d'abord.")
-    else:
-        import matplotlib.pyplot as plt
-        import matplotlib
-        matplotlib.use("Agg")
-
-        total = data.get("total_requests", 0)
-        sr    = data.get("success_rate", 0)
-        gmean = data.get("global_mean_ms", 0)
-        cache = data.get("cache", {})
-
-        r1, r2, r3, r4 = st.columns(4)
-        r1.metric("Total requêtes", total)
-        r2.metric("Taux de succès", f"{sr}%")
-        r3.metric("Latence moy.",   f"{gmean:.0f} ms")
-        r4.metric("Cache hit rate", f"{cache.get('hit_rate', 0)}%")
-
-        st.markdown("---")
-        col_left, col_right = st.columns(2)
-
-        with col_left:
-            st.markdown("#### Répartition par template")
-            tpl_counts = data.get("template_counts", {})
-            if tpl_counts:
-                fig1, ax1 = plt.subplots(figsize=(6, 4))
-                labels = [k.replace("get_", "") for k in tpl_counts.keys()]
-                values = list(tpl_counts.values())
-                colors = ["#4CAF50", "#2196F3", "#FF9800", "#9C27B0",
-                          "#e53935", "#00BCD4", "#FF5722", "#795548",
-                          "#607D8B", "#E91E63"]
-                ax1.barh(labels, values, color=colors[:len(labels)], alpha=0.85)
-                ax1.set_xlabel("Nb requêtes")
-                ax1.set_title("Templates les plus utilisés")
-                for i, v in enumerate(values):
-                    ax1.text(v + 0.3, i, str(v), va="center", fontsize=9)
-                fig1.tight_layout()
-                st.pyplot(fig1)
-                plt.close(fig1)
-
-        with col_right:
-            st.markdown("#### Volume journalier (7 derniers jours)")
-            daily = data.get("daily_volume", {})
-            if daily:
-                fig2, ax2 = plt.subplots(figsize=(6, 4))
-                days   = list(daily.keys())
-                counts = list(daily.values())
-                ax2.plot(days, counts, color="#2196F3", marker="o", linewidth=2, markersize=6)
-                ax2.fill_between(days, counts, alpha=0.15, color="#2196F3")
-                ax2.set_ylabel("Requêtes")
-                ax2.set_title("Évolution du volume journalier")
-                ax2.tick_params(axis="x", rotation=30)
-                for i, v in enumerate(counts):
-                    ax2.annotate(str(v), (days[i], counts[i]),
-                                 textcoords="offset points",
-                                 xytext=(0, 8), ha="center", fontsize=9)
-                fig2.tight_layout()
-                st.pyplot(fig2)
-                plt.close(fig2)
-
-        st.markdown("---")
-        col_l2, col_r2 = st.columns(2)
-
-        with col_l2:
-            st.markdown("#### Latence par template (sans cache)")
-            lat_tpl = data.get("latency_by_template", {})
-            if lat_tpl:
-                fig3, ax3 = plt.subplots(figsize=(6, 4))
-                tpls  = [k.replace("get_", "") for k in lat_tpl.keys()]
-                means = [v["mean"] for v in lat_tpl.values()]
-                p95s  = [v["p95"]  for v in lat_tpl.values()]
-                x = range(len(tpls))
-                w = 0.35
-                ax3.bar([i - w/2 for i in x], means,
-                        width=w, color="#4CAF50", alpha=0.85, label="Moyenne")
-                ax3.bar([i + w/2 for i in x], p95s,
-                        width=w, color="#FF9800", alpha=0.85, label="P95")
-                ax3.set_xticks(list(x))
-                ax3.set_xticklabels(tpls, rotation=30, ha="right", fontsize=8)
-                ax3.set_ylabel("ms")
-                ax3.set_title("Latence moyenne vs P95 par template")
-                ax3.legend(fontsize=9)
-                fig3.tight_layout()
-                st.pyplot(fig3)
-                plt.close(fig3)
-
-        with col_r2:
-            st.markdown("#### Impact du cache sur la latence")
-            cold_m = cache.get("cold_mean", 0)
-            warm_m = cache.get("warm_mean", 0)
-            if cold_m > 0 or warm_m > 0:
-                fig4, ax4 = plt.subplots(figsize=(6, 4))
-                cats = ["Sans cache\n(cold)", "Avec cache\n(warm)"]
-                vals = [cold_m, warm_m]
-                bars = ax4.bar(cats, vals, color=["#FF9800", "#4CAF50"], alpha=0.85, width=0.4)
-                ax4.set_ylabel("Latence moy. (ms)")
-                ax4.set_title("Comparaison latence cache hit vs miss")
-                for bar, val in zip(bars, vals):
-                    ax4.text(bar.get_x() + bar.get_width() / 2,
-                             bar.get_height() + 5,
-                             f"{val:.0f} ms",
-                             ha="center", fontsize=11, fontweight="bold")
-                if cold_m > 0 and warm_m < cold_m:
-                    gain = round((1 - warm_m / cold_m) * 100, 1)
-                    ax4.set_title(f"Gain cache : {gain}% de réduction de latence", fontsize=11)
-                fig4.tight_layout()
-                st.pyplot(fig4)
-                plt.close(fig4)
-            else:
-                st.info("Pas encore de données cache warm.")
-
-        st.markdown("---")
-
-        st.markdown("#### Top 10 questions les plus posées")
-        top_q = data.get("top_questions", {})
-        if top_q:
-            df_topq = pd.DataFrame([
-                {"Question": q[:80], "Nb": n}
-                for q, n in top_q.items()
-            ])
-            st.dataframe(df_topq, use_container_width=True, hide_index=True)
-
-        st.markdown("#### Taux de succès par template")
-        sbt = data.get("success_by_template", {})
-        if sbt:
-            df_sbt = pd.DataFrame([
-                {"Template": k.replace("get_", ""), "Taux succès (%)": v}
-                for k, v in sorted(sbt.items(), key=lambda x: -x[1])
-            ])
-            st.dataframe(df_sbt, use_container_width=True, hide_index=True)
+                        # Afficher les données historiques
+                        st.markdown("**📊 Historique (12 derniers mois)**")
+                        df_hist = pd.DataFrame(prediction["historique"])
+                        st.dataframe(df_hist, use_container_width=True, hide_index=True)
+                        
+                        # Afficher les prédictions
+                        st.markdown("**🔮 Prédictions (3 prochains mois)**")
+                        df_pred = pd.DataFrame(prediction["predictions"])
+                        st.dataframe(df_pred, use_container_width=True, hide_index=True)
+                        
+                        # Métriques
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric("Qualité du modèle (R²)", f"{prediction['model_score']:.2f}")
+                        col2.metric("Tendance", "📈 Hausse" if prediction["tendance"] == "hausse" else "📉 Baisse")
+                        col3.metric("Prévision mois prochain", f"{prediction['predictions'][0]['CA_HT_predit']:,.0f} TND")
+                        
+                        # Graphique
+                        fig, ax = plt.subplots(figsize=(10, 4))
+                        hist_months = [d["mois"] for d in prediction["historique"]]
+                        hist_values = [d["CA_HT"] for d in prediction["historique"]]
+                        pred_months = [d["mois"] for d in prediction["predictions"]]
+                        pred_values = [d["CA_HT_predit"] for d in prediction["predictions"]]
+                        
+                        ax.plot(hist_months, hist_values, 'b-o', label="Historique", linewidth=2, markersize=6)
+                        ax.plot(pred_months, pred_values, 'r--o', label="Prédiction", linewidth=2, markersize=6)
+                        ax.axvline(x=len(hist_months)-0.5, color='gray', linestyle='--', alpha=0.5)
+                        ax.set_ylabel("CA HT (TND)")
+                        ax.set_xlabel("Mois")
+                        ax.set_title("Évolution et prédiction du Chiffre d'Affaires")
+                        ax.legend()
+                        ax.grid(True, alpha=0.3)
+                        plt.xticks(rotation=45)
+                        fig.tight_layout()
+                        st.pyplot(fig)
+                        plt.close(fig)
+                else:
+                    st.warning(f"Données insuffisantes pour la prédiction ({len(months_data)}/3 mois minimum).")
+            
+            # ─── PRÉDICTION STOCK ─────────────────────────────────────────────
+            elif "Stock" in pred_type:
+                st.markdown("#### 📦 Prédiction des ruptures de stock")
+                
+                r = call_api("produits avec stock inférieur à 20")
+                products_data = r.get("table", [])
+                
+                if products_data:
+                    # Convertir les tuples en dictionnaires
+                    formatted_products = []
+                    for p in products_data:
+                        if isinstance(p, (tuple, list)):
+                            # Adapter l'index selon votre requête SQL
+                            # Exemple: SELECT p.ref, p.label, p.stock
+                            formatted_products.append({
+    "produit_nom": p[1] if len(p) > 1 else "",  # ← "produit_nom" pas "produit_ref"
+    "stock_actuel": float(p[2]) if len(p) > 2 and p[2] is not None else 0  # ← "stock_actuel"
+})
+                        else:
+                            formatted_products.append(p)
+                    
+                    alerts = predict_stock_rupture(formatted_products, seuil=10)
+                    
+                    if alerts:
+                        st.warning(f"⚠️ {len(alerts)} produit(s) en risque de rupture")
+                        df_alerts = pd.DataFrame(alerts)
+                        st.dataframe(df_alerts, use_container_width=True, hide_index=True)
+                        
+                        # Niveaux de risque
+                        critique = sum(1 for a in alerts if a.get("niveau_risque") == "critique")
+                        eleve = sum(1 for a in alerts if a.get("niveau_risque") == "elevé")
+                        col1, col2, col3 = st.columns(3)
+                        col1.metric("🚨 Risque critique", critique, delta="< 7 jours")
+                        col2.metric("⚠️ Risque élevé", eleve, delta="< 30 jours")
+                        col3.metric("📦 Stock faible", len(alerts) - critique - eleve, delta="< seuil")
+                    else:
+                        st.success("✅ Aucun produit en risque de rupture détecté")
+                else:
+                    st.info("Aucun produit avec stock faible détecté")
+            
+            # ─── PRÉDICTION FIDÉLITÉ CLIENTS ───────────────────────────────────
+            elif "fidélité" in pred_type:
+                st.markdown("#### 👥 Prédiction de fidélité clients")
+                
+                r = call_api("clients avec plus de 2 commandes")
+                clients_data = r.get("table", [])
+                
+                if clients_data:
+                    formatted_clients = []
+                    for c in clients_data:
+                        if isinstance(c, (tuple, list)):
+                            formatted_clients.append({
+                                "nom": c[0] if len(c) > 0 else "",
+                                "nombre_commandes": int(c[1]) if len(c) > 1 and c[1] is not None else 0
+                            })
+                        else:
+                            formatted_clients.append(c)
+                    
+                    predictions = predict_fidelite_clients(formatted_clients)
+                    
+                    st.markdown("**Top clients par score de fidélité**")
+                    df_fidelite = pd.DataFrame(predictions[:10])
+                    st.dataframe(df_fidelite, use_container_width=True, hide_index=True)
+                    
+                    # Statistiques
+                    fideles = sum(1 for p in predictions if p["score_fidelite"] > 70)
+                    a_risque = sum(1 for p in predictions if p["prediction_rachat"] == "faible")
+                    
+                    col1, col2, col3 = st.columns(3)
+                    col1.metric("👑 Clients fidèles", fideles, delta="score > 70")
+                    col2.metric("⚠️ Risque de départ", a_risque, delta="prédiction faible")
+                    col3.metric("📊 Total clients analysés", len(predictions))
+                    
+                    # Graphique distribution
+                    fig, ax = plt.subplots(figsize=(8, 4))
+                    scores = [p["score_fidelite"] for p in predictions]
+                    ax.hist(scores, bins=20, color='#4CAF50', alpha=0.7, edgecolor='black')
+                    ax.set_xlabel("Score de fidélité")
+                    ax.set_ylabel("Nombre de clients")
+                    ax.set_title("Distribution des scores de fidélité")
+                    ax.axvline(x=70, color='red', linestyle='--', label="Seuil fidèle")
+                    ax.axvline(x=30, color='orange', linestyle='--', label="Seuil risque")
+                    ax.legend()
+                    fig.tight_layout()
+                    st.pyplot(fig)
+                    plt.close(fig)
+                else:
+                    st.info("Aucune donnée client disponible")

@@ -3,27 +3,29 @@
 def get_factures_between():
     return """
     SELECT
-        f.ref AS facture_ref,
-        s.nom AS client,
+        f.rowid         AS id,
+        f.ref           AS facture_ref,
+        s.nom           AS client,
         f.total_ht,
         f.total_ttc,
-        f.datef AS date_facture
+        f.datef         AS date_facture
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     WHERE f.datef BETWEEN :start_date AND :end_date
       AND f.entity = 1
     ORDER BY f.datef ASC
-    LIMIT 100
+    LIMIT 200
     """
 
 
 def get_factures_par_client():
     return """
     SELECT
-        f.ref AS facture_ref,
+        f.rowid         AS id,
+        f.ref           AS facture_ref,
         f.total_ht,
         f.total_ttc,
-        f.datef AS date_facture
+        f.datef         AS date_facture
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     WHERE s.nom = :client
@@ -36,11 +38,12 @@ def get_factures_par_client():
 def get_factures_negatives():
     return """
     SELECT
-        f.ref AS facture_ref,
-        s.nom AS client,
+        f.rowid         AS id,
+        f.ref           AS facture_ref,
+        s.nom           AS client,
         f.total_ht,
         f.total_ttc,
-        f.datef AS date_facture
+        f.datef         AS date_facture
     FROM m38h_facture f
     LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     WHERE f.total_ht < 0
@@ -52,9 +55,10 @@ def get_factures_negatives():
 
 def get_clients_multiple_commandes():
     return """
-    SELECT c.rowid AS client_id,
-           c.nom AS client_nom,
-           COUNT(co.rowid) AS nb_commandes
+    SELECT
+        c.rowid         AS id,
+        c.nom           AS client_nom,
+        COUNT(co.rowid) AS nb_commandes
     FROM m38h_societe c
     JOIN m38h_commande co ON co.fk_soc = c.rowid
     WHERE c.entity = 1
@@ -67,16 +71,17 @@ def get_clients_multiple_commandes():
 
 def get_produits_stock_faible():
     return """
-    SELECT p.ref AS produit_ref,
-           p.label AS produit_nom,
-           p.stock AS stock_disponible
+    SELECT
+        p.rowid         AS id,
+        p.ref           AS produit_ref,
+        p.label         AS produit_nom,
+        p.stock         AS stock_disponible
     FROM m38h_product p
     WHERE p.stock < :stock_min
       AND p.entity = 1
     ORDER BY p.stock ASC
     LIMIT 100
     """
-
 
 def get_total_ventes_mois():
     return """
@@ -96,44 +101,42 @@ def get_total_ventes_mois():
 def get_factures_non_payees():
     return """
     SELECT
-        f.ref AS facture_ref,
-        s.nom AS client,
+        f.rowid         AS id,
+        f.ref           AS facture_ref,
+        s.nom           AS client,
         f.total_ht,
         f.total_ttc,
-        f.datef AS date_facture,
-        COALESCE(SUM(pf.amount), 0) AS montant_paye,
-        (f.total_ttc - COALESCE(SUM(pf.amount), 0)) AS montant_restant
+        f.datef         AS date_facture,
+        COALESCE(SUM(pf.amount), 0)                           AS montant_paye,
+        (f.total_ttc - COALESCE(SUM(pf.amount), 0))          AS montant_restant
     FROM m38h_facture f
-    LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
+    LEFT JOIN m38h_societe s         ON f.fk_soc      = s.rowid
     LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
     WHERE f.entity = 1
-    GROUP BY
-        f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
+    GROUP BY f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
     HAVING (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
     ORDER BY f.datef ASC
     LIMIT 100
     """
 
-
 def get_factures_partiellement_payees():
     return """
     SELECT
-        f.ref AS facture_ref,
-        s.nom AS client,
+        f.rowid         AS id,
+        f.ref           AS facture_ref,
+        s.nom           AS client,
         f.total_ht,
         f.total_ttc,
-        f.datef AS date_facture,
-        COALESCE(SUM(pf.amount), 0) AS montant_paye,
-        (f.total_ttc - COALESCE(SUM(pf.amount), 0)) AS montant_restant
+        f.datef         AS date_facture,
+        COALESCE(SUM(pf.amount), 0)                           AS montant_paye,
+        (f.total_ttc - COALESCE(SUM(pf.amount), 0))          AS montant_restant
     FROM m38h_facture f
-    LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
+    LEFT JOIN m38h_societe s         ON f.fk_soc      = s.rowid
     LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
     WHERE f.entity = 1
-    GROUP BY
-        f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
-    HAVING
-        COALESCE(SUM(pf.amount), 0) > 0
-        AND (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
+    GROUP BY f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
+    HAVING COALESCE(SUM(pf.amount), 0) > 0
+       AND (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
     ORDER BY f.datef ASC
     LIMIT 100
     """
@@ -156,10 +159,6 @@ def get_total_paiements():
 
 
 def get_commandes_par_mois():
-    """
-    Retourne le nombre et le total des commandes pour un mois donné.
-    Paramètres : annee (ex: 2026), mois (ex: 03)
-    """
     return """
     SELECT
         COUNT(c.rowid)                        AS nb_commandes,
@@ -176,17 +175,13 @@ def get_commandes_par_mois():
 
 
 def get_top_clients_ca():
-    """
-    Top clients par chiffre d'affaires TTC décroissant.
-    Paramètre : limit (int) — troncature appliquée côté Python dans chatbot.py
-    Le LIMIT 200 est un garde-fou DB, la troncature réelle est faite en Python.
-    """
     return """
     SELECT
-        s.nom                      AS client,
-        COUNT(f.rowid)             AS nb_factures,
-        ROUND(SUM(f.total_ht), 3)  AS CA_HT,
-        ROUND(SUM(f.total_ttc), 3) AS CA_TTC
+        s.rowid                      AS id,
+        s.nom                        AS client,
+        COUNT(f.rowid)               AS nb_factures,
+        ROUND(SUM(f.total_ht), 3)    AS CA_HT,
+        ROUND(SUM(f.total_ttc), 3)   AS CA_TTC
     FROM m38h_facture f
     JOIN m38h_societe s ON f.fk_soc = s.rowid
     WHERE f.entity = 1
@@ -196,15 +191,13 @@ def get_top_clients_ca():
     LIMIT 200
     """
 
-
 def get_liste_clients_simple():
-    """Liste de tous les clients actifs."""
     return """
     SELECT
-        s.rowid  AS id,
-        s.nom    AS client,
+        s.rowid         AS id,
+        s.nom           AS client,
         s.email,
-        s.phone  AS telephone
+        s.phone         AS telephone
     FROM m38h_societe s
     WHERE s.entity = 1
       AND s.client = 1
@@ -213,39 +206,74 @@ def get_liste_clients_simple():
     """
 
 def get_produits_non_commandes():
-    """
-    Produits qui n'ont jamais été commandés
-    """
     return """
     SELECT
-        p.rowid AS produit_id,
-        p.ref AS produit_ref,
-        p.label AS produit_nom,
+        p.rowid         AS id,
+        p.ref           AS produit_ref,
+        p.label         AS produit_nom,
         p.stock
     FROM m38h_product p
-    LEFT JOIN m38h_commande c ON p.rowid = c.fk_product
-    WHERE c.rowid IS NULL
+    LEFT JOIN m38h_commandedet cd ON cd.fk_product = p.rowid
+    WHERE cd.fk_product IS NULL
       AND p.entity = 1
     ORDER BY p.label ASC
     LIMIT 100
     """
 
-def get_produits_non_commandes():
+def get_factures_non_payees_30j():
     return """
     SELECT
-        p.rowid AS produit_id,
-        p.ref AS produit_ref,
-        p.label AS produit_nom,
-        p.stock
-    FROM m38h_product p
-    WHERE p.entity = 1
-    AND NOT EXISTS (
-        SELECT 1
-        FROM m38h_commandedet cd
-        WHERE cd.fk_product = p.rowid
-    )
-    ORDER BY p.label ASC
+        f.rowid         AS id,
+        f.ref           AS facture_ref,
+        s.nom           AS client,
+        f.total_ht,
+        f.total_ttc,
+        f.datef         AS date_facture,
+        COALESCE(SUM(pf.amount), 0)                           AS montant_paye,
+        (f.total_ttc - COALESCE(SUM(pf.amount), 0))          AS montant_restant,
+        DATEDIFF(CURDATE(), f.datef)                          AS jours_retard
+    FROM m38h_facture f
+    LEFT JOIN m38h_societe s         ON f.fk_soc      = s.rowid
+    LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
+    WHERE f.entity = 1
+      AND f.datef <= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+    GROUP BY f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
+    HAVING (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
+    ORDER BY f.datef ASC
     LIMIT 100
+    """
+
+def get_top_produits_commandes():
+    return """
+    SELECT
+        p.rowid                  AS id,
+        p.ref                    AS produit_ref,
+        p.label                  AS produit_nom,
+        SUM(cd.qty)              AS quantite_commandee,
+        COUNT(cd.rowid)          AS nb_lignes_commande
+    FROM m38h_product p
+    JOIN m38h_commandedet cd ON cd.fk_product = p.rowid
+    WHERE p.entity = 1
+    GROUP BY p.rowid, p.ref, p.label
+    ORDER BY quantite_commandee DESC
+    LIMIT 200
+    """
+
+def get_ca_par_trimestre():
+    """CA total par trimestre pour une année donnée."""
+    return """
+    SELECT
+        QUARTER(f.datef)               AS trimestre,
+        CONCAT('T', QUARTER(f.datef))  AS libelle,
+        ROUND(SUM(f.total_ht), 3)      AS total_ht,
+        ROUND(SUM(f.total_ttc), 3)     AS total_ttc,
+        COUNT(f.rowid)                 AS nb_factures
+    FROM m38h_facture f
+    WHERE YEAR(f.datef) = :annee
+      AND f.entity = 1
+    GROUP BY QUARTER(f.datef)
+    ORDER BY trimestre ASC
+    LIMIT 4
     """
 
 # ─── Mapping template_name → fonction SQL ─────────────────────────────────────
@@ -259,9 +287,11 @@ TEMPLATE_MAPPING = {
     "get_factures_non_payees":        get_factures_non_payees,
     "get_factures_partiellement_payees": get_factures_partiellement_payees,
     "get_total_paiements":            get_total_paiements,
-    # ── Nouveaux templates ──
     "get_commandes_par_mois":         get_commandes_par_mois,
     "get_top_clients_ca":             get_top_clients_ca,
     "liste_clients_simple":           get_liste_clients_simple,
     "get_produits_non_commandes": get_produits_non_commandes,
+    "get_factures_non_payees_30j": get_factures_non_payees_30j,
+    "get_top_produits_commandes": get_top_produits_commandes,
+    "get_ca_par_trimestre": get_ca_par_trimestre,
 }

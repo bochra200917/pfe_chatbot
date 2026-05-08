@@ -22,6 +22,9 @@
 | clarification | 0.01 ms | 0.03 ms | +0.00 MB | 15 |
 | security_reject | 0.0 ms | 0.02 ms | +0.00 MB | 15 |
 
+> Note : les latences du tableau "par catégorie" (153 ms, 121 ms) sont mesurées 
+> en local (DB localhost). Les 2 387 ms correspondent à la DB distante Infomaniak.
+
 ### Interprétation
 
 - **template_v1v2** : latence la plus faible, delta mémoire minimal — le routing par regex ne charge aucune ressource externe.
