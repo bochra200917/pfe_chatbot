@@ -34,9 +34,9 @@ def match_question(question: str):
     q = normalize(question)
 
     # ── NOUVEAU : top produits commandés → template dédié ──
-    if any(w in q for w in ["produit", "article"]) and \
-       any(w in q for w in ["commande", "vendu", "vendu"]) and \
-       any(w in q for w in ["top", "plus", "meilleur", "populaire"]):
+    if (any(w in q for w in ["produit", "article"]) and 
+       any(w in q for w in ["commande", "vendu", "vendu"]) and 
+       any(w in q for w in ["top", "plus", "meilleur", "populaire"])):
         match_n = re.search(r'\b(\d+)\b', q)
         limit = int(match_n.group(1)) if match_n else 10
         return "get_top_produits_commandes", {"limit": limit}
@@ -64,10 +64,10 @@ def match_question(question: str):
     # ══════════════════════════════════════════════════════════════════
 
     # ── Top clients par CA ─────────────────────────────────────────
-    if any(w in q for w in ["top", "meilleur", "eleve", "plus grand", "plus important",
+    if any((w in q for w in ["top", "meilleur", "eleve", "plus grand", "plus important",
                              "plus haut", "chiffre affaires le plus", "plus eleve",
-                             "les plus eleve", "le plus eleve"]) \
-            and any(w in q for w in ["client", "societe"]):
+                             "les plus eleve", "le plus eleve"]) 
+            and any(w in q for w in ["client", "societe"])):
         match_n = re.search(r'\b(\d+)\b', q)
         limit = int(match_n.group(1)) if match_n else 5
         return "get_top_clients_ca", {"limit": limit}
