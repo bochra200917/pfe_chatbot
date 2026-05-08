@@ -17,6 +17,10 @@ try:
 except ImportError:
     SentenceTransformer = None
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 MONTHS = {
     "janv": "01", "fév": "02", "fev": "02", "avr": "04",
     "juil": "07", "sept": "09", "oct": "10", "nov": "11",
@@ -392,7 +396,7 @@ def get_response(question: str) -> dict:
     # ── NOUVEAU : questions complexes → LLM directement, skip tout le routing ──
     
     q_norm = normalize(question)
-    if any(kw in q for kw in COMPLEX_KEYWORDS):
+    if any(kw in q_lower for kw in COMPLEX_KEYWORDS):
         # Passe directement au LLM interne, skip ambiguités + mapping + routing
         try:
             result = run_llm_pipeline(question)
