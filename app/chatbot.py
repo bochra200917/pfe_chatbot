@@ -12,6 +12,10 @@ from app.cache import chatbot_cache
 from app.suggestion_engine import generate_suggestions
 from app.prompt_template import apply_mapping_rules
 from ui.hybrid_engine import load_templates
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    SentenceTransformer = None
 
 MONTHS = {
     "janv": "01", "fév": "02", "fev": "02", "avr": "04",
@@ -23,6 +27,15 @@ MONTHS = {
     "decembre": "12", "décembre": "12"
 }
 
+COMPLEX_KEYWORDS = [
+    "semestre",
+    "mais pas", "sauf en", "pas en",
+    "jamais commandé", "n ont jamais", "n a jamais",
+    "depuis plus de", "depuis plus",
+    "comparer", "comparaison",
+]
+
+hybrid_engine = None
 
 def normalize(text: str) -> str:
     text = text.lower().strip()
@@ -48,15 +61,9 @@ def match_question(question: str):
         return "get_ca_par_trimestre", {"annee": annee}
 
     # ── EXCLUSION PRIORITAIRE : questions complexes → LLM ──
-    complex_keywords = [
-        "semestre", "bimestriel",
-        "mais pas", "sauf en", "pas en",
-        "jamais commandé", "n ont jamais", "n a jamais",
-        "depuis plus de", "depuis plus",
-        "comparer", "comparaison",
-    ]
+    
 
-    if any(kw in q for kw in complex_keywords):
+    if any(kw in q for kw in COMPLEX_KEYWORDS):
         return None, None  # → force passage au LLM
     
     # ══════════════════════════════════════════════════════════════════
@@ -275,6 +282,9 @@ def _execute_template(question: str, template_name: str,
         # Cela évite l'erreur "paramètre inconnu" quand on passe {"limit": 5}
         # à un SQL qui ne contient pas :limit (ex: get_top_clients_ca).
         sql_placeholders = set(re.findall(r':(\w+)', sql_query))
+        missing = sql_placeholders - set(params.keys())
+        if missing:
+            raise ValueError(f"Missing SQL params: {missing}")
         sql_params = {k: v for k, v in params.items() if k in sql_placeholders}
 
         columns, rows, execution_time = execute_query(sql_query, sql_params)
@@ -356,6 +366,15 @@ def reload_templates():
 
 
 def get_response(question: str) -> dict:
+
+    if SentenceTransformer is None:
+        raise RuntimeError("Model not available")
+
+    global hybrid_engine
+    if hybrid_engine is None:
+        from ui.hybrid_engine import HybridEngine
+        hybrid_engine = HybridEngine()
+    
     start_time = time.time()
 
     # ── 1. Sécurité ──
@@ -371,20 +390,16 @@ def get_response(question: str) -> dict:
     q_lower = normalize(question)
 
     # ── NOUVEAU : questions complexes → LLM directement, skip tout le routing ──
-    complex_keywords = [
-        "semestre",
-        "mais pas", "sauf en", "pas en",
-        "jamais commandé", "n ont jamais", "n a jamais",
-        "depuis plus de", "depuis plus",
-        "les plus commandés", "le plus commandé",
-        "top 3 produits", "top 5 produits",
-        "comparer", "comparaison",
-    ]
+    
     q_norm = normalize(question)
-    if any(kw in q_norm for kw in complex_keywords):
+    if any(kw in q for kw in COMPLEX_KEYWORDS):
         # Passe directement au LLM interne, skip ambiguités + mapping + routing
         try:
             result = run_llm_pipeline(question)
+
+            if not result or "metadata" not in result:
+                raise ValueError("LLM returned invalid result")
+            
             intent = result["metadata"].get("template", "")
             p = result["metadata"].get("params", {})
             result["metadata"]["suggestions"] = generate_suggestions(intent, p)
@@ -466,8 +481,8 @@ def get_response(question: str) -> dict:
     if early_match in ("get_top_clients_ca", "get_commandes_par_mois", "liste_clients_simple","get_top_produits_commandes","get_ca_par_trimestre",):
         return _execute_template(question, early_match, early_params, start_time)
 
-    print("🔍 MAPPING RESULT:", apply_mapping_rules(question))
-
+    logger.debug(f"MAPPING RESULT: {apply_mapping_rules(question)}")
+    
     # ── 4. Mapping rules ──
     mapping_result = apply_mapping_rules(question)
     if mapping_result is not None:

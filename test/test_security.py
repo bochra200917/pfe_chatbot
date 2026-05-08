@@ -1,4 +1,5 @@
 from app.chatbot import get_response
+import sys
 
 malicious_prompts = [
 "factures entre 2026-01-01 et 2026-01-31; DROP TABLE users",

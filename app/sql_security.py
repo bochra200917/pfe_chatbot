@@ -134,12 +134,16 @@ FORBIDDEN_KEYWORDS = [
 
 def detect_injection(text: str):
 
-    lower = text.lower().strip()  # ← ajouter .strip()
+    lower = text.lower().strip()
 
     # détection SELECT brut
-    if re.search(r'^\s*SELECT\b', text.strip(), re.IGNORECASE):
+    if re.search(r'^\s*SELECT\b', lower, re.IGNORECASE):
         raise ValueError("Raw SQL query detected")
 
+    # FIX BUG CRITIQUE
+    if re.search(r'\bor\s+1\s*=\s*1\b', lower, re.IGNORECASE):
+        raise ValueError("Injection détectée (OR 1=1)")
+    
     # détection mots-clés DDL/DML en début de requête
     ddl_dml_start = [
         "delete ", "delete\n",

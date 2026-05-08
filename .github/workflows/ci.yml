@@ -38,7 +38,9 @@ jobs:
             --ignore=E122,E221,E226,E231,E241,E251,E261,E265,E272,E302,E303,E305,E402,E501,E701,E741,F401,F541,F811,F841,W291,W292,W293,W503,W504,E711,E712 \
             --count \
             --statistics
-
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
   # ─────────────────────────────────────────────
   # Job 2 : Tests unitaires (pytest)
   # ─────────────────────────────────────────────
@@ -50,13 +52,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v5
-        env:
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
       - name: Install dependencies
         run: |

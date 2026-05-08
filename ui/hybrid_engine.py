@@ -16,8 +16,19 @@ from typing import Optional
 from dataclasses import dataclass, field, asdict
 import sqlglot
 from sqlglot.errors import ParseError
-from sentence_transformers import SentenceTransformer, util
 import requests
+
+try:
+    from sentence_transformers import SentenceTransformer, util
+except ImportError:
+    SentenceTransformer = None
+    util = None
+
+logger = logging.getLogger(__name__)
+
+def load_model():
+    from sentence_transformers import SentenceTransformer, util
+    return SentenceTransformer("all-MiniLM-L6-v2"), util
 
 def call_ollama(prompt: str, model: str = "mistral") -> str:
     """
@@ -43,8 +54,6 @@ def call_ollama(prompt: str, model: str = "mistral") -> str:
         logger.error(f"Ollama error: {e}")
         return f"ERROR: {str(e)}"
 
-logger = logging.getLogger(__name__)
-
 # ─── Constantes ───────────────────────────────────────────────────────────────
 
 FORBIDDEN_KEYWORDS = [
@@ -63,7 +72,10 @@ ALLOWED_TABLES = {
 }
 
 # ─── Embeddings Model ─────────────────────────────────────────────
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+if SentenceTransformer is not None:
+    embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+else:
+    embedding_model = None
 
 MAX_ROWS = 200
 LLM_CONFIDENCE_THRESHOLD = 0.6  # fallback déclenché si templates échouent
@@ -94,6 +106,9 @@ def build_template_embeddings(templates: dict):
     global TEMPLATE_EMBEDDINGS
 
     TEMPLATE_EMBEDDINGS = {}
+
+    if embedding_model is None:
+        return
 
     for tid, t in templates.items():
         if not t.get("active", True):
@@ -169,7 +184,7 @@ def enforce_business_rules(sql: str) -> str:
     return sql
 
 def sanitize(value: str) -> str:
-    return value.replace("'", "''")
+    return re.sub(r"[;--]", "", value.replace("'", "''"))
 
 def inject_params(sql: str, params: dict) -> str:
     result = sql
@@ -596,8 +611,6 @@ def llm_generate_sql(question: str, cache: dict = None) -> dict:
 
 
     # ── Étape 5 : sécurisation LIMIT ──
-    if "LIMIT" not in sql.upper():
-        sql += " LIMIT 200"
 
     if cache is not None:
         cache[cache_key] = {
