@@ -18,6 +18,8 @@ import sqlglot
 from sqlglot.errors import ParseError
 import requests
 
+from app.chatbot import match_question
+
 try:
     from sentence_transformers import SentenceTransformer, util
 except ImportError:
@@ -184,7 +186,7 @@ def enforce_business_rules(sql: str) -> str:
     return sql
 
 def sanitize(value: str) -> str:
-    return re.sub(r"[;--]", "", value.replace("'", "''"))
+    return re.sub(r"[;'\-]", "", value)
 
 def inject_params(sql: str, params: dict) -> str:
     result = sql
@@ -236,7 +238,21 @@ def match_template(question: str, templates: dict):
         # Si 1 seul mot-clé mais très spécifique (> 6 chars) → aussi valide
         if matches == 1:
             matching_kw = [kw for kw in keywords if kw.lower() in question_lower]
-            if matching_kw and len(matching_kw[0]) > 6:
+
+    # empêcher les mots trop génériques
+            GENERIC_KEYWORDS = {
+        "facture", "factures",
+        "client", "clients",
+        "commande", "commandes",
+        "produit", "produits",
+        "vente", "ventes",
+    }
+
+            if (
+        matching_kw
+        and len(matching_kw[0]) > 6
+        and matching_kw[0].lower() not in GENERIC_KEYWORDS
+    ):
                 params = extract_params_from_question(question, t.get("params", []))
                 logger.info(f"[KEYWORD MATCH SINGLE] tid={tid} kw={matching_kw[0]}")
                 return tid, t, params
@@ -653,6 +669,33 @@ class HybridEngine:
         # debug tracing global
         logger.info(f"[QUERY] {question}")
 
+        # priorité aux règles V1/V2 historiques
+
+        legacy_intent, legacy_params = match_question(question)
+
+        if legacy_intent and legacy_intent in self.templates:
+            template = self.templates[legacy_intent]
+
+            sql_final = inject_params(
+        template.get("sql", ""),
+        legacy_params
+    )
+
+            valid, err = validate_sql_security(sql_final)
+
+            if valid:
+                return HybridResult(
+            question=question,
+            mode="template",
+            intent=legacy_intent,
+            sql=sql_final,
+            params=legacy_params,
+            valid=True,
+            error=None,
+            llm_called=False,
+            duration_ms=round((time.time() - start) * 1000, 2),
+        )
+    
         # ── Étape 1 : Matching templates V1/V2 ──────────────────────────────
         tid, template, params = match_template(question, self.templates)
 

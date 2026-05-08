@@ -862,10 +862,16 @@ def render_dataframe_with_links(df: pd.DataFrame, entity_type: str) -> None:
  
     df_display[label_col] = df_display.apply(make_link, axis=1)
  
-    # Masquer la colonne id dans l'affichage
-    display_cols = [c for c in df_display.columns if c != id_col]
-    df_display = df_display[display_cols]
- 
+    # ── Réorganiser les colonnes sans masquer l'ID ──
+    cols = list(df_display.columns)
+
+    # Mettre l'id au début pour meilleure lisibilité
+    if id_col in cols:
+        cols.remove(id_col)
+        cols.insert(0, id_col)
+
+    df_display = df_display[cols]
+
     # Rendu HTML
     table_html = df_display.to_html(
         escape=False,
