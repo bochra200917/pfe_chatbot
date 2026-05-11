@@ -529,6 +529,7 @@ def get_response(question: str) -> dict:
         hybrid_engine = HybridEngine()
     
     start_time = time.time()
+    suggestions = []
 
     # ── 1. Sécurité ──
     try:
@@ -682,12 +683,9 @@ def get_response(question: str) -> dict:
             }
         except Exception as e:
             logger.warning(f"Erreur template admin {admin_tid} : {e}")
-            # Continue vers routing normal si le template admin échoue
 
     # ── 4. Mapping rules ── (supprimez le bloc _skip_mapping, plus nécessaire)
     mapping_result = apply_mapping_rules(question)
-
-        # ── 4. Mapping rules ──
     print("🔍 MAPPING RESULT:", mapping_result)
 
     if mapping_result is not None:

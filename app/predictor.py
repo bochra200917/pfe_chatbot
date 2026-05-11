@@ -119,7 +119,7 @@ def predict_ca_next_month(monthly_data: list) -> dict:
         last_date = datetime.strptime(last_month_str, "%Y-%m")
         next_month = last_date + timedelta(days=32)
         predicted_month = next_month.strftime("%Y-%m")
-    except:
+    except Exception:
         predicted_month = "?"
     
     return {

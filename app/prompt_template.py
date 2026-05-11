@@ -306,23 +306,23 @@ def _normalize_simple(text: str) -> str:
     return text.encode("ascii", "ignore").decode("utf-8")
 
 _BYPASS_PATTERNS = [
-# ── TOP CLIENTS CA ──
-lambda q: ("client" in q)
-          and ("top" in q or "meilleur" in q)
-          and ("ca" in q or "chiffre" in q or "revenu" in q),
-
-# ── STOCK FAIBLE ──
-    
-    # Évolution / croissance CA → template admin get_monthly_growth_revenue
-    lambda q: ("evolution" in q or "croissance" in q or "progression" in q)
-              and ("ca" in q or "chiffre" in q or "vente" in q or "revenu" in q),
-
-    # Valeur moyenne commande → template admin get_average_order_value
-    lambda q: ("valeur" in q or "moyenne" in q or "panier" in q or "aov" in q)
-              and ("commande" in q),
-
+    # ── TOP CLIENTS CA ──
+    lambda q: (
+        "client" in q
+        and ("top" in q or "meilleur" in q)
+        and ("ca" in q or "chiffre" in q or "revenu" in q)
+    ),
+    # ── ÉVOLUTION / CROISSANCE CA ──
+    lambda q: (
+        ("evolution" in q or "croissance" in q or "progression" in q)
+        and ("ca" in q or "chiffre" in q or "vente" in q or "revenu" in q)
+    ),
+    # ── VALEUR MOYENNE COMMANDE ──
+    lambda q: (
+        ("valeur" in q or "moyenne" in q or "panier" in q or "aov" in q)
+        and ("commande" in q)
+    ),
 ]
-
 
 def apply_mapping_rules(question: str) -> dict | None:
     q = _normalize_simple(question)
