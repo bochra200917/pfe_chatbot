@@ -231,6 +231,15 @@ def match_template(question: str, templates: dict):
         matches = sum(1 for kw in keywords if kw.lower() in question_lower)
         # Si au moins 2 mots-clés matchent → c'est ce template
         ratio = matches / len(keywords)
+        # anti-confusion templates admin
+        ADMIN_BLOCKLIST = {
+    "get_top_produits_ca",
+    "get_top_clients_ca"
+}
+
+        if tid in ADMIN_BLOCKLIST:
+            return None, None, {}
+        
         if ratio >= 0.6:
             params = extract_params_from_question(question, t.get("params", []))
             logger.info(f"[KEYWORD MATCH] tid={tid} matches={matches}")
@@ -257,6 +266,21 @@ def match_template(question: str, templates: dict):
                 logger.info(f"[KEYWORD MATCH SINGLE] tid={tid} kw={matching_kw[0]}")
                 return tid, t, params
 
+    # ── MATCH EXACT INTENT PRIORITY (CRITICAL FIX) ──
+    normalized_q = question_lower.strip()
+
+    for tid, t in templates.items():
+        intent = t.get("intent", "").lower()
+        description = t.get("description", "").lower()
+
+        if intent and intent in normalized_q:
+            params = extract_params_from_question(question, t.get("params", []))
+            return tid, t, params
+
+    # fallback description match stricte
+        if description and description in normalized_q:
+            return tid, t, {}
+    
     # ── Fallback 2 : embeddings avec seuil abaissé ──
     if not TEMPLATE_EMBEDDINGS:
         return None, None, {}
@@ -272,7 +296,7 @@ def match_template(question: str, templates: dict):
             best_tid = tid
 
     # ── Seuil abaissé de 0.70 à 0.55 ──
-    THRESHOLD = 0.55
+    THRESHOLD = 0.68
 
     if best_score < THRESHOLD:
         return None, None, {}
@@ -345,13 +369,33 @@ def extract_params_from_question(question: str, param_names: list) -> dict:
             params[p] = numbers[0] if numbers else "10"
 
         elif p_lower == "client":
-            # Cherche un nom propre après "client" ou "pour"
-            match = re.search(
-                r'(?:client|pour|de)\s+([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s\-]{1,40})',
-                question, re.IGNORECASE
-            )
-            if match:
-                params[p] = f"%{match.group(1).strip()}%"
+            _stop = {
+        "avec", "et", "ou", "pour", "de", "du", "des", "les", "la", "le",
+        "total", "ht", "ttc", "montant", "facture", "factures", "entre",
+        "depuis", "par", "sur", "en", "au", "aux", "un", "une",
+        "non", "pas", "plus", "moins",
+    }
+    # Pattern 1 : "client <nom>"
+            m = re.search(
+        r'\bclient\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9_\-\s]{0,40})',
+        question, re.IGNORECASE
+    )
+            if not m:
+        # Pattern 2 : "factures de/du <nom>"
+                m = re.search(
+            r'\bfactures?\s+(?:de|du|d\')\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9_\-\s]{0,40})',
+            question, re.IGNORECASE
+        )
+            if m:
+                raw = m.group(1).strip()
+                tokens = raw.split()
+                clean = []
+                for tok in tokens:
+                    if tok.lower() in _stop:
+                        break
+                    clean.append(tok)
+                client = " ".join(clean).strip()
+                params[p] = f"%{client}%" if client else "%"
             else:
                 params[p] = "%"
 
@@ -671,8 +715,8 @@ class HybridEngine:
 
         # priorité aux règles V1/V2 historiques
 
-        legacy_intent, legacy_params = match_question(question)
-
+        legacy_intent, legacy_params = None, {}
+        
         if legacy_intent and legacy_intent in self.templates:
             template = self.templates[legacy_intent]
 
@@ -734,7 +778,7 @@ class HybridEngine:
                 return HybridResult(
             question=question,
             mode="template",
-            intent=template.get("intent", tid),
+            intent=tid,
             sql=sql_final,
             params=params,
             valid=True,

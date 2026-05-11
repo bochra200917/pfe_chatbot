@@ -1,25 +1,31 @@
 {
   "version": "1.0",
-  "updated_at": "2026-05-06T11:59:44.553102",
+  "updated_at": "2026-05-11T14:41:47.199966",
   "templates": {
     "stock_faible": {
-      "intent": "get_low_stock_products",
+      "intent": "get_produits_stock_inferieur_seuil",
       "description": "Produits dont le stock est inférieur à un seuil donné",
-      "sql": "SELECT p.ref,\n       p.label AS produit,\n       ps.reel AS stock_actuel,\n       e.label AS entrepot\nFROM m38h_product p\nJOIN m38h_product_stock ps ON ps.fk_product = p.rowid\nJOIN m38h_entrepot e ON e.rowid = ps.fk_entrepot\nWHERE ps.reel < :seuil_stock\n  AND p.tosell = 1\nORDER BY ps.reel ASC\nLIMIT :limit",
+      "sql": "SELECT p.ref,\n       p.label AS produit,\n       ps.reel AS stock_actuel,\n       e.label AS entrepot\nFROM m38h_product p\nJOIN m38h_product_stock ps ON ps.fk_product = p.rowid\nJOIN m38h_entrepot e ON e.rowid = ps.fk_entrepot\nWHERE ps.reel < :seuil\n  AND p.tosell = 1\nORDER BY ps.reel ASC\nLIMIT :limit",
       "params": [
-        "limit",
-        "seuil_stock"
+        "seuil",
+        "limit"
       ],
       "keywords": [
-        "stock",
-        "rupture",
-        "inférieur",
-        "produit disponible",
-        "seuil"
+        "stock en rupture",
+        "alerte stock critique",
+        "inventaire bas",
+        "seuil stock atteint",
+        "stock épuisé",
+        "produits en rupture",
+        "stock inférieur",
+        "seuil stock",
+        "faible stock",
+        "produits disponibles",
+        "inventaire bas"
       ],
       "active": true,
       "created_at": "2026-04-10T10:28:26.570737",
-      "updated_at": "2026-04-10T10:28:26.570746"
+      "updated_at": "2026-05-11T14:41:45.591662"
     },
     "commandes_par_mois": {
       "intent": "get_commandes_par_mois",
@@ -69,13 +75,14 @@
         "client"
       ],
       "keywords": [
-        "facture",
-        "client",
-        "total"
+        "factures par client spécifique",
+        "factures de mondher",
+        "factures du client xyz",
+        "historique factures client"
       ],
       "active": true,
       "created_at": "2026-04-17T12:00:08.716816",
-      "updated_at": "2026-04-17T12:01:47.632417"
+      "updated_at": "2026-05-11T14:40:54.780364"
     },
     "produits_non_commandes": {
       "intent": "get_produits_non_commandes",
@@ -145,30 +152,25 @@
     },
     "top_produits_ca": {
       "intent": "get_top_produits_ca",
-      "description": "produits générant le plus de CA.",
-      "sql": "SELECT\n    p.ref,\n    p.label AS produit,\n    SUM(cd.total_ht) AS ca_ht,\n    SUM(cd.total_ttc) AS ca_ttc,\n    SUM(cd.qty) AS quantite\nFROM m38h_commandedet cd\nJOIN m38h_product p ON p.rowid = cd.fk_product\nWHERE p.entity = 1\nGROUP BY p.rowid, p.ref, p.label\nORDER BY ca_ttc DESC\nLIMIT :limit",
+      "description": "Top des produits générant le plus de chiffre d'affaires (CA)",
+      "sql": "SELECT\n    p.ref,\n    p.label AS produit,\n    COALESCE(SUM(cd.total_ht), 0) AS ca_ht,\n    COALESCE(SUM(cd.total_ttc), 0) AS ca_ttc,\n    COALESCE(SUM(cd.qty), 0) AS quantite\nFROM m38h_commandedet cd\nJOIN m38h_product p ON p.rowid = cd.fk_product\nWHERE p.entity = 1\nGROUP BY p.rowid, p.ref, p.label\nORDER BY ca_ttc DESC\nLIMIT :limit",
       "params": [
         "limit"
       ],
       "keywords": [
-        "produits générant le plus de chiffre d'affaire",
-        "produits générant le plus de ca",
-        "produits avec plus grand chiffre d'affaire",
-        "produits avec plus grand ca",
-        "produits les plus vendus en valeur",
-        "top produits chiffre d'affaire",
-        "top produits ca",
-        "meilleurs produits chiffre d'affaire",
+        "ca",
+        "chiffre d'affaires",
+        "chiffre affaires",
+        "revenu",
+        "ventes",
+        "top ventes",
+        "produits les plus vendus",
         "produits rentables",
-        "produits qui rapportent le plus",
-        "produits avec le plus de revenus",
-        "classement produits ca",
-        "ranking produits ca",
-        "produits ca",
-        "produits plus ca",
-        "top produits",
-        "produits generant ca",
-        "produits qui generent le plus"
+        "best selling products",
+        "ranking produits",
+        "top produits ca",
+        "produits générant ca",
+        "produits générant chiffre d'affaires"
       ],
       "active": true,
       "created_at": "2026-05-06T09:43:15.485618",

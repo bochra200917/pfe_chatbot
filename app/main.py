@@ -72,26 +72,58 @@ class FeedbackRequest(BaseModel):
 
 @app.post("/ask")
 def ask(request: QuestionRequest, user: str = Depends(authenticate)):
+
+    print("\n==============================")
+    print("QUESTION RECUE =", request.question)
+    print("==============================\n")
+
     if not request.question.strip():
         raise HTTPException(status_code=400, detail="Question vide")
+
     if len(request.question) > 500:
         raise HTTPException(status_code=400, detail="Question trop longue")
+
     try:
         response = get_response(request.question)
+
+        print("\n========= RESPONSE =========")
+        print(response)
+        print("============================\n")
+
         metadata = response.get("metadata", {})
         status   = metadata.get("status", "")
+
+        print("METADATA =", metadata)
+        print("STATUS =", status)
+
         if status not in ["rejected", "clarification_required", "error"]:
+
             template_name = metadata.get("template", "unknown")
             row_count     = metadata.get("row_count", 0)
             from_cache    = metadata.get("from_cache", False)
+
+            print("TEMPLATE =", template_name)
+            print("ROW COUNT =", row_count)
+
             summary = generate_summary(template_name, row_count)
+
             if from_cache:
                 summary += " (cache)"
-            response["summary"] = summary
-        return response
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
 
+            response["summary"] = summary
+
+        return response
+
+    except Exception as e:
+
+        print("\n========= ERREUR =========")
+        print(str(e))
+        print("==========================\n")
+
+        return {
+            "status": "error",
+            "message": str(e)
+        }
 
 @app.get("/audit")
 def audit_dashboard(user: str = Depends(authenticate)):

@@ -298,20 +298,78 @@ def _factures_mois(m) -> dict | None:
     }
 
 
+import unicodedata
+
+def _normalize_simple(text: str) -> str:
+    text = text.lower().strip()
+    text = unicodedata.normalize("NFD", text)
+    return text.encode("ascii", "ignore").decode("utf-8")
+
+_BYPASS_PATTERNS = [
+# ── TOP CLIENTS CA ──
+lambda q: ("client" in q)
+          and ("top" in q or "meilleur" in q)
+          and ("ca" in q or "chiffre" in q or "revenu" in q),
+
+# ── STOCK FAIBLE ──
+    
+    # Évolution / croissance CA → template admin get_monthly_growth_revenue
+    lambda q: ("evolution" in q or "croissance" in q or "progression" in q)
+              and ("ca" in q or "chiffre" in q or "vente" in q or "revenu" in q),
+
+    # Valeur moyenne commande → template admin get_average_order_value
+    lambda q: ("valeur" in q or "moyenne" in q or "panier" in q or "aov" in q)
+              and ("commande" in q),
+
+]
+
+
 def apply_mapping_rules(question: str) -> dict | None:
-    """
-    Applique les règles regex dans l'ordre.
-    Retourne {intent, params, confidence} si match, sinon None → LLM sera appelé.
-    """
-    q = question.strip()
+    q = _normalize_simple(question)
+
+    # ── Stock faible : UNIQUEMENT si "stock" + mot de seuil/alerte ──
+    # Ne pas matcher "factures non payées" qui ne contient pas "stock"
+    if "stock" in q and any(w in q for w in [
+        "inferieur", "faible", "bas", "rupture", "alerte", "critique", "moins de"
+    ]):
+        return {
+            "intent": "get_produits_stock_faible",
+            "params": {"seuil": 5},
+            "confidence": 0.99,
+        }
+
+    # ── Top produits CA : UNIQUEMENT si "produit" + "ca/chiffre" + "top/meilleur" ──
+    if any(w in q for w in ["produit", "article"]) \
+       and any(w in q for w in ["ca", "chiffre", "revenu"]) \
+       and any(w in q for w in ["top", "meilleur", "plus", "generant", "ranking"]):
+        return {
+            "intent": "get_top_produits_ca",
+            "params": {"limit": 10},
+            "confidence": 0.99,
+        }
+
+    # ── Produits non commandés : UNIQUEMENT si "jamais" ou "non commandé" ──
+    if any(w in q for w in ["jamais commande", "non commande", "sans commande", "pas commande"]):
+        return {
+            "intent": "get_produits_non_commandes",
+            "params": {"limit": 10},
+            "confidence": 0.99,
+        }
+
+    # Guard : bypass pour les templates admin
+    for bypass_check in _BYPASS_PATTERNS:
+        if bypass_check(q):
+            return None
+
+    q_raw = question.strip()
     for pattern, handler in MAPPING_RULES:
-        m = pattern.search(q)
+        m = pattern.search(q_raw)
         if m:
-            result = handler(m, q)
+            result = handler(m, q_raw)
             if result:
                 return result
-    return None
 
+    return None
 
 # ──────────────────────────────────────────────────────────────────────
 # Test rapide : python app/prompt_template.py

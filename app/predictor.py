@@ -1,7 +1,7 @@
 # app/predictor.py
 # Analyse prédictive et apprentissage continu
 # Fonctionnalités :
-#   - Prévision CA mois suivant (régression linéaire)
+#   - Prévision CA mois suivant (régression linéaire/polynomiale)
 #   - Alertes stock rupture prévue
 #   - Score fidélité clients
 #   - Apprentissage continu depuis les feedbacks
@@ -11,15 +11,19 @@ import os
 import statistics
 from datetime import datetime, timedelta
 from collections import Counter
-
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.metrics import mean_absolute_error, r2_score
 
 # ─────────────────────────────────────────────
-# 1. Prévision CA mensuel
+# 1. Prévision CA mensuel (version ML améliorée)
 # ─────────────────────────────────────────────
 
 def predict_ca_next_month(monthly_data: list) -> dict:
     """
-    Prédit le CA du mois suivant par régression linéaire simple.
+    Prédit le CA du mois suivant par régression polynomiale (degré 2).
+    Gère les données partielles (mois en cours avec valeurs manquantes).
 
     Args:
         monthly_data: liste de dicts {"mois": "YYYY-MM", "CA_HT": float, "CA_TTC": float}
@@ -27,67 +31,200 @@ def predict_ca_next_month(monthly_data: list) -> dict:
     Returns:
         dict avec predicted_ca_ht, predicted_ca_ttc, trend, confidence, method
     """
-    if len(monthly_data) < 2:
+    # Filtrer les données valides (CA non nul et non None)
+    valid_data = []
+    for d in monthly_data:
+        ca_ht = d.get("CA_HT")
+        if ca_ht is not None and ca_ht != "" and float(ca_ht) > 0:
+            valid_data.append({
+                "mois": d["mois"],
+                "CA_HT": float(ca_ht),
+                "CA_TTC": float(d.get("CA_TTC", ca_ht * 1.19))
+            })
+    
+    n = len(valid_data)
+    
+    if n < 2:
         return {
             "predicted_ca_ht":  None,
             "predicted_ca_ttc": None,
             "trend":            "insufficient_data",
             "confidence":       "low",
             "method":           "N/A",
-            "message":          "Au moins 2 mois de données nécessaires"
+            "message":          f"Au moins 2 mois de données nécessaires. Actuellement : {n} mois"
         }
 
-    # Extraire les valeurs CA_HT
-    values_ht  = [float(d.get("CA_HT", 0) or 0)  for d in monthly_data]
-    values_ttc = [float(d.get("CA_TTC", 0) or 0) for d in monthly_data]
+    # Extraire les valeurs
+    months = [d["mois"] for d in valid_data]
+    values_ht = [d["CA_HT"] for d in valid_data]
+    mean_y = statistics.mean(values_ht) if values_ht else 0
+    
+    # Créer des indices numériques pour la régression
+    X = np.array(range(n)).reshape(-1, 1)
+    y = np.array(values_ht)
 
-    n = len(values_ht)
-    x = list(range(n))
-
-    # Régression linéaire simple y = a*x + b
-    mean_x   = statistics.mean(x)
-    mean_y   = statistics.mean(values_ht)
-    num      = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, values_ht))
-    den      = sum((xi - mean_x) ** 2 for xi in x)
-    slope    = num / den if den != 0 else 0
-    intercept = mean_y - slope * mean_x
-
-    # Prédiction pour le prochain point
-    predicted_ht  = round(slope * n + intercept, 2)
+    # ─────────────────────────────────────
+    # ML MODEL : Régression polynomiale (degré 2)
+    # Capture mieux les tendances saisonnières
+    # ─────────────────────────────────────
+    
+    poly = PolynomialFeatures(degree=min(2, n-1))
+    X_poly = poly.fit_transform(X)
+    
+    model = LinearRegression()
+    model.fit(X_poly, y)
+    
+    # Prédiction pour le mois suivant (indice = n)
+    X_next = poly.transform([[n]])
+    predicted_ht = model.predict(X_next)[0]
+    predicted_ht = max(0, round(float(predicted_ht), 2))
     predicted_ttc = round(predicted_ht * 1.19, 2) if predicted_ht > 0 else 0
-
-    # Tendance
+    
+    # Calcul du R² pour évaluer la qualité du modèle
+    y_pred = model.predict(X_poly)
+    r2 = r2_score(y, y_pred) if len(y) > 1 else 0
+    
+    # Calcul de l'erreur moyenne
+    mae = mean_absolute_error(y, y_pred) if len(y) > 1 else 0
+    
+    # Tendance basée sur la pente de la régression linéaire simple
+    simple_model = LinearRegression()
+    simple_model.fit(X, y)
+    slope = simple_model.coef_[0]
+    
     if slope > 0.02 * mean_y:
         trend = "hausse"
     elif slope < -0.02 * mean_y:
         trend = "baisse"
     else:
         trend = "stable"
-
-    # Confiance basée sur le nombre de points
-    if n >= 6:
+    
+    # Confiance basée sur R² et nombre de points
+    if n >= 6 and r2 > 0.7:
         confidence = "high"
+    elif n >= 4 and r2 > 0.5:
+        confidence = "medium"
     elif n >= 3:
         confidence = "medium"
     else:
         confidence = "low"
-
+    
     # Variation par rapport au dernier mois
-    last_ca  = values_ht[-1]
+    last_ca = values_ht[-1]
     variation = round(((predicted_ht - last_ca) / last_ca * 100), 1) if last_ca != 0 else 0
-
+    
+    # Calcul du mois prédit (mois suivant après le dernier mois connu)
+    last_month_str = months[-1]
+    try:
+        last_date = datetime.strptime(last_month_str, "%Y-%m")
+        next_month = last_date + timedelta(days=32)
+        predicted_month = next_month.strftime("%Y-%m")
+    except:
+        predicted_month = "?"
+    
     return {
-        "predicted_ca_ht":  max(0, predicted_ht),
-        "predicted_ca_ttc": max(0, predicted_ttc),
+        "predicted_ca_ht":  predicted_ht,
+        "predicted_ca_ttc": predicted_ttc,
+        "predicted_month":  predicted_month,
         "trend":            trend,
         "confidence":       confidence,
-        "method":           "linear_regression",
+        "method":           "polynomial_regression_degree2",
         "slope":            round(slope, 2),
+        "r2_score":         round(r2, 3),
+        "mae":              round(mae, 2),
         "variation_pct":    variation,
         "based_on_months":  n,
-        "message":          f"Prévision basée sur {n} mois · Tendance : {trend} ({variation:+.1f}%)"
+        "months_used":      months,
+        "message":          f"Prévision basée sur {n} mois · R²={r2:.2f} · Tendance : {trend} ({variation:+.1f}%)"
     }
 
+
+def predict_ca_multiple_months(monthly_data: list, months_ahead: int = 3) -> dict:
+    """
+    Prédit le CA pour plusieurs mois à venir.
+
+    Args:
+        monthly_data: données historiques
+        months_ahead: nombre de mois à prédire (défaut: 3)
+
+    Returns:
+        dict avec historique, prédictions et métriques
+    """
+    valid_data = []
+    for d in monthly_data:
+        ca_ht = d.get("CA_HT")
+        if ca_ht is not None and ca_ht != "" and float(ca_ht) > 0:
+            valid_data.append({
+                "mois": d["mois"],
+                "CA_HT": float(ca_ht)
+            })
+    
+    n = len(valid_data)
+    
+    if n < 2:
+        return {
+            "error": f"Données insuffisantes ({n}/2 mois minimum)",
+            "historique": monthly_data,
+            "predictions": []
+        }
+    
+    # Préparer les données pour le modèle
+    X = np.array(range(n)).reshape(-1, 1)
+    y = np.array([d["CA_HT"] for d in valid_data])
+    
+    # Régression polynomiale
+    degree = min(2, n-1)
+    poly = PolynomialFeatures(degree=degree)
+    X_poly = poly.fit_transform(X)
+    
+    model = LinearRegression()
+    model.fit(X_poly, y)
+    
+    # Prédictions
+    predictions = []
+    last_date = datetime.strptime(valid_data[-1]["mois"], "%Y-%m")
+    
+    last_value = valid_data[-1]["CA_HT"]
+    
+    for i in range(1, months_ahead + 1):
+        X_next = poly.transform([[n + i - 1]])
+        pred_value = model.predict(X_next)[0]
+        pred_value = max(0, round(float(pred_value), 2))
+        
+        # Date du mois prédit
+        pred_date = last_date + timedelta(days=32 * i)
+        pred_date = pred_date.replace(day=1)
+        pred_month = pred_date.strftime("%Y-%m")
+        
+        # Variation
+        if i == 1:
+            variation = round(((pred_value - last_value) / last_value * 100), 1) if last_value != 0 else 0
+        else:
+            variation = round(((pred_value - predictions[-1]["CA_HT_predit"]) / predictions[-1]["CA_HT_predit"] * 100), 1) if predictions[-1]["CA_HT_predit"] != 0 else 0
+        
+        predictions.append({
+            "mois": pred_month,
+            "CA_HT_predit": pred_value,
+            "CA_TTC_predit": round(pred_value * 1.19, 2),
+            "variation_pct": variation
+        })
+    
+    # Score du modèle
+    y_pred = model.predict(X_poly)
+    r2 = r2_score(y, y_pred) if len(y) > 1 else 0
+    
+    return {
+        "historique": valid_data,
+        "predictions": predictions,
+        "r2_score": round(r2, 3),
+        "based_on_months": n,
+        "trend": "hausse" if predictions[0]["CA_HT_predit"] > valid_data[-1]["CA_HT"] else "baisse"
+    }
+
+
+# ─────────────────────────────────────────────
+# 2. Alertes stock rupture
+# ─────────────────────────────────────────────
 
 def predict_stock_alert(stock_data: list, consumption_rate: float = 0.1) -> list:
     """
@@ -150,7 +287,7 @@ def _stock_action(level: str) -> str:
 
 
 # ─────────────────────────────────────────────
-# 2. Score fidélité clients
+# 3. Score fidélité clients
 # ─────────────────────────────────────────────
 
 def compute_loyalty_score(client_data: list) -> list:
@@ -195,7 +332,7 @@ def compute_loyalty_score(client_data: list) -> list:
 
 
 # ─────────────────────────────────────────────
-# 3. Apprentissage continu depuis feedbacks
+# 4. Apprentissage continu depuis feedbacks
 # ─────────────────────────────────────────────
 
 FEEDBACK_FILE = "logs/feedback.jsonl"
@@ -268,7 +405,7 @@ def get_learning_insights() -> dict:
     if satisfaction_rate < 70:
         suggestions.append("Satisfaction < 70% — revoir les templates les plus utilisés")
     if questions_prob:
-        suggestions.append(f"{len(questions_prob)} question(s) signalées — envisager de nouveaux patterns regex")
+        suggestions.append(f"{len(questions_prob)} question(s) signalée(s) — envisager de nouveaux patterns regex")
     for p in patterns:
         if p["pattern"] == "incompréhension" and p["occurrences"] >= 2:
             suggestions.append("Améliorer la détection des questions ambiguës")

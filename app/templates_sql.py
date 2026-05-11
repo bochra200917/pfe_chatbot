@@ -294,4 +294,10 @@ TEMPLATE_MAPPING = {
     "get_factures_non_payees_30j": get_factures_non_payees_30j,
     "get_top_produits_commandes": get_top_produits_commandes,
     "get_ca_par_trimestre": get_ca_par_trimestre,
+    "get_low_stock_products": get_produits_stock_faible,
+"get_produits_stock_faible": get_produits_stock_faible,
+
+"get_produits_non_commandes": get_produits_non_commandes,
+
+"get_top_clients_ca": get_top_clients_ca,
 }

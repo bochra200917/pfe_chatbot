@@ -1324,3 +1324,207 @@
 [2026-05-08 12:30:45] uuid=03585b3c-1e12-4034-8a98-731a0a40d43e | status=success | template=get_produits_stock_faible | rows=100 | duration=190.94ms | question=Produits avec stock inférieur à 5
 [2026-05-08 12:30:57] uuid=2b0deb5e-e92b-496f-a55b-ed1cf1fcc170 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=185.48ms | question=Clients avec plus de 2 commandes
 [2026-05-08 12:31:03] uuid=5e24f976-f2a3-4cf2-9370-5f45bb4cba72 | status=success | template=get_total_ventes_mois | rows=1 | duration=187.57ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-08 13:23:53] uuid=82697c70-5e3f-4c2c-910f-d5c318ae76e1 | status=success | template=get_factures_non_payees | rows=92 | duration=503.52ms | question=Factures non payées
+[2026-05-08 14:24:31] uuid=4bafc41c-273e-4243-b823-4cb5dcd33f00 | status=success | template=get_factures_non_payees | rows=92 | duration=476.45ms | question=Factures non payées
+[2026-05-08 14:35:45] uuid=0b5fa74c-33d2-47f4-83bc-62695c0bc72f | status=success | template=get_factures_non_payees | rows=92 | duration=192.86ms | question=Factures non payées
+[2026-05-11 08:41:52] uuid=16acc41f-bc80-40b3-8b96-42063abd5be4 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=496.49ms | question=Clients avec plus de 2 commandes
+[2026-05-11 08:49:40] uuid=5f6689e0-bc6d-4f1e-b50a-9ec21c84411e | status=success | template=get_total_ventes_mois | rows=0 | duration=28790.92ms | question=produits générant le plus de CA.
+[2026-05-11 08:50:06] uuid=6db33b24-abd3-436e-8783-f6a39e7e1277 | status=success | template=get_produits_stock_faible | rows=100 | duration=434.23ms | question=Produits avec stock inférieur à 5
+[2026-05-11 08:52:16] uuid=d8e4717d-00db-4a56-ae92-c2f3f914d7b3 | status=success | template=get_total_ventes_mois | rows=0 | duration=15875.53ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 08:53:10] uuid=06aa9719-72d2-4169-bef8-d774e7317d56 | status=success | template=get_produits_non_commandes | rows=100 | duration=11822.25ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 08:53:42] uuid=992b5669-d408-490e-b1c4-be16bc610474 | status=success | template=get_factures_par_client | rows=0 | duration=182.36ms | question=Factures d’un client avec total HT et TTC
+[2026-05-11 08:54:01] uuid=53837c0f-b4bf-471d-b360-45936ab26500 | status=success | template=get_top_clients_ca | rows=5 | duration=191.25ms | question=Top N clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 08:54:40] uuid=ac6273c5-3cc4-44b5-978e-b5ed0fb1e251 | status=success | template=get_factures_par_client | rows=0 | duration=185.68ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 08:54:55] uuid=b009cfcd-1aca-4c7f-b390-32e1d5e5aff4 | status=success | template=get_top_clients_ca | rows=5 | duration=0.11ms | question=Top 5 clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 08:55:21] uuid=adfaecdb-b195-4bb5-8596-c7a902bc22b8 | status=success | template=get_commandes_par_mois | rows=1 | duration=188.67ms | question=Nombre et total des commandes pour mars
+[2026-05-11 08:55:44] uuid=7e567670-5569-4c1e-a131-dbb40645c938 | status=success | template=get_produits_stock_faible | rows=100 | duration=189.06ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 08:56:32] uuid=cb558592-caf8-4c37-991e-b904a497517e | status=success | template=get_factures_par_client | rows=4 | duration=15432.07ms | question=Factures de mondher avec total HT et TTC
+[2026-05-11 09:00:23] uuid=a016f339-932b-4b2a-b971-069bce5c576e | status=success | template=get_factures_par_client | rows=4 | duration=12130.07ms | question=Factures de mondher avec total HT et TTC
+[2026-05-11 09:00:45] uuid=e72a40ed-ce30-4eca-bdbb-3282f53472ab | status=success | template=get_factures_par_client | rows=0 | duration=189.44ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 09:09:02] uuid=9cf73dc7-6d77-4d47-836d-868e9eece5ec | status=success | template=get_factures_par_client | rows=4 | duration=188.78ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 09:09:09] uuid=b3d1cf73-930b-4729-9031-9225722cc4db | status=success | template=get_factures_par_client | rows=4 | duration=0.87ms | question=Factures de mondher avec total HT et TTC
+[2026-05-11 09:12:08] uuid=74a40458-ef85-4c51-8ee6-340ac195143f | status=success | template=get_factures_par_client | rows=4 | duration=184.18ms | question=Montre-moi les factures de mondher
+[2026-05-11 09:21:19] uuid=ec9c3798-9807-46ca-a9df-82704b1af382 | status=success | template=get_total_ventes_mois | rows=0 | duration=21243.0ms | question=Produits générant le plus de CA.
+[2026-05-11 09:25:50] uuid=a916edc8-3007-4840-b637-49b3e0019641 | status=success | template=get_total_ventes_mois | rows=0 | duration=20878.25ms | question=Produits générant le plus de CA.
+[2026-05-11 09:29:23] uuid=d656d088-2aac-48cd-9ac4-35a8382bf172 | status=success | template=get_total_ventes_mois | rows=0 | duration=13821.37ms | question=Produits générant le plus de CA.
+[2026-05-11 09:29:50] uuid=2b3f1a41-931b-435c-8adf-801bb20d5870 | status=success | template=get_total_ventes_mois | rows=0 | duration=11853.48ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 09:30:12] uuid=663fd440-e25f-497d-be03-5f41587cb4b4 | status=success | template=get_total_ventes_mois | rows=0 | duration=13593.5ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 09:36:45] uuid=b5941b51-aac9-4c5a-ba7e-0bf5fce43875 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=198.15ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 09:37:17] uuid=6dc259d5-8e4a-46d4-92d6-b35c1c079db3 | status=success | template=top_produits_ca | rows=10 | duration=180.5ms | question=Produits générant le plus de CA.
+[2026-05-11 09:37:29] uuid=ef57e97e-6e0e-496a-b195-33b47a393eba | status=success | template=get_average_order_value_by_client | rows=10 | duration=179.86ms | question=Valeur moyenne des commandes par client
+[2026-05-11 09:37:44] uuid=c5bb1155-b2ef-46bf-abac-a77cd8bd9e60 | status=success | template=top_produits_ca | rows=10 | duration=181.91ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 09:38:28] uuid=e5a6879c-9257-469f-a097-89d525bab36a | status=success | template=factures_par_client | rows=4 | duration=185.94ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 09:39:13] uuid=f26a91a3-a60c-44b0-9d36-e03017a25c7c | status=success | template=top_produits_ca | rows=10 | duration=202.28ms | question=Produits générant le plus de CA.
+[2026-05-11 09:39:34] uuid=07903d45-5518-4e72-be73-60c947c2b366 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=180.62ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 09:39:53] uuid=9ec2ab57-7fb7-4d93-8a96-b6afb922bbcc | status=success | template=get_average_order_value_by_client | rows=10 | duration=178.33ms | question=Valeur moyenne des commandes par client
+[2026-05-11 09:40:12] uuid=ff97b671-bc41-436a-80db-3ae411af9d45 | status=success | template=top_produits_ca | rows=10 | duration=201.05ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 09:40:54] uuid=28542c5e-cb66-44ff-858c-db4cb2781e79 | status=success | template=factures_par_client | rows=4 | duration=186.35ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 09:41:09] uuid=1f1c6747-8ae8-492e-a367-4412ee894b43 | status=success | template=top_produits_ca | rows=5 | duration=187.14ms | question=Top 5 clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 09:41:47] uuid=fc2b893e-d634-43c3-80c9-3352170fcb9f | status=success | template=commandes_par_mois | rows=1 | duration=189.16ms | question=Nombre et total des commandes pour mars
+[2026-05-11 09:42:05] uuid=4f52a098-0110-40df-93fb-af3ef885c9e0 | status=success | template=top_produits_ca | rows=5 | duration=180.58ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 10:04:05] uuid=c1d7b78d-8af7-45f0-9a19-7a38d8c79b64 | status=success | template=produits_non_commandes | rows=10 | duration=187.59ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 10:04:16] uuid=f02d4fde-1404-4d29-8391-787728751f95 | status=success | template=top_clients_ca | rows=5 | duration=190.79ms | question=Top 5 clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 10:04:30] uuid=afeaa9d6-a3be-40ab-8276-605e41e23bff | status=success | template=produits_non_commandes | rows=5 | duration=180.97ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 10:05:00] uuid=d97a4ba4-eb25-47f3-ab43-0a371f61910d | status=success | template=produits_non_commandes | rows=10 | duration=189.06ms | question=Produits générant le plus de CA.
+[2026-05-11 10:05:24] uuid=c1e9d0aa-73c7-4379-938a-cc0b851a9696 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=189.38ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 10:05:35] uuid=a322de41-dbe3-4f88-8603-eaf33470bfd0 | status=success | template=get_average_order_value_by_client | rows=10 | duration=180.65ms | question=Valeur moyenne des commandes par client
+[2026-05-11 10:05:46] uuid=c2a26375-9567-4885-8b21-093a69761286 | status=success | template=factures_par_client | rows=4 | duration=187.35ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 10:05:59] uuid=4193ca8a-04e3-4939-bc77-a84ab7fe07c9 | status=success | template=commandes_par_mois | rows=1 | duration=177.41ms | question=Nombre et total des commandes pour mars
+[2026-05-11 10:06:12] uuid=361244f6-d636-4d29-b1f9-61f4283b1935 | status=success | template=produits_non_commandes | rows=5 | duration=187.67ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 10:21:58] uuid=6b038c58-3c99-431c-85f2-dc5e0b78721f | status=success | template=produits_non_commandes | rows=10 | duration=197.4ms | question=Produits générant le plus de CA
+[2026-05-11 10:21:58] uuid=06644740-8795-42dd-b998-5abb2e38a3da | status=success | template=produits_non_commandes | rows=10 | duration=198.71ms | question=Produits générant le plus de CA
+[2026-05-11 10:22:09] uuid=383ae44c-e976-4273-8a8d-fdaeb6416a55 | status=success | template=produits_non_commandes | rows=5 | duration=188.23ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 10:25:32] uuid=4e72aeca-3fa8-4ebf-803e-b0232bb50021 | status=success | template=produits_non_commandes | rows=10 | duration=187.77ms | question=Produits générant le plus de CA
+[2026-05-11 10:26:30] uuid=11b78ec5-0568-44ba-8956-c5382a611679 | status=success | template=produits_non_commandes | rows=10 | duration=183.64ms | question=Produits jamais commandés
+[2026-05-11 10:34:01] uuid=d3d4d4d8-e3f2-4b99-8cec-f501ebf3c0dc | status=success | template=produits_non_commandes | rows=10 | duration=193.46ms | question=Produits générant le plus de CA
+[2026-05-11 10:34:16] uuid=809139a6-2089-4ea4-a3b6-6390bf77d80d | status=success | template=produits_non_commandes | rows=5 | duration=182.12ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 10:34:27] uuid=56e94a26-857d-4943-be32-378b793c1401 | status=success | template=produits_non_commandes | rows=10 | duration=187.94ms | question=Produits jamais commandés
+[2026-05-11 10:48:56] uuid=4ccbbe96-8f56-4aac-833c-745a891c3130 | status=success | template=produits_non_commandes | rows=10 | duration=185.64ms | question=Produits générant le plus de CA.
+[2026-05-11 10:49:24] uuid=dae0eddf-4bf8-488c-a909-f96d4aa58b09 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.85ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 10:49:43] uuid=6777cf5f-09ee-4002-9701-30436c506218 | status=success | template=get_average_order_value_by_client | rows=10 | duration=179.48ms | question=Valeur moyenne des commandes par client
+[2026-05-11 10:49:52] uuid=8e6ebed0-d45f-4ead-9f8c-4034bd77573a | status=success | template=produits_non_commandes | rows=10 | duration=181.97ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 10:50:06] uuid=95484e89-9f44-4eca-b5f6-7b60e9852047 | status=success | template=factures_par_client | rows=4 | duration=181.73ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 10:50:14] uuid=c0723f0f-2dd8-4634-9d23-1f1f23d5d1c5 | status=success | template=factures_par_client | rows=10 | duration=188.74ms | question=Factures de mondher avec total HT et TTC
+[2026-05-11 10:50:26] uuid=a98549ea-4ed4-4313-a7c3-fab7c58ab066 | status=success | template=top_clients_ca | rows=5 | duration=182.95ms | question=Top 5 clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 10:50:39] uuid=a1130528-2f3f-455b-8cb0-afbc5e0c4b06 | status=success | template=commandes_par_mois | rows=1 | duration=184.66ms | question=Nombre et total des commandes pour mars
+[2026-05-11 10:50:52] uuid=0c9b6424-91a6-4d1a-a170-4ba09dd0b46b | status=success | template=produits_non_commandes | rows=5 | duration=182.1ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 10:51:27] uuid=b957c0bf-1842-40e6-9af4-546c51a4767b | status=success | template=produits_non_commandes | rows=10 | duration=180.76ms | question=Produits générant le plus de CA.
+[2026-05-11 10:51:52] uuid=3fdaa123-fa3d-4285-bf80-64ac650dfed9 | status=success | template=produits_non_commandes | rows=10 | duration=180.56ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 10:52:09] uuid=aa473b5d-e8c0-4c63-b00c-a7d487ec7a84 | status=success | template=produits_non_commandes | rows=5 | duration=182.96ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 10:52:21] uuid=fc6bfa0a-b9b5-426a-9fcd-7e4c29dfb484 | status=success | template=produits_non_commandes | rows=20 | duration=188.39ms | question=Produits dont le stock est inférieur à 20
+[2026-05-11 10:52:40] uuid=544e7117-d990-440d-ba73-005f5a72954d | status=success | template=produits_non_commandes | rows=15 | duration=182.83ms | question=Produits dont le stock est inférieur à 15
+[2026-05-11 10:53:11] uuid=792ab9a0-349f-4693-bed4-7e3c0849b4c9 | status=success | template=produits_non_commandes | rows=8 | duration=208.74ms | question=Produits dont le stock est inférieur à 8
+[2026-05-11 10:58:51] uuid=3995c3ff-03f1-4680-a189-c259afda0f0d | status=success | template=produits_non_commandes | rows=10 | duration=199.46ms | question=Produits générant le plus de CA
+[2026-05-11 11:00:32] uuid=b16b0957-910d-4492-8d7d-095394637c52 | status=success | template=get_produits_stock_faible | rows=100 | duration=199.49ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 11:00:55] uuid=335faed9-3718-4251-abab-fc0ded484335 | status=success | template=get_produits_stock_faible | rows=100 | duration=2.24ms | question=Produits dont le stock est inférieur à 20
+[2026-05-11 11:02:28] uuid=33534a50-ed8d-4ed2-93bf-c82125a01b72 | status=success | template=produits_non_commandes | rows=10 | duration=459.57ms | question=Produits générant le plus de CA
+[2026-05-11 11:05:18] uuid=58793016-d6fc-4619-81c2-f7848f5ac5dc | status=success | template=top_produits_ca | rows=10 | duration=440.88ms | question=Produits générant le plus de CA
+[2026-05-11 11:06:55] uuid=968f01d8-c778-4db3-a5c7-95e4888fc470 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=411.72ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 11:07:01] uuid=5141ebfe-ed15-4c96-973d-39a5bb7d9ffa | status=success | template=get_average_order_value_by_client | rows=10 | duration=407.14ms | question=Valeur moyenne des commandes par client
+[2026-05-11 11:07:13] uuid=4dcdf647-03da-4820-b7cf-ffe01ca2faea | status=success | template=produits_non_commandes | rows=10 | duration=422.38ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 11:07:19] uuid=bd5f79e9-5cd2-440f-822a-18b8db1a35f3 | status=success | template=factures_par_client | rows=4 | duration=180.86ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 11:07:31] uuid=ef86e988-e86e-4c8e-ac95-d0113252edd5 | status=success | template=top_clients_ca | rows=5 | duration=193.73ms | question=Top 5 clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 11:07:39] uuid=b131ec63-7233-4ba5-9590-2d14484318ae | status=success | template=commandes_par_mois | rows=1 | duration=179.62ms | question=Nombre et total des commandes pour mars
+[2026-05-11 11:07:46] uuid=f3b81181-f603-48e1-91ed-c48afe847dbe | status=success | template=get_produits_stock_faible | rows=100 | duration=2.19ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 11:07:57] uuid=d207d430-928a-473b-b63d-d94c732a4b63 | status=success | template=top_produits_ca | rows=10 | duration=197.64ms | question=Produits générant le plus de CA.
+[2026-05-11 11:15:54] uuid=57e67caf-c351-42ec-a344-1a18a47dd0a2 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=189.17ms | question=chiffre d affaires de mai 2025
+[2026-05-11 11:15:57] uuid=ccf8e69f-0ec3-48b2-821e-00f0dcfc444a | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.87ms | question=chiffre d affaires de juin 2025
+[2026-05-11 11:15:59] uuid=e6356952-909c-4a1b-bf3b-f689352e5171 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=183.66ms | question=chiffre d affaires de juillet 2025
+[2026-05-11 11:16:01] uuid=c42aab98-9f1d-42e6-9c86-18af386b20af | status=success | template=get_monthly_growth_revenue | rows=6 | duration=183.76ms | question=chiffre d affaires de août 2025
+[2026-05-11 11:16:03] uuid=18d63b23-999a-41ce-8e42-354dd750d577 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=187.92ms | question=chiffre d affaires de septembre 2025
+[2026-05-11 11:16:06] uuid=9968fa01-7bdc-4f5d-94bb-00de76826f0d | status=success | template=get_monthly_growth_revenue | rows=6 | duration=187.61ms | question=chiffre d affaires de octobre 2025
+[2026-05-11 11:16:08] uuid=ea9641b0-f77d-47d2-985f-cfd8ad6cbe0f | status=success | template=get_monthly_growth_revenue | rows=6 | duration=215.27ms | question=chiffre d affaires de novembre 2025
+[2026-05-11 11:16:10] uuid=47ad8f80-8c51-4035-8424-64bbf2cd3342 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=181.58ms | question=chiffre d affaires de décembre 2025
+[2026-05-11 11:16:12] uuid=9533bb8a-d831-4f83-a377-541e107cb507 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=181.96ms | question=chiffre d affaires de janvier 2026
+[2026-05-11 11:16:15] uuid=cc6f213f-9274-4cd4-a6cf-141a1441b11d | status=success | template=get_monthly_growth_revenue | rows=6 | duration=189.2ms | question=chiffre d affaires de février 2026
+[2026-05-11 11:16:17] uuid=962500fc-a3f6-48c2-9c78-317a138ec0f0 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=185.57ms | question=chiffre d affaires de mars 2026
+[2026-05-11 11:16:19] uuid=0f27c22f-7920-4373-8a17-a4fe6a4b4f58 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.35ms | question=chiffre d affaires de avril 2026
+[2026-05-11 11:24:51] uuid=f57c2de8-52ad-4b3a-b94a-f606c258bbc0 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=186.38ms | question=chiffre d affaires de mai 2025
+[2026-05-11 11:24:53] uuid=6a6b5ced-2f07-4d7c-90aa-430099f2711c | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.38ms | question=chiffre d affaires de juin 2025
+[2026-05-11 11:24:55] uuid=c6a02f43-3008-429a-a1e0-8c92fe68d111 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=191.18ms | question=chiffre d affaires de juillet 2025
+[2026-05-11 11:24:57] uuid=ce571c21-8037-4e20-b8a1-1b6fb589b722 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=189.46ms | question=chiffre d affaires de août 2025
+[2026-05-11 11:25:00] uuid=e2c878d6-57f7-4d89-a4b4-fe5f0ea9d575 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=185.02ms | question=chiffre d affaires de septembre 2025
+[2026-05-11 11:25:02] uuid=00e9ba7b-803e-4c6e-a204-dbffd509549b | status=success | template=get_monthly_growth_revenue | rows=6 | duration=185.24ms | question=chiffre d affaires de octobre 2025
+[2026-05-11 11:25:04] uuid=953ae98d-a22a-4a1b-8619-ccc94dd2aba0 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=186.6ms | question=chiffre d affaires de novembre 2025
+[2026-05-11 11:25:06] uuid=40f40d7c-702a-4413-aa6b-8d20e44d856c | status=success | template=get_monthly_growth_revenue | rows=6 | duration=190.46ms | question=chiffre d affaires de décembre 2025
+[2026-05-11 11:25:08] uuid=d943f0e7-b0cb-4f16-9443-be912539d442 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=190.62ms | question=chiffre d affaires de janvier 2026
+[2026-05-11 11:25:11] uuid=615dd326-c9c6-4611-b50d-d5b665a1fd0d | status=success | template=get_monthly_growth_revenue | rows=6 | duration=190.09ms | question=chiffre d affaires de février 2026
+[2026-05-11 11:25:13] uuid=c9b18b5f-6466-4f28-a12f-003602c2b26c | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.53ms | question=chiffre d affaires de mars 2026
+[2026-05-11 11:25:15] uuid=e31e29d4-e9df-42b6-a586-17f6d012bbac | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.12ms | question=chiffre d affaires de avril 2026
+[2026-05-11 11:29:22] uuid=e6f094c8-e325-415d-8c53-38416681013a | status=success | template=get_monthly_growth_revenue | rows=6 | duration=190.64ms | question=chiffre d affaires de mai 2025
+[2026-05-11 11:29:24] uuid=7e604c64-1e28-407d-b4d7-65c9777f5c78 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=186.12ms | question=chiffre d affaires de juin 2025
+[2026-05-11 11:29:26] uuid=14350005-3576-481f-be53-128f530d97cb | status=success | template=get_monthly_growth_revenue | rows=6 | duration=187.26ms | question=chiffre d affaires de juillet 2025
+[2026-05-11 11:29:28] uuid=db8441db-9721-424d-9c36-85e9056bc17f | status=success | template=get_monthly_growth_revenue | rows=6 | duration=183.3ms | question=chiffre d affaires de août 2025
+[2026-05-11 11:29:31] uuid=27086589-8697-4ff0-b20e-ffdcef6d9b60 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=200.8ms | question=chiffre d affaires de septembre 2025
+[2026-05-11 11:29:33] uuid=6bf070bf-7f9c-46bb-b735-c1f1d848a24e | status=success | template=get_monthly_growth_revenue | rows=6 | duration=190.15ms | question=chiffre d affaires de octobre 2025
+[2026-05-11 11:29:35] uuid=0ce2a316-68d3-4047-8a55-d25f131bb2fe | status=success | template=get_monthly_growth_revenue | rows=6 | duration=191.15ms | question=chiffre d affaires de novembre 2025
+[2026-05-11 11:29:37] uuid=48abd20e-7e9b-46dc-ae0b-52a597149405 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.28ms | question=chiffre d affaires de décembre 2025
+[2026-05-11 11:29:40] uuid=296d9a02-ace5-41ec-b730-c45c45802f9d | status=success | template=get_monthly_growth_revenue | rows=6 | duration=181.16ms | question=chiffre d affaires de janvier 2026
+[2026-05-11 11:29:42] uuid=e606a3e8-fce9-4ace-8402-d92558c715a8 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=180.83ms | question=chiffre d affaires de février 2026
+[2026-05-11 11:29:44] uuid=d0ce0900-1b16-47d3-8fbd-c9713cee59fe | status=success | template=get_monthly_growth_revenue | rows=6 | duration=191.53ms | question=chiffre d affaires de mars 2026
+[2026-05-11 11:29:46] uuid=b90eab72-85f8-47c3-bb82-df98730955b8 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=285.47ms | question=chiffre d affaires de avril 2026
+[2026-05-11 11:47:59] uuid=e603aaab-46d4-4947-97c5-e1bc81aea97d | status=success | template=get_monthly_growth_revenue | rows=6 | duration=187.06ms | question=chiffre d affaires de mai 2025
+[2026-05-11 11:48:01] uuid=34993873-b317-4550-b8fe-03fec4f6a65b | status=success | template=get_monthly_growth_revenue | rows=6 | duration=180.62ms | question=chiffre d affaires de juin 2025
+[2026-05-11 11:48:03] uuid=831f049b-7e4e-4ffd-bf7a-018f0733972e | status=success | template=get_monthly_growth_revenue | rows=6 | duration=181.86ms | question=chiffre d affaires de juillet 2025
+[2026-05-11 11:48:05] uuid=05c7114b-e3fd-42db-9a9f-2db67bc7437d | status=success | template=get_monthly_growth_revenue | rows=6 | duration=188.95ms | question=chiffre d affaires de août 2025
+[2026-05-11 11:48:08] uuid=c12358e0-5d71-410b-bcd1-83a7be46dfb5 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=188.12ms | question=chiffre d affaires de septembre 2025
+[2026-05-11 11:48:10] uuid=00b94f1c-6f7d-41f4-ae7f-2fe61a0c6916 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=203.14ms | question=chiffre d affaires de octobre 2025
+[2026-05-11 11:48:12] uuid=133de40e-20b0-4e33-abef-31f1cdd5d332 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=179.67ms | question=chiffre d affaires de novembre 2025
+[2026-05-11 11:48:14] uuid=66eb4100-3788-418e-b42a-eda1c6e8fe10 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=254.92ms | question=chiffre d affaires de décembre 2025
+[2026-05-11 11:48:17] uuid=3ddbed60-e7f7-4b9f-a9e0-44a10ecd0ae7 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=187.04ms | question=chiffre d affaires de janvier 2026
+[2026-05-11 11:48:19] uuid=48065696-54dd-44d4-8225-d6d3e44cfaab | status=success | template=get_monthly_growth_revenue | rows=6 | duration=225.16ms | question=chiffre d affaires de février 2026
+[2026-05-11 11:48:21] uuid=ae63c06d-e7b1-4293-a870-1e2655f567f9 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=181.74ms | question=chiffre d affaires de mars 2026
+[2026-05-11 11:48:23] uuid=ff6214f4-7c79-431d-a075-a57f4c302af5 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=194.56ms | question=chiffre d affaires de avril 2026
+[2026-05-11 11:50:01] uuid=83d34b8d-877b-4f96-ac65-978a53c385cf | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.03ms | question=chiffre d affaires de janvier 2026
+[2026-05-11 11:53:22] uuid=fea73b7d-d32f-4e78-a71d-340f9331341e | status=success | template=get_monthly_growth_revenue | rows=6 | duration=185.78ms | question=évolution chiffre d affaires mensuel
+[2026-05-11 11:57:22] uuid=58b5c3c6-259d-4def-abec-536f089ff16d | status=success | template=get_monthly_growth_revenue | rows=6 | duration=189.88ms | question=évolution chiffre d affaires mensuel
+[2026-05-11 11:58:03] uuid=44eb1994-c3e6-41ea-9c24-ef22c24bc839 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=189.66ms | question=évolution chiffre d affaires mensuel
+[2026-05-11 12:41:54] uuid=9d541a61-1ffd-4882-9d38-0545e4db3376 | status=success | template=produits_non_commandes | rows=10 | duration=183.46ms | question=Factures non payées
+[2026-05-11 12:42:26] uuid=ed5d3d78-b0ce-430d-8ae1-30ee1e9d8b02 | status=success | template=get_produits_stock_faible | rows=100 | duration=199.42ms | question=Produits avec stock inférieur à 5
+[2026-05-11 12:42:38] uuid=3ec6050e-5c31-4f63-a286-91fd3457d786 | status=success | template=produits_non_commandes | rows=10 | duration=193.52ms | question=Factures non payées
+[2026-05-11 12:42:44] uuid=266223b4-0015-48eb-ad9a-23c4ba7c138d | status=success | template=factures_par_client | rows=200 | duration=187.9ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-11 12:42:51] uuid=189a8aff-e982-4048-aebb-dafb7467932f | status=success | template=top_clients_ca | rows=2 | duration=186.36ms | question=Clients avec plus de 2 commandes
+[2026-05-11 12:42:59] uuid=25e28c51-7a43-400a-9f13-4b7c2e185ec1 | status=success | template=top_produits_ca | rows=46 | duration=181.93ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-11 12:43:06] uuid=7795e3cf-8338-40fa-aaa5-bf7b17752441 | status=success | template=top_clients_ca | rows=2 | duration=187.4ms | question=Clients avec plus de 2 commandes
+[2026-05-11 12:43:10] uuid=cfe6731a-9ee4-4e45-a18f-e3caffe2caf8 | status=success | template=get_produits_stock_faible | rows=100 | duration=2.2ms | question=Produits avec stock inférieur à 5
+[2026-05-11 12:46:34] uuid=03fed733-4b15-4b46-918e-e12aeb3ff64a | status=success | template=produits_non_commandes | rows=10 | duration=187.81ms | question=Factures non payées
+[2026-05-11 12:58:47] uuid=aa069745-890a-4699-928b-4628a8a9d18f | status=success | template=factures_par_client | rows=200 | duration=191.85ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-11 12:58:57] uuid=cfd13867-9483-49ed-a50b-d6ceb59a1ae2 | status=success | template=produits_non_commandes | rows=10 | duration=182.08ms | question=Factures non payées
+[2026-05-11 12:59:03] uuid=de3d20de-a1ba-4558-ab7e-74113ab55106 | status=success | template=get_produits_stock_faible | rows=100 | duration=194.36ms | question=Produits avec stock inférieur à 5
+[2026-05-11 12:59:07] uuid=c7201700-ad06-4bcf-a184-25abc1b91f80 | status=success | template=top_clients_ca | rows=2 | duration=183.38ms | question=Clients avec plus de 2 commandes
+[2026-05-11 12:59:15] uuid=f44ebbf5-5c7d-403d-bbd0-b1f612dad632 | status=success | template=top_produits_ca | rows=46 | duration=189.56ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-11 13:59:33] uuid=3fce0d43-1ca0-4148-b076-bdd339b22af3 | status=success | template=factures_par_client | rows=200 | duration=459.64ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-11 13:59:57] uuid=6c878627-b3c6-4e12-bdd0-6d8880712960 | status=success | template=produits_non_commandes | rows=10 | duration=428.28ms | question=Factures non payées
+[2026-05-11 14:00:13] uuid=99942079-7a12-4b9f-9715-f194311421d9 | status=success | template=get_produits_stock_faible | rows=100 | duration=405.79ms | question=Produits avec stock inférieur à 5
+[2026-05-11 14:01:00] uuid=8392b72f-a1a7-4a58-bbd6-cd993803909d | status=success | template=top_clients_ca | rows=2 | duration=411.79ms | question=Clients avec plus de 2 commandes
+[2026-05-11 14:01:20] uuid=57b25594-7774-4b99-972f-049a59484777 | status=success | template=top_produits_ca | rows=46 | duration=412.42ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-11 14:02:06] uuid=85bb0398-25f8-4a49-b55d-063296a44e91 | status=success | template=top_clients_ca | rows=2 | duration=182.94ms | question=Clients avec plus de 2 commandes
+[2026-05-11 14:02:09] uuid=a7c6a082-dd5c-4daf-8318-c6d87bb191b4 | status=success | template=get_produits_stock_faible | rows=100 | duration=2.72ms | question=Produits avec stock inférieur à 5
+[2026-05-11 14:07:16] uuid=f9be0e0a-fba0-4126-9ec2-acee82f3fefe | status=success | template=top_produits_ca | rows=46 | duration=183.73ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-11 14:14:55] uuid=82309c53-22cb-4dad-96ac-8565f20f844a | status=success | template=get_factures_non_payees | rows=91 | duration=197.86ms | question=Factures non payées
+[2026-05-11 14:15:05] uuid=aa9d1dc2-2550-413e-89e7-3332e6f55824 | status=success | template=get_factures_between | rows=200 | duration=231.98ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-11 14:15:09] uuid=cfbd42a7-9e8e-49af-804e-7da0eea4cd63 | status=success | template=get_produits_stock_faible | rows=100 | duration=189.42ms | question=Produits avec stock inférieur à 5
+[2026-05-11 14:15:14] uuid=d2e83df6-1708-4353-8bea-8c8ec69be35a | status=success | template=get_clients_multiple_commandes | rows=5 | duration=184.64ms | question=Clients avec plus de 2 commandes
+[2026-05-11 14:15:19] uuid=82a19ac7-d671-403b-b3e1-7ea91752becd | status=success | template=get_total_ventes_mois | rows=1 | duration=180.67ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-11 14:18:51] uuid=3326defc-d927-488c-a979-7bb6532285ae | status=success | template=top_produits_ca | rows=10 | duration=191.9ms | question=Top des produits générant le plus de chiffre d'affaires
+[2026-05-11 14:21:33] uuid=96830f06-1e06-4927-aad9-6440f13ca255 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=182.34ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 14:21:53] uuid=0de36ca6-9986-46ba-b782-f3f8f1a3d825 | status=success | template=get_average_order_value_by_client | rows=10 | duration=182.25ms | question=Valeur moyenne des commandes par client
+[2026-05-11 14:22:04] uuid=7f36788d-17f1-4a3c-8818-b3317bd22153 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=184.06ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 14:23:08] uuid=8e87fe5a-d231-49cc-a290-2caf3b74ad82 | status=success | template=produits_non_commandes | rows=10 | duration=183.52ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 14:23:32] uuid=894da3ff-16db-43bc-91b1-f5bad046c4a9 | status=success | template=get_average_order_value_by_client | rows=10 | duration=187.85ms | question=Factures d’un client avec total HT et TTC
+[2026-05-11 14:24:55] uuid=d2fd9dce-9cb0-49d6-b2a2-a48b6eed5ab2 | status=success | template=get_average_order_value_by_client | rows=10 | duration=181.18ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 14:25:36] uuid=d35c41af-c6dc-4727-8f63-7943b02deb4f | status=success | template=top_clients_ca | rows=5 | duration=181.52ms | question=Top 5 clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 14:25:54] uuid=93f062c1-0688-4d1f-8cdf-2947e7a7da69 | status=success | template=commandes_par_mois | rows=1 | duration=179.94ms | question=Nombre et total des commandes pour un mois donné
+[2026-05-11 14:26:19] uuid=084f9861-0c13-490f-a02b-249cada32091 | status=success | template=produits_non_commandes | rows=5 | duration=185.96ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 14:29:00] uuid=7defced8-98c7-484f-85a6-b4e97bfdae36 | status=success | template=produits_non_commandes | rows=5 | duration=192.67ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 14:29:28] uuid=ff464b78-32ac-4f32-a599-b22c2598674b | status=success | template=commandes_par_mois | rows=1 | duration=182.79ms | question=Nombre et total des commandes pour mars
+[2026-05-11 14:29:47] uuid=b9cbb869-b338-43a8-9d92-61f3bba7f8f3 | status=success | template=top_clients_ca | rows=5 | duration=185.06ms | question=Top 5 clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 14:30:07] uuid=9825a6e8-2d67-4bec-acf7-a2d2a5aa5a23 | status=success | template=get_average_order_value_by_client | rows=10 | duration=181.03ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 14:30:41] uuid=f174bc5a-5317-40aa-8512-0dfe360fe143 | status=success | template=produits_non_commandes | rows=10 | duration=181.53ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 14:30:55] uuid=9d3cd350-0d0d-4be1-86b2-11eaf2b3b494 | status=success | template=get_average_order_value_by_client | rows=10 | duration=188.2ms | question=Valeur moyenne des commandes par client
+[2026-05-11 14:31:09] uuid=b7a5b535-5ecb-4a8d-840b-1a5ee4f1c014 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=184.82ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 14:31:28] uuid=05f90d37-2475-4ac0-a650-76d93695b653 | status=success | template=top_produits_ca | rows=10 | duration=184.23ms | question=Top des produits générant le plus de chiffre d'affaires (CA)
+[2026-05-11 14:31:40] uuid=2a9f5617-b4db-4d64-93b4-75def3b1b634 | status=success | template=get_factures_between | rows=200 | duration=233.96ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-11 14:31:45] uuid=dbf69794-515e-419c-88d8-b86b819b5bba | status=success | template=get_factures_non_payees | rows=91 | duration=189.34ms | question=Factures non payées
+[2026-05-11 14:31:50] uuid=a2055223-b1d0-4dad-9342-2b17af22321b | status=success | template=get_produits_stock_faible | rows=100 | duration=191.6ms | question=Produits avec stock inférieur à 5
+[2026-05-11 14:31:53] uuid=286f02ee-57f3-44f2-ba09-6a3c98a23400 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=182.94ms | question=Clients avec plus de 2 commandes
+[2026-05-11 14:31:58] uuid=6d642ffb-fee2-4bc9-8a95-12106788d46b | status=success | template=get_total_ventes_mois | rows=1 | duration=183.59ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-11 14:32:11] uuid=7cd87558-703a-4385-bdc0-6c077e1bc9f0 | status=success | template=get_factures_non_payees | rows=91 | duration=0.27ms | question=Factures non payées
+[2026-05-11 14:35:33] uuid=cb9f33c0-5318-4285-a01d-176c3738d052 | status=success | template=get_average_order_value_by_client | rows=10 | duration=181.84ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 14:35:40] uuid=5c70c279-110a-4146-9cc5-339d69ccf92b | status=success | template=produits_non_commandes | rows=5 | duration=188.24ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 14:44:28] uuid=4c12a2f5-e06a-4e5a-8875-9667cffde936 | status=success | template=get_factures_par_client | rows=4 | duration=182.42ms | question=Factures du client mondher avec total HT et TTC
+[2026-05-11 14:44:40] uuid=e9a7a08d-3fef-4c9b-ba94-4fef7f7b99b1 | status=success | template=get_produits_stock_faible | rows=100 | duration=187.7ms | question=Produits dont le stock est inférieur à 5
+[2026-05-11 14:45:18] uuid=803de0d4-ff3a-4876-a899-f85ffed0d114 | status=success | template=get_produits_stock_faible | rows=36 | duration=201.34ms | question=Produits dont le stock est inférieur à 0*
+[2026-05-11 14:45:21] uuid=0538aa93-71cb-497b-937d-606181dda8f6 | status=success | template=get_produits_stock_faible | rows=36 | duration=0.22ms | question=Produits dont le stock est inférieur à 0
+[2026-05-11 14:45:54] uuid=042824ed-99b1-446b-a628-16fb67da39f1 | status=success | template=get_commandes_par_mois | rows=1 | duration=183.51ms | question=Nombre et total des commandes pour mars
+[2026-05-11 14:46:16] uuid=8ebb17c4-7fc7-4f65-927d-27c9b407513f | status=success | template=get_top_clients_ca | rows=3 | duration=182.89ms | question=Top 3 clients avec le chiffre d'affaires le plus élevé
+[2026-05-11 14:46:35] uuid=d217c7d9-c025-4136-b9bc-eac79339d75d | status=success | template=produits_non_commandes | rows=10 | duration=214.2ms | question=Produits qui n'ont jamais été commandés
+[2026-05-11 14:46:57] uuid=aa0d1ab5-7415-4838-8ced-d8c234ea0762 | status=success | template=get_average_order_value_by_client | rows=10 | duration=186.64ms | question=Valeur moyenne des commandes par client
+[2026-05-11 14:47:12] uuid=8ff39734-2783-4c27-8eaf-37f2406082ae | status=success | template=get_monthly_growth_revenue | rows=6 | duration=187.49ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-11 14:47:25] uuid=590f7619-1f9c-46df-8cec-42ef1e21fbbe | status=success | template=top_produits_ca | rows=10 | duration=187.53ms | question=Top des produits générant le plus de chiffre d'affaires (CA)
+[2026-05-11 14:47:33] uuid=a7b7444a-8790-434d-a5b9-812782b61116 | status=success | template=get_factures_between | rows=200 | duration=231.73ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-11 14:47:41] uuid=68c21fd2-f131-4c27-a84a-83ce73743e18 | status=success | template=get_factures_non_payees | rows=91 | duration=187.93ms | question=Factures non payées
+[2026-05-11 14:48:00] uuid=70e4ab9b-b3f9-4f77-a5d4-770265257d60 | status=success | template=get_produits_stock_faible | rows=100 | duration=0.12ms | question=Produits avec stock inférieur à 5
+[2026-05-11 14:48:05] uuid=ee2990b5-c9fd-4379-9d8c-39e725e759b3 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=184.68ms | question=Clients avec plus de 2 commandes
+[2026-05-11 14:48:09] uuid=8921026c-4f3c-49f7-9189-2e5fc4bc6c9c | status=success | template=get_total_ventes_mois | rows=1 | duration=187.7ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-11 14:48:12] uuid=e16efa5c-be82-4e73-a484-1bef6f55d183 | status=success | template=get_factures_between | rows=200 | duration=0.25ms | question=Factures entre 2026-01-01 et 2026-02-28

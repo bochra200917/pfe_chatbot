@@ -26,12 +26,17 @@ except Exception:
 # ─────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────
-API_URL        = "http://localhost:8000/ask"
+import os
+
 API_USER       = "admin"
 API_PASS       = "1234"
-HYBRID_API_URL = "http://localhost:8001/ask"
-EXECUTE_URL    = "http://localhost:8000/execute"
 DOLIBARR_BASE_URL = "https://demonstration.cieloo.io"
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
+
+API_URL        = f"{BASE_URL}/ask"
+HYBRID_API_URL = f"{BASE_URL}/ask"
+EXECUTE_URL    = f"{BASE_URL}/execute"
 
 st.set_page_config(
     page_title="Chatbot ZAI Informatique",
@@ -64,202 +69,102 @@ st.markdown("""
 
 st.markdown("""
 <style>
-/* ── Assistant flottant ── */
-.floating-btn {
-    position: fixed;
-    bottom: 2rem;
-    right: 2rem;
-    width: 56px;
-    height: 56px;
-    background: linear-gradient(135deg, #7c3aed, #4f46e5);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: 0 4px 20px rgba(124,58,237,0.4);
-    z-index: 9999;
-    font-size: 1.5rem;
-    border: none;
-    color: white;
-    transition: transform 0.2s;
-}
-.floating-btn:hover { transform: scale(1.1); }
-.popup-overlay {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    
-    width: 280px;
-    max-width: 85%;
-    
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    z-index: 9998;
-    
-    padding: 0.75rem;
-    border: 1px solid #e5e7eb;
-    
-    animation: fadeIn 0.2s ease;
-}
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-.popup-header {
-    font-size: 0.9rem;
+/* Styles spécifiques (non couverts par le thème Streamlit) */
+.chat-title {
+    font-size: 1.8rem;
     font-weight: 700;
-    color: #1a1a2e;
-    margin-bottom: 0.6rem;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
+    margin-bottom: 0.2rem;
 }
-.popup-category {
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #6d28d9;
-    margin: 0.4rem 0 0.2rem 0;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-.popup-prompt {
-    background: #f8f7ff;
-    border: 1px solid #e5e7eb;
-    border-radius: 6px;
-    padding: 0.35rem 0.6rem;
-    font-size: 0.75rem;
-    color: #374151;
-    cursor: pointer;
-    margin-bottom: 0.25rem;
-    transition: all 0.15s;
-    display: block;
-    width: 100%;
-    text-align: left;
-}
-.popup-prompt:hover {
-    background: #ede9fe;
-    border-color: #7c3aed;
-    color: #4c1d95;
-}
-.popup-close {
-    position: absolute;
-    top: 0.6rem;
-    right: 0.6rem;
-    background: none;
-    border: none;
-    font-size: 1rem;
-    color: #9ca3af;
-    cursor: pointer;
-    line-height: 1;
-}
-.popup-close:hover { color: #374151; }
-.popup-input-area {
-    margin-top: 0.6rem;
-    border-top: 1px solid #e5e7eb;
-    padding-top: 0.6rem;
-}
-.popup-input-label {
-    font-size: 0.7rem;
+.chat-subtitle {
+    font-size: 0.95rem;
     color: #6b7280;
-    margin-bottom: 0.25rem;
+    margin-bottom: 1.5rem;
 }
-.main { background-color: #f8f9fa; }
-.chat-title { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; margin-bottom: 0.2rem; }
-.chat-subtitle { font-size: 0.95rem; color: #6c757d; margin-bottom: 1.5rem; }
 .result-box {
-    background: white !important; border-radius: 10px; padding: 1.2rem 1.5rem;
-    border-left: 4px solid #4CAF50; margin-top: 1rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06); color: #111 !important;
+    background: white;
+    border-radius: 14px;
+    padding: 1.2rem 1.5rem;
+    border-left: 4px solid #4CAF50;
+    margin-top: 1rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
-.result-box strong { color: #111 !important; }
 .rejected-box {
-    background: #fff5f5 !important; border-radius: 10px; padding: 1.2rem 1.5rem;
+    background: #fff5f5;
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
     border-left: 4px solid #e53935;
 }
 .clarification-box {
-    background: #fffde7 !important; border-radius: 10px; padding: 1.2rem 1.5rem;
+    background: #fffde7;
+    border-radius: 10px;
+    padding: 1.2rem 1.5rem;
     border-left: 4px solid #FFC107;
 }
 .llm-badge {
-    background: #ede9fe !important; border-radius: 10px; padding: 0.5rem 1rem;
-    border-left: 4px solid #7c3aed; margin-bottom: 0.5rem;
-    font-size: 0.82rem; color: #4c1d95;
+    background: #ede9fe;
+    border-radius: 10px;
+    padding: 0.5rem 1rem;
+    border-left: 4px solid #7c3aed;
 }
-.history-wrapper {
-    border: 1px solid #e0e0e0; border-radius: 10px; padding: 8px;
-    background: #fafafa; height: 520px; overflow-y: auto;
-    scrollbar-width: thin; scrollbar-color: #cbd5e0 transparent;
-}
-.history-wrapper::-webkit-scrollbar { width: 5px; }
-.history-wrapper::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 10px; }
-.history-item {
-    background: white; border-radius: 8px; padding: 0.55rem 0.9rem;
-    margin-bottom: 0.35rem; font-size: 0.86rem; color: #333; border: 1px solid #e8e8e8;
+.meta-chip, .meta-chip-llm {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    margin-right: 6px;
 }
 .meta-chip {
-    display: inline-block; background: #e8f5e9; color: #2e7d32;
-    border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; margin-right: 6px;
+    background: #e8f5e9;
+    color: #2e7d32;
 }
 .meta-chip-llm {
-    display: inline-block; background: #ede9fe; color: #6d28d9;
-    border-radius: 20px; padding: 2px 10px; font-size: 0.8rem; margin-right: 6px;
+    background: #ede9fe;
+    color: #6d28d9;
 }
 .suggestion-box {
-    background: #f3f4f6 !important; border-radius: 10px; padding: 0.8rem 1rem;
+    background: #f3f4f6;
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
     border-left: 4px solid #6366f1;
 }
-.scroll-table, .fb-scroll {
-    background: #f9fafb !important; border: 1px solid #e5e7eb !important;
-    border-radius: 10px; max-height: 350px; overflow-y: auto;
-    scrollbar-width: thin; scrollbar-color: #cbd5e0 transparent;
+.history-wrapper {
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 8px;
+    background: #fafafa;
+    height: 520px;
+    overflow-y: auto;
 }
-.scroll-table::-webkit-scrollbar, .fb-scroll::-webkit-scrollbar { width: 5px; }
-.scroll-table::-webkit-scrollbar-thumb, .fb-scroll::-webkit-scrollbar-thumb {
-    background: #cbd5e0; border-radius: 10px;
-}
-.scroll-table-header, .fb-header {
-    display: flex; background: #f1f3f5 !important; padding: 6px 10px;
-    font-size: 0.78rem; font-weight: 600; color: #111 !important;
-    border-bottom: 1px solid #dee2e6; position: sticky; top: 0; z-index: 2;
-}
-.scroll-table-row {
-    display: flex; align-items: center; padding: 6px 10px;
-    border-bottom: 1px solid #e5e7eb; font-size: 0.83rem;
-    background: #ffffff !important; color: #111 !important;
-}
-.scroll-table-row:nth-child(even) { background: #f3f4f6 !important; }
-.scroll-table-row:hover { background: #e5e7eb !important; }
-.scroll-table-row span, .scroll-table-header span, .fb-header span { color: #111 !important; }
-.col-rank  { width: 8%;  text-align: center; font-weight: 600; }
-.col-ques  { width: 76%; }
-.col-count { width: 16%; text-align: center; font-weight: 600; color: #2e7d32; }
-.custom-popup {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 280px;
-    max-width: 85%;
-    padding: 16px;
+.history-item {
     background: white;
-    border-radius: 12px;
-    z-index: 9999;
+    border-radius: 8px;
+    padding: 0.55rem 0.9rem;
+    margin-bottom: 0.35rem;
+    border: 1px solid #e8e8e8;
 }
-.fb-row-wrapper {
-    border-bottom: 1px solid #e5e7eb; padding: 4px 0;
-    background: white; font-size: 0.83rem; color: #111;
+.dolibarr-table th {
+    background: #f1f3f5;
+    color: #111;
+    border-bottom: 2px solid #dee2e6;
 }
-.fb-row-wrapper:nth-child(even) { background: #f9fafb; }
+.dolibarr-table tr:hover td {
+    background: #ede9fe;
+}
+.stButton button {
+    background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    border: none !important;
+}
+div[role="dialog"] {
+    background: white !important;
+    border-radius: 14px !important;
+    border: 1px solid #e6eaf2 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# SESSION STATE
-# ═══════════════════════════════════════════════════════════════════════
 # ─────────────────────────────────────────────
 # SESSION STATE
 # ─────────────────────────────────────────────
@@ -1403,7 +1308,6 @@ elif selected_tab == "📊 Analyse prédictive":
     import sys
     sys.path.append(os.path.dirname(os.path.dirname(__file__)))
     from utils.predictive import predict_ca_mensuel, predict_stock_rupture, predict_fidelite_clients
-    
     pred_type = st.selectbox(
         "Type d'analyse",
         ["📈 CA mensuel — prévision", "📦 Stock — alerte rupture", "👥 Clients — fidélité prévue"]
@@ -1415,60 +1319,67 @@ elif selected_tab == "📊 Analyse prédictive":
             # ─── PRÉDICTION CA MENSUEL ─────────────────────────────────────────
             if "CA mensuel" in pred_type:
                 st.markdown("#### 📈 Prédiction du Chiffre d'Affaires")
-                
-                # Récupérer les données historiques (12 derniers mois)
-                months_data = []
-                today = date.today()
-                for i in range(12, 0, -1):
-                    # Calculer le mois (mois courant - i)
-                    year = today.year
-                    month = today.month - i
-                    if month <= 0:
-                        month += 12
-                        year -= 1
-                    
-                    month_name_fr = month_name(str(month).zfill(2))
-                    result = call_api(f"chiffre d affaires de {month_name_fr} {year}")
+    
+    # Une seule requête pour récupérer TOUS les mois
+                with st.spinner("Récupération des données historiques..."):
+                    result = call_api("évolution chiffre d affaires mensuel")
                     table = result.get("table", [])
-                    
-                    if table and "CA_HT" in table[0]:
-                        ca_value = table[0].get("CA_HT", 0)
-                        if ca_value is not None and ca_value != "":
-                            months_data.append({
-                                "mois": f"{year}-{str(month).zfill(2)}",
-                                "CA_HT": float(ca_value)
-                            })
+    
+                months_data = []
+                if table:
+                    for row in table:
+                        if isinstance(row, dict):
+                            annee = row.get("annee")
+                            mois = row.get("mois")
+                            ca = row.get("chiffre_affaires")
                 
+                            if annee and mois and ca and float(ca) > 0:
+                                months_data.append({
+                        "mois": f"{annee}-{str(mois).zfill(2)}",
+                        "CA_HT": float(ca)
+                    })
+        
+        # Trier par date
+                    months_data.sort(key=lambda x: x["mois"])
+        
+                    st.info(f"📊 {len(months_data)} mois de données historiques récupérées")
+                    df_hist = pd.DataFrame(months_data)
+                    st.dataframe(df_hist, use_container_width=True, hide_index=True)
+    
                 if len(months_data) >= 3:
-                    # Faire la prédiction
-                    prediction = predict_ca_mensuel(months_data, months_ahead=3)
-                    
+        # Faire la prédiction
+                    prediction = predict_ca_mensuel(months_data, months_ahead=1)
+        
                     if "error" in prediction:
                         st.error(prediction["error"])
                     else:
-                        # Afficher les données historiques
-                        st.markdown("**📊 Historique (12 derniers mois)**")
-                        df_hist = pd.DataFrame(prediction["historique"])
-                        st.dataframe(df_hist, use_container_width=True, hide_index=True)
-                        
-                        # Afficher les prédictions
-                        st.markdown("**🔮 Prédictions (3 prochains mois)**")
+            # Afficher les prédictions
+                        st.markdown("**🔮 Prédictions (prochain mois)**")
                         df_pred = pd.DataFrame(prediction["predictions"])
                         st.dataframe(df_pred, use_container_width=True, hide_index=True)
-                        
-                        # Métriques
+            
+            # Métriques
+                        # Dans l'affichage des métriques
                         col1, col2, col3 = st.columns(3)
                         col1.metric("Qualité du modèle (R²)", f"{prediction['model_score']:.2f}")
                         col2.metric("Tendance", "📈 Hausse" if prediction["tendance"] == "hausse" else "📉 Baisse")
-                        col3.metric("Prévision mois prochain", f"{prediction['predictions'][0]['CA_HT_predit']:,.0f} TND")
-                        
-                        # Graphique
+
+                        dernier_ca = months_data[-1]["CA_HT"]
+                        ca_prevu = prediction["predictions"][0]["CA_HT_predit"]
+                        variation = ((ca_prevu - dernier_ca) / dernier_ca * 100) if dernier_ca > 0 else 0
+
+# Ajouter un avertissement si la variation est extrême
+                        if abs(variation) > 50:
+                            st.warning(f"⚠️ Variation extrême de {variation:+.1f}% détectée. La prédiction peut être peu fiable en raison de données volatiles.")
+
+                        col3.metric("Prévision mois prochain", f"{ca_prevu:,.0f} TND", delta=f"{variation:+.1f}%")
+            # Graphique
                         fig, ax = plt.subplots(figsize=(10, 4))
-                        hist_months = [d["mois"] for d in prediction["historique"]]
-                        hist_values = [d["CA_HT"] for d in prediction["historique"]]
+                        hist_months = [d["mois"] for d in months_data]
+                        hist_values = [d["CA_HT"] for d in months_data]
                         pred_months = [d["mois"] for d in prediction["predictions"]]
                         pred_values = [d["CA_HT_predit"] for d in prediction["predictions"]]
-                        
+            
                         ax.plot(hist_months, hist_values, 'b-o', label="Historique", linewidth=2, markersize=6)
                         ax.plot(pred_months, pred_values, 'r--o', label="Prédiction", linewidth=2, markersize=6)
                         ax.axvline(x=len(hist_months)-0.5, color='gray', linestyle='--', alpha=0.5)
@@ -1482,8 +1393,7 @@ elif selected_tab == "📊 Analyse prédictive":
                         st.pyplot(fig)
                         plt.close(fig)
                 else:
-                    st.warning(f"Données insuffisantes pour la prédiction ({len(months_data)}/3 mois minimum).")
-            
+                    st.warning(f"Données insuffisantes pour la prédiction ({len(months_data)}/3 mois minimum).")              
             # ─── PRÉDICTION STOCK ─────────────────────────────────────────────
             elif "Stock" in pred_type:
                 st.markdown("#### 📦 Prédiction des ruptures de stock")

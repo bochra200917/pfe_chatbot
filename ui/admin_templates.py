@@ -20,194 +20,321 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ─── CSS personnalisé ──────────────────────────────────────────────────────────
+# ─── CSS personnalisé – Style Dolibarr/Cieloo amélioré ────────────────────────
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap');
 
     html, body, [class*="css"] {
-        font-family: 'Sora', sans-serif;
+        font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     }
     code, pre, .stCode {
         font-family: 'JetBrains Mono', monospace !important;
     }
 
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
-    }
-    [data-testid="stSidebar"] * {
-        color: #e2e8f0 !important;
-    }
-    [data-testid="stSidebar"] .stRadio label {
-        color: #94a3b8 !important;
+    /* Tokens de couleurs (ref. Dolibarr) */
+    :root {
+        --bg-doli: #f6f9ff;
+        --card-doli: #ffffff;
+        --ink-doli: #0f172a;
+        --muted-doli: #6b7280;
+        --border-doli: #e6eaf2;
+        --primary-doli: #2d6cdf;
+        --primary-ink: #1f4fb0;
+        --radius-doli: 14px;
+        --shadow-doli: 0 10px 25px rgba(17,24,39,.06);
+        --blue-doli: #2563eb;
+        --blue-2: #3b82f6;
     }
 
-    /* Header principal */
+    /* ========== SIDEBAR REPENSÉE (couleur dans le thème) ========== */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(135deg, #eef2ff 0%, #ffffff 80%);
+        border-right: 1px solid #e0e7ef;
+        box-shadow: 2px 0 12px rgba(0,0,0,0.03);
+    }
+    [data-testid="stSidebar"] * {
+        color: var(--ink-doli) !important;
+    }
+    [data-testid="stSidebar"] .stRadio label {
+        color: var(--muted-doli) !important;
+        font-weight: 500;
+        padding: 0.5rem 0.75rem;
+        border-radius: 10px;
+        transition: background 0.2s, color 0.2s;
+    }
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background: #e0e7ff;
+        color: var(--blue-doli) !important;
+    }
+    [data-testid="stSidebar"] .stRadio [aria-checked="true"] label {
+        background: linear-gradient(90deg, #e0e7ff, #ffffff);
+        color: var(--blue-doli) !important;
+        font-weight: 700;
+        border-left: 3px solid var(--blue-doli);
+        padding-left: 0.6rem;
+    }
+    /* Titre "Admin Panel" dans la sidebar */
+    /* Titre "Admin Panel" dans la sidebar */
+.sidebar .stMarkdown h3, [data-testid="stSidebar"] h3 {
+    font-size: 1.5rem;   /* au lieu de 1.1rem */
+    font-weight: 800;     /* plus gras */
+    color: var(--blue-doli);
+    letter-spacing: -0.3px;
+    margin-bottom: 0.5rem;
+}
+    /* Séparateur dans sidebar */
+    [data-testid="stSidebar"] hr {
+        margin: 1rem 0;
+        border-color: #e2e8f0;
+    }
+
+    /* Header principal – effet glassmorphisme léger */
     .admin-header {
-        background: linear-gradient(135deg, #0f172a, #1e3a5f);
-        border: 1px solid #334155;
-        border-radius: 12px;
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        border: none;
+        border-radius: var(--radius-doli);
         padding: 24px 32px;
         margin-bottom: 28px;
         display: flex;
         align-items: center;
         gap: 16px;
+        box-shadow: 0 12px 24px rgba(37,99,235,0.18), 0 1px 2px rgba(0,0,0,0.02);
+        position: relative;
+        overflow: hidden;
+    }
+    .admin-header::before {
+        content: '';
+        position: absolute;
+        top: -30%;
+        right: -10%;
+        width: 200px;
+        height: 200px;
+        background: rgba(255,255,255,0.08);
+        border-radius: 50%;
+        pointer-events: none;
     }
     .admin-header h1 {
-        color: #f1f5f9;
+        color: #ffffff;
         font-size: 1.6rem;
         font-weight: 700;
         margin: 0;
         letter-spacing: -0.5px;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
     .admin-header p {
-        color: #64748b;
+        color: rgba(255,255,255,0.85);
         margin: 4px 0 0 0;
         font-size: 0.85rem;
     }
 
-    /* Cards de stats */
+    /* Cartes de statistiques – effet premium */
     .stat-card {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 10px;
+        background: var(--card-doli);
+        border: 1px solid var(--border-doli);
+        border-radius: var(--radius-doli);
         padding: 20px;
         text-align: center;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.02), 0 2px 4px rgba(0,0,0,0.02);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 18px 32px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.02);
+        border-color: #d9e2ef;
     }
     .stat-number {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #38bdf8;
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--blue-doli);
         font-family: 'JetBrains Mono', monospace;
+        letter-spacing: -0.02em;
     }
     .stat-label {
-        color: #94a3b8;
+        color: var(--muted-doli);
         font-size: 0.8rem;
-        margin-top: 4px;
+        margin-top: 8px;
+        font-weight: 500;
     }
 
     /* Badges */
     .badge {
         display: inline-block;
-        padding: 2px 10px;
-        border-radius: 20px;
-        font-size: 0.72rem;
+        padding: 3px 12px;
+        border-radius: 30px;
+        font-size: 0.7rem;
         font-weight: 600;
         font-family: 'JetBrains Mono', monospace;
     }
-    .badge-active   { background: #052e16; color: #4ade80; border: 1px solid #166534; }
-    .badge-inactive { background: #1c1917; color: #a8a29e; border: 1px solid #44403c; }
-    .badge-select   { background: #0c1e3d; color: #60a5fa; border: 1px solid #1e3a5f; }
+    .badge-active   { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+    .badge-inactive { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+    .badge-select   { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
 
     /* Bloc SQL */
     .sql-block {
-        background: #0f172a;
-        border: 1px solid #1e3a5f;
-        border-left: 3px solid #38bdf8;
-        border-radius: 8px;
+        background: #f8fafc;
+        border: 1px solid var(--border-doli);
+        border-left: 4px solid var(--blue-doli);
+        border-radius: 12px;
         padding: 14px 18px;
         font-family: 'JetBrains Mono', monospace;
         font-size: 0.82rem;
-        color: #93c5fd;
+        color: var(--ink-doli);
         white-space: pre-wrap;
-        margin: 8px 0;
-        line-height: 1.6;
+        margin: 12px 0;
+        line-height: 1.5;
+        box-shadow: inset 0 1px 2px rgba(0,0,0,0.01), 0 1px 2px rgba(0,0,0,0.02);
     }
 
-    /* Alerte sécurité */
+    /* Alertes sécurité */
     .security-warning {
-        background: #2d1b00;
-        border: 1px solid #92400e;
-        border-left: 3px solid #f59e0b;
-        border-radius: 8px;
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        border-left: 4px solid #f59e0b;
+        border-radius: 10px;
         padding: 12px 16px;
-        color: #fcd34d;
+        color: #92400e;
         font-size: 0.83rem;
-        margin: 8px 0;
+        margin: 12px 0;
     }
     .security-ok {
-        background: #052e16;
-        border: 1px solid #166534;
-        border-left: 3px solid #4ade80;
-        border-radius: 8px;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-left: 4px solid #22c55e;
+        border-radius: 10px;
         padding: 12px 16px;
-        color: #86efac;
+        color: #15803d;
         font-size: 0.83rem;
-        margin: 8px 0;
+        margin: 12px 0;
     }
 
-    /* Boutons custom */
+    /* Boutons modernes */
     .stButton > button {
-        border-radius: 8px;
-        font-family: 'Sora', sans-serif;
+        border-radius: 10px;
+        font-family: 'Inter', sans-serif;
         font-weight: 600;
         font-size: 0.85rem;
-        transition: all 0.2s ease;
+        transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        background: linear-gradient(135deg, var(--blue-doli), var(--blue-2));
+        color: white;
+        border: none;
+        box-shadow: 0 2px 8px rgba(37,99,235,0.2);
+        padding: 0.4rem 1rem;
+    }
+    .stButton > button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(37,99,235,0.3);
+        background: linear-gradient(135deg, #1d4ed8, #2563eb);
+    }
+    .stButton > button:active {
+        transform: translateY(1px);
     }
 
-    /* Expander styling */
+    /* Expander styling – plus aéré */
     [data-testid="stExpander"] {
-        border: 1px solid #334155;
-        border-radius: 10px;
-        background: #1e293b;
+        border: 1px solid #eef2f6;
+        border-radius: 16px;
+        background: var(--card-doli);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        margin-bottom: 12px;
+        transition: box-shadow 0.2s;
+    }
+    [data-testid="stExpander"]:hover {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+        border-color: #e2e8f0;
+    }
+    [data-testid="stExpander"] details {
+        padding: 0;
+    }
+    [data-testid="stExpander"] summary {
+        padding: 1rem 1.2rem;
+        font-weight: 600;
     }
 
     /* Version badge */
     .version-tag {
-        background: #172554;
-        color: #93c5fd;
-        border: 1px solid #1e40af;
-        border-radius: 20px;
-        padding: 2px 12px;
-        font-size: 0.72rem;
+        background: #f1f5f9;
+        color: var(--muted-doli);
+        border: 1px solid #e2e8f0;
+        border-radius: 30px;
+        padding: 2px 14px;
+        font-size: 0.7rem;
         font-family: 'JetBrains Mono', monospace;
+        font-weight: 500;
     }
 
-    hr { border-color: #1e293b; }
-    
-    /* Scroll table styles pour Cache & Audit */
+    hr {
+        border-color: #edf2f7;
+        margin: 1.5rem 0;
+    }
+
+    /* Tableaux scrollables – plus de confort */
     .scroll-table, .fb-scroll {
-        background: #f9fafb !important;
-        border: 1px solid #e5e7eb !important;
-        border-radius: 10px;
-        max-height: 350px;
+        background: var(--card-doli) !important;
+        border: 1px solid #edf2f7 !important;
+        border-radius: 16px;
+        max-height: 380px;
         overflow-y: auto;
         scrollbar-width: thin;
-        scrollbar-color: #cbd5e0 transparent;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
-    .scroll-table::-webkit-scrollbar, .fb-scroll::-webkit-scrollbar { width: 5px; }
+    .scroll-table::-webkit-scrollbar, .fb-scroll::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
     .scroll-table::-webkit-scrollbar-thumb, .fb-scroll::-webkit-scrollbar-thumb {
         background: #cbd5e0;
         border-radius: 10px;
     }
     .scroll-table-header, .fb-header {
         display: flex;
-        background: #f1f3f5 !important;
-        padding: 6px 10px;
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: #111 !important;
-        border-bottom: 1px solid #dee2e6;
+        background: #fafcff !important;
+        padding: 8px 12px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--ink-doli);
+        border-bottom: 1px solid var(--border-doli);
         position: sticky;
         top: 0;
         z-index: 2;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
     .scroll-table-row {
         display: flex;
         align-items: center;
-        padding: 6px 10px;
-        border-bottom: 1px solid #e5e7eb;
-        font-size: 0.83rem;
-        background: #ffffff !important;
-        color: #111 !important;
+        padding: 8px 12px;
+        border-bottom: 1px solid #f0f2f5;
+        font-size: 0.85rem;
+        background: var(--card-doli) !important;
+        color: var(--ink-doli);
+        transition: background 0.1s;
     }
-    .scroll-table-row:nth-child(even) { background: #f3f4f6 !important; }
-    .scroll-table-row:hover { background: #e5e7eb !important; }
-    .scroll-table-row span, .scroll-table-header span, .fb-header span { color: #111 !important; }
-    .col-rank  { width: 8%;  text-align: center; font-weight: 600; }
+    .scroll-table-row:nth-child(even) {
+        background: #fafcff !important;
+    }
+    .scroll-table-row:hover {
+        background: #f1f5f9 !important;
+    }
+    .col-rank  { width: 8%; text-align: center; font-weight: 600; }
     .col-ques  { width: 76%; }
-    .col-count { width: 16%; text-align: center; font-weight: 600; color: #2e7d32; }
+    .col-count { width: 16%; text-align: center; font-weight: 700; color: #2e7d32; }
+
+    /* Messages information */
+    .stAlert {
+        border-radius: 12px;
+        border-left-width: 4px;
+    }
+    /* Inputs plus propres */
+    .stTextInput > div > input, .stSelectbox > div > select, .stTextArea textarea {
+        border-radius: 10px;
+        border: 1px solid #e0e7ef;
+        transition: border 0.15s, box-shadow 0.15s;
+    }
+    .stTextInput > div > input:focus, .stSelectbox > div > select:focus, .stTextArea textarea:focus {
+        border-color: var(--blue-doli);
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -230,7 +357,6 @@ ALLOWED_TABLES = [
 ]
 
 # ─── Fonctions utilitaires ─────────────────────────────────────────────────────
-
 def load_templates() -> dict:
     if not os.path.exists(TEMPLATES_FILE):
         return {
@@ -241,33 +367,25 @@ def load_templates() -> dict:
     with open(TEMPLATES_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
 
-
 def save_templates(data: dict):
     data["updated_at"] = datetime.now().isoformat()
     with open(TEMPLATES_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-
 def validate_sql(sql: str) -> tuple:
     errors = []
     sql_upper = sql.upper().strip()
-
     if not sql_upper.startswith("SELECT"):
         errors.append("❌ La requête doit commencer par SELECT.")
-
     for kw in FORBIDDEN_KEYWORDS:
         if re.search(r'\b' + kw + r'\b', sql_upper):
             errors.append(f"❌ Mot-clé interdit détecté : `{kw}`")
-
     if "LIMIT" not in sql_upper:
         errors.append("⚠️  Aucun LIMIT détecté — ajoute LIMIT :limit pour sécuriser.")
-
     return len(errors) == 0, errors
-
 
 def extract_params(sql: str) -> list:
     return list(set(re.findall(r':(\w+)', sql)))
-
 
 def get_stats(data: dict) -> dict:
     templates = data.get("templates", {})
@@ -279,18 +397,14 @@ def get_stats(data: dict) -> dict:
         "version":  data.get("version", "1.0"),
     }
 
-
 def call_hybrid_api(endpoint: str) -> dict:
-    """Appelle l'API hybride (port 8001) et retourne le JSON."""
     try:
         r = req.get(f"{HYBRID_API_URL}{endpoint}", timeout=5)
         return r.json() if r.status_code == 200 else {}
     except Exception:
         return {}
 
-
 def call_api_endpoint(endpoint: str, method: str = "GET") -> dict:
-    """Appelle l'API principale (port 8000) pour cache/audit."""
     API_USER = "admin"
     API_PASS = "1234"
     try:
@@ -300,14 +414,11 @@ def call_api_endpoint(endpoint: str, method: str = "GET") -> dict:
     except Exception:
         return {}
 
-
 # ─── Initialisation session state ─────────────────────────────────────────────
 if "data" not in st.session_state:
     st.session_state.data = load_templates()
-
 if "msg" not in st.session_state:
     st.session_state.msg = None
-
 
 # ─── Sidebar Navigation ────────────────────────────────────────────────────────
 with st.sidebar:
@@ -339,7 +450,6 @@ with st.sidebar:
         st.session_state.data = load_templates()
         st.rerun()
 
-
 # ─── Header ───────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="admin-header">
@@ -360,9 +470,8 @@ if st.session_state.msg:
         st.warning(mtxt)
     st.session_state.msg = None
 
-
 # ════════════════════════════════════════════════════════════════════════════════
-# PAGE 1 — Liste des templates
+# PAGE 1 — Liste des templates (contenu inchangé)
 # ════════════════════════════════════════════════════════════════════════════════
 if page == "📋 Liste des templates":
 

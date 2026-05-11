@@ -45,17 +45,40 @@ def normalize(text: str) -> str:
     text = unicodedata.normalize("NFD", text)
     return text.encode("ascii", "ignore").decode("utf-8")
 
+# Mots qui ne font PAS partie d'un nom de client
+_STOP_WORDS = {
+    "avec", "et", "ou", "pour", "de", "du", "des", "les", "la", "le",
+    "total", "ht", "ttc", "montant", "facture", "factures", "entre",
+    "depuis", "jusqu", "par", "sur", "en", "au", "aux", "un", "une",
+    "non", "pas", "plus", "moins",
+}
+
+def _extract_client_name(q: str) -> str | None:
+    # Pattern 1 : "client <nom>"
+    m = re.search(
+        r'\bclient\s+([a-zA-ZÀ-ÿ0-9][a-zA-ZÀ-ÿ0-9_\-\s]{0,40})',
+        q, re.IGNORECASE
+    )
+    if not m and "facture" in q:
+        # Pattern 2 : "factures de/du <nom>"
+        m = re.search(
+            r'\bfactures?\s+(?:de|du|d\')\s+([a-zA-ZÀ-ÿ0-9][a-zA-ZÀ-ÿ0-9_\-\s]{0,40})',
+            q, re.IGNORECASE
+        )
+    if not m:
+        return None
+    raw = m.group(1).strip()
+    tokens = raw.split()
+    clean_tokens = []
+    for tok in tokens:
+        if tok.lower() in _STOP_WORDS:
+            break
+        clean_tokens.append(tok)
+    client = " ".join(clean_tokens).strip()
+    return client if client else None
 
 def match_question(question: str):
     q = normalize(question)
-
-    # ── NOUVEAU : top produits commandés → template dédié ──
-    if (any(w in q for w in ["produit", "article"]) and 
-       any(w in q for w in ["commande", "vendu", "vendu"]) and 
-       any(w in q for w in ["top", "plus", "meilleur", "populaire"])):
-        match_n = re.search(r'\b(\d+)\b', q)
-        limit = int(match_n.group(1)) if match_n else 10
-        return "get_top_produits_commandes", {"limit": limit}
 
     # ── CA par trimestre ──────────────────────────────────────
     if "trimestre" in q and any(w in q for w in ["ca", "chiffre", "vente", "depense", "total"]):
@@ -155,13 +178,8 @@ def match_question(question: str):
     if "negatif" in q or "negativ" in q or "avoir" in q:
         return "get_factures_negatives", {}
 
-    match = re.search(r'factures?\s+client\s+([a-zA-Z0-9_\- ]+)', q)
-    if match:
-        return "get_factures_par_client", {"client": match.group(1).strip()}
-
-    match = re.search(r'client\s+([a-zA-Z0-9_\- ]+)', q)
-    if "facture" in q and match:
-        client_name = match.group(1).strip().replace("pour", "").strip()
+    client_name = _extract_client_name(q)
+    if client_name and "facture" in q:
         return "get_factures_par_client", {"client": client_name}
 
     # Boucle MONTHS — uniquement pour le CA/ventes
@@ -372,6 +390,133 @@ def reload_templates():
     from ui.hybrid_engine import load_templates
     TEMPLATES = load_templates()
 
+import os
+import json as _json_templates
+
+HYBRID_TEMPLATES_FILE = os.path.join(
+    os.path.dirname(__file__), "..", "ui", "templates.json"
+)
+
+def load_hybrid_templates() -> dict:
+    """Recharge à chaque requête — pas de cache mémoire."""
+    try:
+        with open(HYBRID_TEMPLATES_FILE, "r", encoding="utf-8") as f:
+            data = _json_templates.load(f)
+        return data.get("templates", {})
+    except Exception:
+        return {}
+
+
+def match_admin_template(question: str) -> tuple:
+    q = normalize(question)
+    q_words = set(q.split())
+
+    # ── Blacklist étendue : ces questions ne doivent JAMAIS aller vers admin templates ──
+    BLACKLIST_PATTERNS = [
+        r"non pay", r"impay", r"non regle", r"non sold",
+        r"entre.*et", r"factures entre",
+        r"plus de.*commande",
+        r"chiffre.*affaires.*janvier", r"chiffre.*affaires.*fevrier",
+        r"chiffre.*affaires.*mars", r"ca de", r"ca du mois",
+        # ── NOUVEAUX : bloquer les questions simples déjà couvertes par V1/V2 ──
+        r"stock.*inferieur",     # → get_produits_stock_faible
+        r"inferieur.*stock",
+        r"stock.*inf",
+        r"moins de.*stock",
+        r"stock.*moins de",
+        r"rupture.*stock",
+        r"factures.*client\s+\w",  # → get_factures_par_client
+        r"facture.*de.*client",
+        r"facture.*pour.*client",
+    ]
+    for pat in BLACKLIST_PATTERNS:
+        if re.search(pat, q):
+            return None, None, {}
+
+    templates = load_hybrid_templates()
+    best_match = None
+    best_score = 0
+
+    for tid, t in templates.items():
+        if not t.get("active", True):
+            continue
+        keywords = t.get("keywords", [])
+        if not keywords:
+            continue
+        total_score = 0
+        for kw in keywords:
+            kw_norm = normalize(kw)
+            if kw_norm in q:
+                # Mots trop génériques ne comptent pas seuls
+                if kw_norm in {"facture", "factures", "client", "clients",
+                               "commande", "commandes", "produit", "produits",
+                               "total", "stock"}:
+                    total_score += 1  # poids réduit
+                else:
+                    total_score += 3
+                continue
+            kw_words = set(kw_norm.split())
+            common = kw_words & q_words
+            if len(common) >= max(1, len(kw_words) // 2):
+                total_score += 2
+            elif len(common) >= 1:
+                total_score += 1
+        if total_score > best_score:
+            best_score = total_score
+            best_match = (tid, t)
+
+    # ── Seuil relevé de 2 à 4 ──
+    if best_match and best_score >= 4:
+        tid, t = best_match
+        sql = t.get("sql", "")
+        placeholders = set(re.findall(r':(\w+)', sql))
+        params = _extract_admin_params(question, placeholders)
+        return tid, sql, params
+
+    return None, None, {}
+
+
+def _extract_admin_params(question: str, placeholders: set) -> dict:
+    params = {}
+    q = normalize(question)
+    _stop = {
+        "avec", "et", "ou", "pour", "de", "du", "des", "les", "la", "le",
+        "total", "ht", "ttc", "montant", "facture", "factures", "entre",
+        "depuis", "par", "sur", "en", "au", "aux", "un", "une",
+        "non", "pas", "plus", "moins",
+    }
+    for p in placeholders:
+        p_lower = p.lower()
+        if "limit" in p_lower:
+            m = re.search(r'\b(\d+)\b', q)
+            params[p] = m.group(1) if m else "10"
+        elif "annee" in p_lower or "year" in p_lower:
+            m = re.search(r'\b(20\d{2})\b', question)
+            params[p] = m.group(1) if m else "2026"
+        elif "mois" in p_lower or "month" in p_lower:
+            from datetime import datetime as _dt
+            MOIS_MAP_LOCAL = {
+                "janvier": "01", "fevrier": "02", "mars": "03", "avril": "04",
+                "mai": "05", "juin": "06", "juillet": "07", "aout": "08",
+                "septembre": "09", "octobre": "10", "novembre": "11", "decembre": "12",
+            }
+            mois_trouve = None
+            for nom, num in MOIS_MAP_LOCAL.items():
+                if nom in q:
+                    mois_trouve = num
+                    break
+            params[p] = mois_trouve if mois_trouve else str(_dt.today().month).zfill(2)
+        elif "seuil" in p_lower or "stock_min" in p_lower:
+            m = re.search(r'\b(\d+)\b', q)
+            params[p] = m.group(1) if m else "10"
+        elif p_lower == "client":
+            client = _extract_client_name(question)
+            params[p] = f"%{client}%" if client else "%"
+        else:
+            m = re.search(r'\b(\d+)\b', q)
+            if m:
+                params[p] = m.group(1)
+    return params
 
 def get_response(question: str) -> dict:
 
@@ -484,15 +629,67 @@ def get_response(question: str) -> dict:
                 "metadata": {"status": "clarification_required", "suggestions": []}
             }
 
-    # ── 3. EARLY MATCH (PRIORITÉ ABSOLUE) ──
+    # ── 2c. EARLY MATCH — templates V1/V2 prioritaires (avant admin templates) ──
     early_match, early_params = match_question(question)
-    if early_match in ("get_top_clients_ca", "get_commandes_par_mois", "liste_clients_simple","get_top_produits_commandes","get_ca_par_trimestre",):
+    if early_match in (
+    "get_top_clients_ca", "get_commandes_par_mois",
+    "liste_clients_simple", "get_top_produits_commandes",
+    "get_ca_par_trimestre",
+    "get_produits_stock_faible",      # ← ajouter
+    "get_factures_par_client",        # ← ajouter
+    "get_factures_non_payees",        # ← ajouter
+    "get_factures_non_payees_30j",    # ← ajouter
+):
         return _execute_template(question, early_match, early_params, start_time)
 
-    logger.debug(f"MAPPING RESULT: {apply_mapping_rules(question)}")
-    
-    # ── 4. Mapping rules ──
+    # ── 2c. Templates admin (priorité sur tout le routing) ──────────────
+    admin_tid, admin_sql, admin_params = match_admin_template(question)
+    if admin_tid and admin_sql:
+        logger.info(f"[ADMIN TEMPLATE MATCH] {admin_tid}")
+        sql_placeholders = set(re.findall(r':(\w+)', admin_sql))
+        sql_params = {k: v for k, v in admin_params.items() if k in sql_placeholders}
+        try:
+            validate_sql_query(admin_sql)
+            columns, rows, _ = execute_query(admin_sql, sql_params)
+            duration = round((time.time() - start_time) * 1000, 2)
+            result_rows = [dict(zip(columns, row)) for row in rows]
+            if "limit" in admin_params:
+                try:
+                    result_rows = result_rows[:int(admin_params["limit"])]
+                except (ValueError, TypeError):
+                    pass
+            log_id = log_query(
+                question, admin_sql, duration, len(result_rows),
+                admin_tid, sql_params, "success", None, from_cache=False
+            )
+            chatbot_cache.set(admin_tid, admin_params, {
+                "table": result_rows, "sql_query": admin_sql
+            })
+            return {
+                "table": result_rows,
+                "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
+                "metadata": {
+                    "status":      "success",
+                    "template":    admin_tid,
+                    "duration_ms": duration,
+                    "row_count":   len(result_rows),
+                    "params":      sql_params,
+                    "logs_id":     log_id,
+                    "sql_query":   admin_sql,
+                    "from_cache":  False,
+                    "suggestions": generate_suggestions(admin_tid, admin_params),
+                }
+            }
+        except Exception as e:
+            logger.warning(f"Erreur template admin {admin_tid} : {e}")
+            # Continue vers routing normal si le template admin échoue
+
+    # ── 4. Mapping rules ── (supprimez le bloc _skip_mapping, plus nécessaire)
     mapping_result = apply_mapping_rules(question)
+
+        # ── 4. Mapping rules ──
+    print("🔍 MAPPING RESULT:", mapping_result)
+
     if mapping_result is not None:
         intent = mapping_result.get("intent", "")
 
@@ -500,7 +697,7 @@ def get_response(question: str) -> dict:
             return {
                 "table": [],
                 "summary": "Requête rejetée pour des raisons de sécurité.",
-                "metadata": {"status": "rejected", "suggestions": []}
+                "metadata": {"status": "rejected", "suggestions": suggestions}
             }
 
         if intent == "clarification_required":
@@ -508,16 +705,15 @@ def get_response(question: str) -> dict:
                 "table": [],
                 "summary": mapping_result.get(
                     "clarification_message", "Veuillez préciser votre demande."),
-                "metadata": {"status": "clarification_required", "suggestions": []}
+                "metadata": {"status": "clarification_required", "suggestions": suggestions}
             }
 
         template_name, params = _convert_mapping_result(mapping_result)
         if template_name is not None:
             return _execute_template(question, template_name, params, start_time)
-
+    
     # ── 5. Match question (fallback règles) ──
     template_name, params = match_question(question)
-
     # ── 6. LLM fallback ──
     # Couche 4 : LLM fallback
     if template_name is None:

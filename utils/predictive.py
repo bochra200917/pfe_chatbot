@@ -4,6 +4,15 @@ from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from datetime import datetime, timedelta
 
+def remove_outliers(data: list, threshold: float = 2.0) -> list:
+    """Supprime les valeurs aberrantes (écart-type > threshold)"""
+    if len(data) < 3:
+        return data
+    values = [d["CA_HT"] for d in data]
+    mean = np.mean(values)
+    std = np.std(values)
+    return [d for d in data if abs(d["CA_HT"] - mean) <= threshold * std]
+
 def predict_ca_mensuel(historical_data: list, months_ahead: int = 1) -> dict:
     """
     Prédiction du CA mensuel basée sur les données historiques
@@ -185,3 +194,67 @@ def predict_fidelite_clients(historique_commandes: list) -> list:
         })
     
     return sorted(predictions, key=lambda x: -x["score_fidelite"])
+
+def predict_ca_multiple_months(historical_data: list, months_ahead: int = 3) -> dict:
+    """
+    Version améliorée de predict_ca_mensuel avec plus de métriques.
+    """
+    if len(historical_data) < 2:
+        return {
+            "error": f"Données insuffisantes ({len(historical_data)}/2 mois minimum)",
+            "historique": historical_data,
+            "predictions": []
+        }
+    
+    # Convertir en DataFrame
+    df = pd.DataFrame(historical_data)
+    df["mois_num"] = range(1, len(df) + 1)
+    X = df[["mois_num"]].values
+    y = df["CA_HT"].values
+    
+    # Régression polynomiale
+    degree = min(2, len(historical_data) - 1)
+    poly = PolynomialFeatures(degree=degree)
+    X_poly = poly.fit_transform(X)
+    model = LinearRegression()
+    model.fit(X_poly, y)
+    
+    # Prédictions
+    last_month_num = len(df)
+    predictions = []
+    last_date = datetime.strptime(df["mois"].iloc[-1], "%Y-%m")
+    
+    for i in range(1, months_ahead + 1):
+        next_month_num = last_month_num + i
+        X_pred = poly.transform([[next_month_num]])
+        pred_value = model.predict(X_pred)[0]
+        pred_value = max(0, round(float(pred_value), 2))
+        
+        pred_date = last_date + timedelta(days=32 * i)
+        pred_date = pred_date.replace(day=1)
+        
+        # Variation
+        if i == 1:
+            last_real = df["CA_HT"].iloc[-1]
+            variation = round(((pred_value - last_real) / last_real * 100), 1) if last_real != 0 else 0
+        else:
+            prev_pred = predictions[-1]["CA_HT_predit"]
+            variation = round(((pred_value - prev_pred) / prev_pred * 100), 1) if prev_pred != 0 else 0
+        
+        predictions.append({
+            "mois": pred_date.strftime("%Y-%m"),
+            "CA_HT_predit": pred_value,
+            "variation_pct": variation
+        })
+    
+    # Score du modèle
+    y_pred = model.predict(X_poly)
+    r2 = model.score(X_poly, y)
+    
+    return {
+        "historique": historical_data,
+        "predictions": predictions,
+        "model_score": round(r2, 3),
+        "tendance": "hausse" if predictions[0]["CA_HT_predit"] > df["CA_HT"].iloc[-1] else "baisse",
+        "message": f"Prédiction basée sur {len(historical_data)} mois, R²={r2:.2f}"
+    }
