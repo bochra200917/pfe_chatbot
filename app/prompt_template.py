@@ -277,13 +277,23 @@ def _ca_mois(m) -> dict | None:
 
 def _factures_mois(m) -> dict | None:
     mois_str = m.group(1).lower()
+
+    # ── Éviter les faux positifs : "paiement" contient "mai" ──
+    # Vérifier que le mot matché est bien un nom de mois isolé
+    FALSE_POSITIVES = {"paiement", "paiements", "email", "mai-"}
+    for fp in FALSE_POSITIVES:
+        if fp in mois_str:
+            return None
+
     mois_norm = mois_str.encode("ascii", "ignore").decode("utf-8")
     mois_num = None
     for k, v in MOIS_MAP.items():
         k_norm = k.encode("ascii", "ignore").decode("utf-8")
         if k_norm and (k_norm in mois_norm or k in mois_str):
-            mois_num = v
-            break
+            # ── Vérifier que c'est un mot entier, pas une sous-chaîne ──
+            if re.search(r'\b' + re.escape(k_norm) + r'\b', mois_norm):
+                mois_num = v
+                break
     if not mois_num:
         return None
     annee    = m.group(2) or _current_year()
@@ -326,6 +336,44 @@ _BYPASS_PATTERNS = [
 
 def apply_mapping_rules(question: str) -> dict | None:
     q = _normalize_simple(question)
+
+    # ══════════════════════════════════════════════════════════════
+    # BYPASS TOTAL → LLM : questions analytiques complexes
+    # Ces patterns ne correspondent à AUCUN template V1/V2
+    # ══════════════════════════════════════════════════════════════
+    LLM_BYPASS_PATTERNS = [
+        # délai / durée entre deux événements
+        r"delai.{0,20}(facture|paiement|commande)",
+        r"duree.{0,20}(facture|paiement|commande)",
+        r"temps.{0,20}(facture|paiement|commande)",
+        r"(facture|commande).{0,20}delai",
+        # émises ET payées, corrélation temporelle
+        r"emises?.{0,20}payees?",
+        r"payees?.{0,20}emises?",
+        r"meme.{0,10}mois",
+        r"meme.{0,10}periode",
+        # lignes de commande distinctes, ranking complexe
+        r"lignes?.{0,20}commande.{0,20}distinct",
+        r"distinct.{0,20}commande",
+        r"plus grand nombre.{0,20}ligne",
+        r"nombre.{0,20}lignes?.{0,20}distinct",
+        # clients sans commande (négatif)
+        r"clients?.{0,20}(jamais|sans|aucune).{0,20}commande",
+        r"(jamais|sans|aucune).{0,20}commande.{0,20}client",
+        r"n.{0,5}ont jamais",
+        r"n.{0,5}a jamais",
+        r"jamais passe",
+        r"jamais commande",
+        # catégorie de produit (table non couverte)
+        r"categorie.{0,20}produit",
+        r"produit.{0,20}categorie",
+        # ratio / pourcentage / taux complexe
+        r"(ratio|taux|pourcentage).{0,30}(facture|commande|paiement)",
+        r"moyenne.{0,20}(delai|jour|semaine)",
+    ]
+    for pat in LLM_BYPASS_PATTERNS:
+        if re.search(pat, q, re.IGNORECASE):
+            return None  # → force LLM
 
     # ── Stock faible : UNIQUEMENT si "stock" + mot de seuil/alerte ──
     # Ne pas matcher "factures non payées" qui ne contient pas "stock"

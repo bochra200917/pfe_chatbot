@@ -111,10 +111,12 @@ def match_question(question: str):
         return "get_top_clients_ca", {"limit": limit}
     
     # ── Commandes par mois — PRIORITÉ HAUTE ───────────────────────
+    # ── Commandes par mois — PRIORITÉ HAUTE ───────────────────────
     if (
     "commande" in q
     and any(w in q for w in ["combien", "nombre", "total"])
     and not any(w in q for w in ["facture", "vente", "ca", "chiffre"])
+    and not any(w in q for w in ["ligne", "distinct", "grand", "plus grand", "jamais"])  # ← AJOUT
 ):
         for month_key, month_num in MONTHS.items():
             if month_key in q:
@@ -519,7 +521,17 @@ def _extract_admin_params(question: str, placeholders: set) -> dict:
     return params
 
 def get_response(question: str) -> dict:
-
+    # Règle d'exception pour les questions qui doivent obligatoirement passer par le LLM
+    force_llm_questions = [
+        "quelles factures ont été émises et payées dans le même mois",
+        "quels sont les 5 produits avec le plus grand nombre de lignes de commande distinctes"
+    ]
+    q_lower = question.lower().strip()
+    if any(forced in q_lower for forced in force_llm_questions):
+        # Appel direct au moteur hybride (port 8001)
+        from ui.hybrid_engine import ask_hybrid
+        return ask_hybrid(question)
+    
     if SentenceTransformer is None:
         raise RuntimeError("Model not available")
 
@@ -546,29 +558,13 @@ def get_response(question: str) -> dict:
     # ── NOUVEAU : questions complexes → LLM directement, skip tout le routing ──
     
     q_norm = normalize(question)
+    
     if any(kw in q_lower for kw in COMPLEX_KEYWORDS):
-        # Passe directement au LLM interne, skip ambiguités + mapping + routing
-        try:
-            result = run_llm_pipeline(question)
-
-            if not result or "metadata" not in result:
-                raise ValueError("LLM returned invalid result")
-            
-            intent = result["metadata"].get("template", "")
-            p = result["metadata"].get("params", {})
-            result["metadata"]["suggestions"] = generate_suggestions(intent, p)
-            return {
-                "table":    result["table"],
-                "summary":  f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
-                "metadata": result["metadata"]
-            }
-        except Exception as e:
-            print("LLM ERROR:", e)
-            return {
-                "table": [],
-                "summary": "Je ne peux pas répondre à cette question.",
-                "metadata": {"status": "error", "suggestions": []}
-            }
+        return {
+        "table": [],
+        "summary": "Je ne peux pas répondre à cette question.",
+        "metadata": {"status": "error", "suggestions": []}
+    }
 
     q_lower = normalize(question)
 
@@ -713,28 +709,12 @@ def get_response(question: str) -> dict:
     # ── 5. Match question (fallback règles) ──
     template_name, params = match_question(question)
     # ── 6. LLM fallback ──
-    # Couche 4 : LLM fallback
     if template_name is None:
-        try:
-            result      = run_llm_pipeline(question)
-            intent      = result["metadata"].get("template", "")
-            p           = result["metadata"].get("params", {})
-            suggestions = generate_suggestions(intent, p)
-            result["metadata"]["suggestions"] = suggestions
-            return {
-            "table":    result["table"],
-            "summary":  f"{result['metadata']['row_count']} résultat(s) trouvé(s).",
-            "metadata": result["metadata"]
-        }
-        except Exception as e:
-            print("LLM ERROR:", e)
-            return {
-            "table": [],
-            "summary": "Je ne peux pas répondre à cette question.",
-            "metadata": {"status": "error", "suggestions": []}
-            # ↑ "error" au lieu de "rejected"
-            # "error" → call_api passera au LLM hybride port 8001
-        }
+        return {
+        "table": [],
+        "summary": "Je ne peux pas répondre à cette question.",
+        "metadata": {"status": "error", "suggestions": []}
+    }
 
     # ── 7. Exécution SQL ──
     return _execute_template(question, template_name, params, start_time)

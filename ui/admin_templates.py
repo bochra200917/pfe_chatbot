@@ -354,6 +354,7 @@ ALLOWED_TABLES = [
     "m38h_paiement_facture", "m38h_accounting_account",
     "m38h_accounting_bookkeeping", "m38h_bank", "m38h_bank_account",
     "m38h_user", "m38h_salary", "m38h_projet", "m38h_projet_task",
+    "m38h_categorie", "m38h_categorie_product",
 ]
 
 # ─── Fonctions utilitaires ─────────────────────────────────────────────────────
@@ -1044,25 +1045,53 @@ elif page == "⚙️ Cache & Audit":
             top_q = audit.get("top_questions", {})
             if top_q:
                 st.markdown("**Top questions**")
+
+    # ── Dédoublonnage côté front (normalisation casse + accents) ──
+                import unicodedata
+
+                def normalize_q(text: str) -> str:
+                    text = text.strip().lower()
+                    text = unicodedata.normalize("NFD", text)
+                    text = text.encode("ascii", "ignore").decode("utf-8")
+                    return text
+
+    # Regrouper par version normalisée, garder la version la mieux écrite
+    # (priorité : majuscule en début, puis la plus longue)
+                merged = {}
+                for q_text, cnt in top_q.items():
+                    key = normalize_q(q_text)
+                    if key not in merged:
+                        merged[key] = {"display": q_text, "count": cnt}
+                    else:
+                        merged[key]["count"] += cnt
+            # Préférer la version avec majuscule initiale
+                        current = merged[key]["display"]
+                        if q_text[0].isupper() and not current[0].isupper():
+                            merged[key]["display"] = q_text
+                        elif len(q_text) > len(current):
+                            merged[key]["display"] = q_text
+
+    # Trier par count décroissant
+                sorted_merged = sorted(merged.values(), key=lambda x: -x["count"])
+
                 header = (
-                    '<div class="scroll-table">'
-                    '<div class="scroll-table-header">'
-                    '<span class="col-rank">#</span>'
-                    '<span class="col-ques">Question</span>'
-                    '<span class="col-count">Nb</span>'
-                    '</div>'
-                )
+        '<div class="scroll-table">'
+        '<div class="scroll-table-header">'
+        '<span class="col-rank">#</span>'
+        '<span class="col-ques">Question</span>'
+        '<span class="col-count">Nb</span>'
+        '</div>'
+    )
                 rows_html = ""
-                for rank, (q_text, cnt) in enumerate(
-                        sorted(top_q.items(), key=lambda x: -x[1]), 1):
-                    q_esc = q_text[:70] + ("…" if len(q_text) > 70 else "")
+                for rank, item in enumerate(sorted_merged, 1):
+                    q_esc = item["display"][:70] + ("…" if len(item["display"]) > 70 else "")
                     rows_html += (
-                        f'<div class="scroll-table-row">'
-                        f'<span class="col-rank">{rank}</span>'
-                        f'<span class="col-ques">{q_esc}</span>'
-                        f'<span class="col-count">{cnt}</span>'
-                        f'</div>'
-                    )
+            f'<div class="scroll-table-row">'
+            f'<span class="col-rank">{rank}</span>'
+            f'<span class="col-ques">{q_esc}</span>'
+            f'<span class="col-count">{item["count"]}</span>'
+            f'</div>'
+        )
                 st.markdown(header + rows_html + "</div>", unsafe_allow_html=True)
         else:
             st.info("API non disponible.")

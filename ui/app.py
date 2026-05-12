@@ -35,7 +35,7 @@ DOLIBARR_BASE_URL = "https://demonstration.cieloo.io"
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
 
 API_URL        = f"{BASE_URL}/ask"
-HYBRID_API_URL = f"{BASE_URL}/ask"
+HYBRID_API_URL = os.getenv("HYBRID_API_URL", "http://localhost:8001/ask")
 EXECUTE_URL    = f"{BASE_URL}/execute"
 
 st.set_page_config(
@@ -58,109 +58,278 @@ def month_name(m):
     return names.get(m, m)
 
 # ─────────────────────────────────────────────
-# CSS
+# CSS — Style Dolibarr / Cieloo (amélioré)
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
-.rejected-box { color: black !important; }
-.clarification-box { color: black !important; }
-</style>
-""", unsafe_allow_html=True)
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap');
 
-st.markdown("""
-<style>
-/* Styles spécifiques (non couverts par le thème Streamlit) */
+html, body, [class*="css"] {
+    font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+code, pre, .stCode {
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* Tokens de couleurs (Dolibarr) */
+:root {
+    --bg-doli: #f6f9ff;
+    --card-doli: #ffffff;
+    --ink-doli: #0f172a;
+    --muted-doli: #6b7280;
+    --border-doli: #e6eaf2;
+    --primary-doli: #2d6cdf;
+    --primary-ink: #1f4fb0;
+    --radius-doli: 14px;
+    --shadow-doli: 0 10px 25px rgba(17,24,39,.06);
+    --blue-doli: #2563eb;
+    --blue-2: #3b82f6;
+}
+
+/* Fond général */
+.main .block-container {
+    background: linear-gradient(145deg, #f3f6fc 0%, #fafdff 100%);
+}
+
+/* Header du chat */
 .chat-title {
     font-size: 1.8rem;
     font-weight: 700;
     margin-bottom: 0.2rem;
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    letter-spacing: -0.3px;
 }
 .chat-subtitle {
     font-size: 0.95rem;
-    color: #6b7280;
+    color: var(--muted-doli);
     margin-bottom: 1.5rem;
+    border-left: 3px solid var(--blue-doli);
+    padding-left: 12px;
 }
+
+/* Cartes de résultat */
 .result-box {
-    background: white;
-    border-radius: 14px;
+    background: var(--card-doli);
+    border-radius: var(--radius-doli);
     padding: 1.2rem 1.5rem;
     border-left: 4px solid #4CAF50;
     margin-top: 1rem;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    box-shadow: var(--shadow-doli);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.result-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 30px rgba(17,24,39,0.08);
 }
 .rejected-box {
     background: #fff5f5;
-    border-radius: 10px;
+    border-radius: var(--radius-doli);
     padding: 1.2rem 1.5rem;
     border-left: 4px solid #e53935;
+    box-shadow: var(--shadow-doli);
+    color: #b91c1c !important;
 }
 .clarification-box {
-    background: #fffde7;
-    border-radius: 10px;
+    background: #fffbeb;
+    border-radius: var(--radius-doli);
     padding: 1.2rem 1.5rem;
-    border-left: 4px solid #FFC107;
+    border-left: 4px solid #f59e0b;
+    box-shadow: var(--shadow-doli);
+    color: #92400e !important;
 }
 .llm-badge {
-    background: #ede9fe;
-    border-radius: 10px;
+    background: #f3e8ff;
+    border-radius: var(--radius-doli);
     padding: 0.5rem 1rem;
-    border-left: 4px solid #7c3aed;
+    border-left: 4px solid #9333ea;
+    font-weight: 500;
+    margin: 1rem 0;
+    box-shadow: var(--shadow-doli);
 }
+
+/* Métadonnées (chips) */
 .meta-chip, .meta-chip-llm {
     display: inline-block;
-    padding: 2px 10px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    margin-right: 6px;
-}
-.meta-chip {
-    background: #e8f5e9;
-    color: #2e7d32;
+    padding: 4px 12px;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    margin-right: 8px;
+    margin-bottom: 8px;
+    background: #f1f5f9;
+    color: #1e293b;
+    font-family: 'JetBrains Mono', monospace;
 }
 .meta-chip-llm {
     background: #ede9fe;
     color: #6d28d9;
 }
+
+/* Boîte de suggestion */
 .suggestion-box {
-    background: #f3f4f6;
-    border-radius: 10px;
+    background: #f8fafc;
+    border-radius: var(--radius-doli);
     padding: 0.8rem 1rem;
     border-left: 4px solid #6366f1;
+    margin: 1rem 0;
+    box-shadow: var(--shadow-doli);
 }
+.suggestion-box span {
+    color: var(--ink-doli) !important;
+}
+
+/* Historique */
 .history-wrapper {
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
+    background: var(--card-doli);
+    border-radius: var(--radius-doli);
+    border: 1px solid var(--border-doli);
+    box-shadow: var(--shadow-doli);
     padding: 8px;
-    background: #fafafa;
     height: 520px;
     overflow-y: auto;
 }
 .history-item {
-    background: white;
-    border-radius: 8px;
-    padding: 0.55rem 0.9rem;
-    margin-bottom: 0.35rem;
-    border: 1px solid #e8e8e8;
+    background: var(--card-doli);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #eef2f6;
+    transition: all 0.1s;
+}
+.history-item:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+.history-item strong {
+    color: var(--blue-doli);
+}
+
+/* Tableaux Dolibarr */
+.dolibarr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
 }
 .dolibarr-table th {
-    background: #f1f3f5;
-    color: #111;
-    border-bottom: 2px solid #dee2e6;
+    background: #f1f5f9;
+    padding: 10px 12px;
+    border-bottom: 2px solid #e2e8f0;
+    font-weight: 600;
+    color: var(--ink-doli);
+}
+.dolibarr-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #eef2f6;
+    color: var(--ink-doli);
 }
 .dolibarr-table tr:hover td {
-    background: #ede9fe;
+    background: #f1f5f9;
 }
+.dolibarr-table-wrapper {
+    max-height: 450px;
+    overflow-y: auto;
+    border-radius: 16px;
+    border: 1px solid var(--border-doli);
+    background: white;
+}
+
+/* Boutons modernes */
 .stButton button {
-    background: linear-gradient(135deg, #2563eb, #3b82f6) !important;
+    background: linear-gradient(135deg, var(--blue-doli), var(--blue-2)) !important;
     color: white !important;
     border-radius: 12px !important;
     font-weight: 600 !important;
     border: none !important;
+    box-shadow: 0 2px 6px rgba(37,99,235,0.2);
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
+.stButton button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(37,99,235,0.3);
+}
+.stButton button:active {
+    transform: translateY(1px);
+}
+
+/* Dialog (popup assistant) */
 div[role="dialog"] {
-    background: white !important;
-    border-radius: 14px !important;
-    border: 1px solid #e6eaf2 !important;
+    background: var(--card-doli) !important;
+    border-radius: 20px !important;
+    border: 1px solid var(--border-doli) !important;
+    box-shadow: 0 25px 40px rgba(0,0,0,0.12) !important;
+}
+div[role="dialog"] [data-testid="stMarkdownContainer"] p {
+    color: var(--ink-doli) !important;
+}
+
+/* Champs de formulaire */
+.stTextInput > div > input, .stSelectbox > div > select, .stTextArea textarea, .stDateInput input {
+    border-radius: 12px !important;
+    border: 1px solid var(--border-doli) !important;
+    transition: 0.15s;
+}
+.stTextInput > div > input:focus, .stSelectbox > div > select:focus, .stTextArea textarea:focus {
+    border-color: var(--blue-doli) !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.1) !important;
+}
+
+/* Onglets (radio horizontal) */
+div[data-baseweb="radio"] {
+    background: white;
+    padding: 4px;
+    border-radius: 40px;
+    border: 1px solid var(--border-doli);
+    display: inline-flex;
+    gap: 6px;
+    margin-bottom: 1.5rem;
+}
+div[data-baseweb="radio"] label {
+    border-radius: 30px;
+    padding: 6px 20px;
+    font-weight: 500;
+    transition: 0.2s;
+}
+div[data-baseweb="radio"] label[data-checked="true"] {
+    background: var(--blue-doli);
+    color: white !important;
+}
+div[data-baseweb="radio"] label[data-checked="true"] span {
+    color: white !important;
+}
+
+/* Expander */
+[data-testid="stExpander"] {
+    border: 1px solid var(--border-doli);
+    border-radius: 16px;
+    background: var(--card-doli);
+    box-shadow: var(--shadow-doli);
+}
+[data-testid="stExpander"] summary {
+    font-weight: 600;
+    padding: 0.8rem 1.2rem;
+}
+
+/* Alertes */
+.stAlert {
+    border-radius: 12px;
+    border-left-width: 4px;
+}
+
+/* Messages d'info / succès */
+.stSuccess, .stInfo, .stWarning, .stError {
+    border-radius: 12px !important;
+}
+
+/* Légères améliorations pour les métriques */
+[data-testid="stMetricValue"] {
+    font-weight: 700;
+    color: var(--blue-doli);
+}
+[data-testid="stMetricDelta"] {
+    font-size: 0.8rem;
 }
 </style>
 """, unsafe_allow_html=True)

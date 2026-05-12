@@ -2,6 +2,8 @@
 WHITELIST_VERSION = "v1.1"
 
 ALLOWED_TABLES = {
+    "m38h_categorie",            
+    "m38h_categorie_product",
     "m38h_facture",
     "m38h_facturedet",
     "m38h_societe",
@@ -26,21 +28,25 @@ ALLOWED_COLUMNS = {
     "m38h_societe": {
         "rowid", "nom", "entity", "email", "phone"
     },
-    # ── FIX 1 : colonnes complètes pour m38h_commande ──
     "m38h_commande": {
         "rowid", "fk_soc", "entity",
-        "date_commande",   # ← manquait — utilisé dans WHERE YEAR/MONTH
-        "total_ht",        # ← manquait — utilisé dans SUM
-        "total_ttc",       # ← manquait — utilisé dans SUM
+        "date_commande",
+        "total_ht",
+        "total_ttc",
         "statut",
         "ref",
     },
-    # ── FIX 2 : colonnes pour m38h_commandedet ──
     "m38h_commandedet": {
-    "rowid", "fk_commande", "fk_product",
-    "qty",
-    "total_ht", "total_ttc",
-    "entity",
+        "rowid", "fk_commande", "fk_product",
+        "qty",
+        "total_ht", "total_ttc",
+        "entity",
+    },
+    "m38h_categorie": {
+        "rowid", "label", "description", "entity", "fk_parent"
+    },
+    "m38h_categorie_product": {
+        "rowid", "fk_categorie", "fk_product"
     },
     "m38h_product": {
         "ref", "label", "stock", "entity", "rowid",
@@ -56,32 +62,23 @@ ALLOWED_COLUMNS = {
         "qty", "total_ht", "total_ttc", "entity",
     },
     "m38h_projet": {
-    "rowid",
-    "ref",
-    "title",
-    "dateo",
-    "fk_soc",
-    "entity"
+        "rowid", "ref", "title", "dateo", "fk_soc", "entity"
     },
-}
-ALLOWED_COLUMNS["m38h_socpeople"] = {
-    "rowid", "fk_soc", "lastname", "firstname", "email"
-}
-
-ALLOWED_COLUMNS["m38h_product_stock"] = {
-    "rowid", "fk_product", "fk_entrepot", "reel"
-}
-
-ALLOWED_COLUMNS["m38h_stock_mouvement"] = {
-    "rowid", "fk_product", "qty", "datem"
-}
-
-ALLOWED_COLUMNS["m38h_entrepot"] = {
-    "rowid", "label", "entity"
-}
-
-ALLOWED_COLUMNS["m38h_projet_task"] = {
-    "rowid", "fk_projet", "label", "dateo"
+    "m38h_socpeople": {
+        "rowid", "fk_soc", "lastname", "firstname", "email"
+    },
+    "m38h_product_stock": {
+        "rowid", "fk_product", "fk_entrepot", "reel"
+    },
+    "m38h_stock_mouvement": {
+        "rowid", "fk_product", "qty", "datem"
+    },
+    "m38h_entrepot": {
+        "rowid", "label", "entity"
+    },
+    "m38h_projet_task": {
+        "rowid", "fk_projet", "label", "dateo"
+    },
 }
 
 ALLOWED_JOINS = {
@@ -93,4 +90,7 @@ ALLOWED_JOINS = {
     ("m38h_commande",   "m38h_commandedet"),    # ← jointure commande ↔ détail
     ("m38h_facture",    "m38h_facturedet"),
     ("m38h_product",    "m38h_facturedet"),
+    ("m38h_commandedet", "m38h_product"),
+    ("m38h_product", "m38h_categorie_product"),
+    ("m38h_categorie_product", "m38h_categorie"),
 }

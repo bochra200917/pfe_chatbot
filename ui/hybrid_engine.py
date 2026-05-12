@@ -467,44 +467,63 @@ Tu es un expert SQL spécialisé en MariaDB (Dolibarr).
 
 {SCHEMA_SUMMARY}
 
-Ta mission : générer UNE requête SQL correcte.
+Ta mission : générer UNE requête SQL correcte pour répondre à la question.
 
-RÈGLES STRICTES :
-- SELECT uniquement
-- LIMIT 200 obligatoire
+RÈGLES ABSOLUES :
+- SELECT uniquement — jamais INSERT, UPDATE, DELETE, DROP, ALTER
+- LIMIT 200 obligatoire (toujours en dernière ligne)
 - Utiliser uniquement les tables autorisées
-- Toujours inclure : entity = 1
-- Ne jamais modifier les données (pas de INSERT, UPDATE, DELETE, DROP...)
+- Toujours inclure : entity = 1 dans le WHERE
+- Ne jamais exposer : pass, password, api_key, token
 
-IMPORTANT :
-- Si la question contient "par client" → utiliser GROUP BY
-- Utiliser SUM() pour les montants
-- Utiliser JOIN avec m38h_societe pour les clients
-- Si la question contient "combien" → utiliser COUNT(*)
-- Si la question contient "commandes" → utiliser m38h_commande
-- Si la question contient un mois + année → filtrer avec MONTH() et YEAR()
+RÈGLES ANALYTIQUES (questions complexes) :
+- "délai moyen" / "temps moyen" entre deux dates → AVG(DATEDIFF(...))
+- "pourcentage" / "taux" → utiliser COUNT(*) et division
+- "jamais" / "sans commande" → LEFT JOIN ... WHERE IS NULL
+- "évolution" / "croissance" → LAG() OVER ou GROUP BY mois
+- "valeur moyenne" / "panier moyen" → AVG(total_ttc)
+- "top N" → ORDER BY ... DESC LIMIT N
+- "par client" / "par produit" → GROUP BY
 
-Exemple :
-SELECT COUNT(*) as total
-FROM m38h_commande
-WHERE MONTH(date_commande) = 3
-AND YEAR(date_commande) = 2026
-AND entity = 1
-LIMIT 200
+EXEMPLES CORRECTS :
 
-FORMAT DE SORTIE :
-- Retourne UNIQUEMENT la requête SQL
-- PAS de JSON
-- PAS d'explication
-- PAS de texte avant ou après
-
-EXEMPLE :
-SELECT s.nom, SUM(f.total_ttc)
+-- Délai moyen entre facture et paiement :
+SELECT ROUND(AVG(DATEDIFF(p.datep, f.datef)), 1) AS delai_moyen_jours
 FROM m38h_facture f
-JOIN m38h_societe s ON f.fk_soc = s.rowid
-WHERE YEAR(f.datef) = 2026 AND f.entity = 1
-GROUP BY s.nom
+JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
+JOIN m38h_paiement p ON p.rowid = pf.fk_paiement
+WHERE f.entity = 1
 LIMIT 200
+
+-- Clients sans aucune commande :
+SELECT s.rowid AS id, s.nom AS client, s.email
+FROM m38h_societe s
+LEFT JOIN m38h_commande c ON c.fk_soc = s.rowid AND c.entity = 1
+WHERE c.rowid IS NULL AND s.entity = 1 AND s.client = 1
+LIMIT 200
+
+-- Valeur moyenne des commandes par client :
+SELECT s.nom AS client, ROUND(AVG(c.total_ttc), 2) AS panier_moyen
+FROM m38h_commande c
+JOIN m38h_societe s ON c.fk_soc = s.rowid
+WHERE c.entity = 1
+GROUP BY s.rowid, s.nom
+ORDER BY panier_moyen DESC
+LIMIT 200
+
+-- Évolution mensuelle CA :
+SELECT YEAR(f.datef) AS annee, MONTH(f.datef) AS mois,
+       SUM(f.total_ttc) AS chiffre_affaires
+FROM m38h_facture f
+WHERE f.entity = 1
+GROUP BY YEAR(f.datef), MONTH(f.datef)
+ORDER BY annee, mois
+LIMIT 200
+
+FORMAT STRICT :
+- Retourne UNIQUEMENT la requête SQL
+- PAS de JSON, PAS d'explication, PAS de texte avant ou après
+- Terminer par LIMIT <nombre>
 """
 
 def clean_llm_json(raw: str) -> str:
@@ -803,7 +822,7 @@ class HybridEngine:
 
         intent = llm_classification.get("intent", "unknown")
         llm_params = llm_classification.get("params", {})
-        needs_sql = llm_classification.get("needs_sql_generation", False)
+        needs_sql = llm_classification.get("needs_sql_generation", True)
 
     # sécurité hors périmètre
         if intent == "out_of_scope":
