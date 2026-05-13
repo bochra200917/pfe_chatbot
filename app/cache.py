@@ -6,7 +6,8 @@ import time
 import hashlib
 import json
 from threading import Lock
-
+# Dans app/cache.py
+import redis, json
 
 # ─────────────────────────────────────────────
 # Configuration
@@ -197,6 +198,16 @@ class ChatbotCache:
                 self._stats["expirations"] += 1
             return len(expired)
 
+r = redis.Redis(host='localhost', port=6379, db=0)
+
+def get(template, params):
+    key = f"{template}:{json.dumps(params, sort_keys=True)}"
+    val = r.get(key)
+    return json.loads(val) if val else None
+
+def set(template, params, value, ttl=3600):  # 1h de TTL
+    key = f"{template}:{json.dumps(params, sort_keys=True)}"
+    r.setex(key, ttl, json.dumps(value, default=str))
 
 # Instance globale du cache
 chatbot_cache = ChatbotCache()

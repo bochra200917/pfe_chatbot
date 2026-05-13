@@ -93,6 +93,22 @@
       "created_at": "2026-04-17T12:00:08.716816",
       "updated_at": "2026-05-11T14:40:54.780364"
     },
+    "ca_mois_courant": {
+  "intent": "get_ca_current_month",
+  "description": "Chiffre d'affaires (HT et TTC) du mois en cours",
+  "sql": "SELECT SUM(f.total_ht) AS CA_HT, SUM(f.total_ttc) AS CA_TTC FROM m38h_facture f WHERE f.entity = 1 AND YEAR(f.datef) = YEAR(CURDATE()) AND MONTH(f.datef) = MONTH(CURDATE()) LIMIT 1",
+  "params": [],
+  "keywords": [
+    "chiffre d'affaires de ce mois",
+    "ca de ce mois",
+    "ventes de ce mois",
+    "chiffre d'affaires ce mois",
+    "ca ce mois",
+    "mon chiffre d'affaires de ce mois",
+    "quel est mon chiffre d'affaires de ce mois"
+  ],
+  "active": true
+},
     "produits_non_commandes": {
       "intent": "get_produits_non_commandes",
       "description": "Produits qui n'ont jamais été commandés",

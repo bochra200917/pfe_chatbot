@@ -1671,3 +1671,36 @@
 [2026-05-13 11:49:58] uuid=511c9cac-27e3-4f9c-ae9e-650b65893c20 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=676.44ms | question=Clients avec plus de 2 commandes
 [2026-05-13 11:50:01] uuid=64a9a074-2e99-4dc2-b2c3-b8f9f5b2bcc2 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=0.4ms | question=Clients avec plus de 2 commandes
 [2026-05-13 11:50:05] uuid=08180c0a-b9bd-46e8-a4d3-c633628fdd41 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=0.34ms | question=Clients avec plus de 2 commandes
+[2026-05-13 12:11:18] uuid=c9372e0e-c526-4a65-a308-cb5c0621761c | status=success | template=get_factures_non_payees | rows=91 | duration=186.62ms | question=Liste des factures non payées
+[2026-05-13 12:11:30] uuid=d258ec62-66d5-454a-8568-2f0f9092c113 | status=success | template=get_factures_non_payees | rows=91 | duration=0.19ms | question=Liste des factures non payées
+[2026-05-13 12:11:34] uuid=c284b396-fee5-4a19-9209-2fcfbad5085d | status=success | template=get_factures_non_payees | rows=91 | duration=0.23ms | question=Liste des factures non payées
+[2026-05-13 12:11:37] uuid=2bc1e285-8c83-40d2-94d8-aa3b02767807 | status=success | template=get_factures_non_payees | rows=91 | duration=0.1ms | question=Liste des factures non payées
+[2026-05-13 12:11:43] uuid=0ec3c3c1-7b08-40b7-a3bf-e58780322329 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=200.36ms | question=Clients avec plus de 2 commandes
+[2026-05-13 12:11:46] uuid=1003cd4d-1dfb-4a23-9bb3-2601a6630ce0 | status=success | template=get_clients_multiple_commandes | rows=5 | duration=0.32ms | question=Clients avec plus de 2 commandes
+[2026-05-13 12:11:49] uuid=cef2ea4a-5152-4352-b57c-9f6194d9063a | status=success | template=get_clients_multiple_commandes | rows=5 | duration=0.26ms | question=Clients avec plus de 2 commandes
+[2026-05-13 12:11:52] uuid=16c2aba5-fce6-4ecc-ab1c-21456585294e | status=success | template=get_factures_between | rows=200 | duration=241.66ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-13 12:11:55] uuid=09d25095-01c7-4869-9418-36b2fcb03f75 | status=success | template=get_factures_between | rows=200 | duration=0.33ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-13 12:11:58] uuid=3622a479-3c98-4e57-9d79-796a9c36e705 | status=success | template=get_factures_between | rows=200 | duration=0.64ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-13 12:12:02] uuid=3de71127-ae7a-4cf5-9580-94da589dee7c | status=success | template=get_produits_stock_faible | rows=100 | duration=200.02ms | question=Produits avec stock inférieur à 5
+[2026-05-13 12:12:05] uuid=079edab7-4531-4670-b13d-0caef320b4a6 | status=success | template=get_produits_stock_faible | rows=100 | duration=0.24ms | question=Produits avec stock inférieur à 5
+[2026-05-13 12:12:07] uuid=dde7a67f-64e3-49c7-9a2a-d79aa13b6ed9 | status=success | template=get_produits_stock_faible | rows=100 | duration=0.15ms | question=Produits avec stock inférieur à 5
+[2026-05-13 12:12:11] uuid=2de8ba71-ced6-43f6-9ded-96e3d1c43e60 | status=success | template=get_total_ventes_mois | rows=1 | duration=199.74ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-13 12:12:14] uuid=0d422868-2fe5-4a7d-8bcd-a70a14fac0fe | status=success | template=get_total_ventes_mois | rows=1 | duration=0.32ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-13 12:15:49] uuid=df2dbc50-dc0b-4e8b-b2a2-2809d92402e2 | status=success | template=get_total_ventes_mois | rows=1 | duration=0.32ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-13 12:16:12] uuid=9f1122e9-d07c-4c72-b030-c863483bd2bf | status=success | template=get_produits_stock_faible | rows=100 | duration=0.13ms | question=Produits avec stock inférieur à 5
+[2026-05-13 12:21:54] uuid=8d8ef111-e415-4958-9625-980abb09c44d | status=success | template=get_ca_par_trimestre | rows=2 | duration=566.02ms | question=Combien ai-je dépensé par catégorie ce trimestre ?
+[2026-05-13 12:22:19] uuid=aed3b379-e2aa-4240-9f15-a11176f325e6 | status=success | template=get_factures_non_payees | rows=90 | duration=449.98ms | question=Quelles sont mes factures fournisseurs non payées ?
+[2026-05-13 12:22:36] uuid=63df4cd2-37a4-472f-ace3-1cf54f8aa5ed | status=success | template=commandes_par_mois | rows=1 | duration=429.9ms | question=Quel est le montant total des achats de janvier 2026 ?
+[2026-05-13 12:22:51] uuid=2b167585-2896-4314-9db2-421ffdea4a54 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=435.22ms | question=Quel est mon chiffre d'affaires de ce mois ?
+[2026-05-13 12:28:42] uuid=487a14cb-e408-4d8f-aa83-94a1b034a9f2 | status=success | template=ca_mois_courant | rows=1 | duration=535.61ms | question=Quel est mon chiffre d'affaires de ce mois ?
+[2026-05-13 12:29:29] uuid=fafb183a-f623-4eec-b3ba-1c807bfbcf1a | status=success | template=get_top_clients_ca | rows=14 | duration=197.22ms | question=Quels sont mes meilleurs clients par CA en 2026 ?
+[2026-05-13 12:37:36] uuid=b3bce545-2f5d-4033-b62e-820e382fca2d | status=success | template=get_factures_non_payees | rows=90 | duration=210.6ms | question=Liste des factures non payées
+[2026-05-13 12:41:02] uuid=6b99d025-0d17-48f4-9fc8-fd13bd696cce | status=success | template=get_factures_non_payees | rows=90 | duration=203.71ms | question=Liste des factures non payées
+[2026-05-13 12:41:29] uuid=6e40ff06-dbe9-4855-b1d3-644221962cdb | status=success | template=get_commandes_par_mois | rows=1 | duration=193.46ms | question=Quel est le total des commandes du mois courant ?
+[2026-05-13 12:41:57] uuid=5183c0d7-3b49-4703-84cc-4c4d54b4ef79 | status=success | template=ca_mois_courant | rows=1 | duration=197.82ms | question=chiffre d affaires de mai 2026
+[2026-05-13 12:42:11] uuid=44c48a70-a630-4bf1-aa32-2a6b8928a739 | status=success | template=get_factures_between | rows=200 | duration=255.89ms | question=factures entre 2026-01-01 et 2026-05-13
+[2026-05-13 12:42:32] uuid=dee881ea-aea7-4873-be86-c56741a42b3b | status=success | template=ca_mois_courant | rows=1 | duration=196.7ms | question=chiffre d affaires total par mois pour 2026
+[2026-05-13 12:44:39] uuid=c682293d-0fa5-4b26-8afc-f7b8c73c226d | status=success | template=ca_mois_courant | rows=1 | duration=203.05ms | question=chiffre d affaires de mai 2026
+[2026-05-13 12:44:56] uuid=3af4fbef-db99-41ae-bd0b-49b1fff88644 | status=success | template=ca_mois_courant | rows=1 | duration=194.59ms | question=chiffre d affaires total par mois pour 2026
+[2026-05-13 12:47:51] uuid=bd3f082c-5d16-447d-9f1e-da2d13614acc | status=success | template=get_monthly_growth_revenue | rows=6 | duration=198.9ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
+[2026-05-13 12:51:06] uuid=88b9fe98-5c0b-4b02-a2dd-99afd733bb40 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=509.21ms | question=évolution mensuelle du chiffre d'affaires

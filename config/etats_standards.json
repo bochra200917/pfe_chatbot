@@ -31,7 +31,7 @@
   },
   {
     "label": "• CA annuel par mois",
-    "question_template": "chiffre d affaires total par mois pour {annee}",
+    "question_template": "évolution mensuelle du chiffre d'affaires",
     "categorie": "ventes"
   },
   {

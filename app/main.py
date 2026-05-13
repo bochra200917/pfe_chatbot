@@ -1,5 +1,5 @@
 # app/main.py — version mise à jour avec /predict + /feedback + /learning
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, logger
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 from typing import Optional
@@ -95,6 +95,10 @@ def ask(request: QuestionRequest, user: str = Depends(authenticate)):
 
         print("METADATA =", metadata)
         print("STATUS =", status)
+
+        # ✅ ICI : Journalisation des erreurs après la définition de 'metadata'
+        if status == "error":
+            logger.warning(f"[ERROR] question='{request.question}' error='{metadata.get('error', '')}'")
 
         if status not in ["rejected", "clarification_required", "error"]:
 

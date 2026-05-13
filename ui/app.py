@@ -1129,7 +1129,7 @@ def render_dataframe_with_links(df: pd.DataFrame, entity_type: str) -> None:
     )
  
     # Légende
-    st.markdown(f'<div style="font-size:0.8rem; color:#666;"><i class="fa-regular fa-circle-info"></i> Cliquez sur un lien pour ouvrir la fiche dans Dolibarr ({DOLIBARR_BASE_URL})</div>', unsafe_allow_html=True)
+    st.markdown(f'<div style="font-size:0.8rem; color:#666;">ℹ️ Cliquez sur un lien pour ouvrir la fiche dans Dolibarr ({DOLIBARR_BASE_URL})</div>', unsafe_allow_html=True)
 
 # ── 2. Remplacer la fonction render_result complète ─────────────────────────
  
