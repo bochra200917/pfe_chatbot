@@ -14,3 +14,4 @@ sentence-transformers==2.7.0
 gunicorn
 matplotlib==3.8.4
 numpy
+redis>=4.5.0

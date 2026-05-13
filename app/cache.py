@@ -1,12 +1,15 @@
 # app/cache.py
-# Cache en mémoire avec stratégie d'invalidation intelligente
-# Basée sur : fréquence d'accès + criticité des données + TTL
-
 import time
 import hashlib
 import json
 from threading import Lock
-import redis
+
+try:
+    import redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    redis = None
 
 # ─────────────────────────────────────────────
 # Configuration
@@ -197,16 +200,26 @@ class ChatbotCache:
                 self._stats["expirations"] += 1
             return len(expired)
 
-r = redis.Redis(host='localhost', port=6379, db=0)
+# Connexion Redis (optionnelle)
+if REDIS_AVAILABLE:
+    r = redis.Redis(host='localhost', port=6379, db=0)
+else:
+    r = None
 
 def get(template, params):
+    """Récupère une valeur depuis Redis (si disponible)"""
+    if r is None:
+        return None
     key = f"{template}:{json.dumps(params, sort_keys=True)}"
     val = r.get(key)
     return json.loads(val) if val else None
 
-def set(template, params, value, ttl=3600):  # 1h de TTL
+def set(template, params, value, ttl=3600):
+    """Stocke une valeur dans Redis (si disponible)"""
+    if r is None:
+        return
     key = f"{template}:{json.dumps(params, sort_keys=True)}"
     r.setex(key, ttl, json.dumps(value, default=str))
 
-# Instance globale du cache
+# Instance globale du cache mémoire
 chatbot_cache = ChatbotCache()
