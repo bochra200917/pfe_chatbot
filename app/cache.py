@@ -6,8 +6,7 @@ import time
 import hashlib
 import json
 from threading import Lock
-# Dans app/cache.py
-import redis, json
+import redis
 
 # ─────────────────────────────────────────────
 # Configuration
