@@ -1727,7 +1727,7 @@ elif selected_tab == "Analyse prédictive":
                         col2.metric("Risque élevé", eleve, delta="< 30 jours")
                         col3.metric("Stock faible", len(alerts) - critique - eleve, delta="< seuil")
                     else:
-                        st.success("✅ Aucun produit en risque de rupture détecté")
+                        st.success("✓ Aucun produit en risque de rupture détecté")
                 else:
                     st.info("Aucun produit avec stock faible détecté")
             

@@ -190,7 +190,7 @@ def predict(request: PredictRequest, user: str = Depends(authenticate)):
 @app.post("/feedback")
 def submit_feedback(request: FeedbackRequest, user: str = Depends(authenticate)):
     """
-    Enregistre le feedback utilisateur (👍 / 👎) pour l'apprentissage continu.
+    Enregistre le feedback utilisateur (✓ / ✗) pour l'apprentissage continu.
     """
     if request.rating not in ("positive", "negative"):
         raise HTTPException(status_code=400, detail="rating doit être 'positive' ou 'negative'")

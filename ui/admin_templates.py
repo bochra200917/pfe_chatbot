@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import requests as req
 from datetime import datetime
+import sqlparse
 
 matplotlib.use("Agg")
 
@@ -23,6 +24,7 @@ st.set_page_config(
 # ─── CSS personnalisé – Style Dolibarr/Cieloo amélioré ────────────────────────
 st.markdown("""
 <style>
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
     @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap');
 
     html, body, [class*="css"] {
@@ -377,12 +379,12 @@ def validate_sql(sql: str) -> tuple:
     errors = []
     sql_upper = sql.upper().strip()
     if not sql_upper.startswith("SELECT"):
-        errors.append("❌ La requête doit commencer par SELECT.")
+        errors.append('<i class="fa-regular fa-circle-xmark"></i> La requête doit commencer par SELECT.')
     for kw in FORBIDDEN_KEYWORDS:
         if re.search(r'\b' + kw + r'\b', sql_upper):
-            errors.append(f"❌ Mot-clé interdit détecté : `{kw}`")
+            errors.append(f'<i class="fa-regular fa-circle-xmark"></i> Mot-clé interdit détecté : `{kw}`')
     if "LIMIT" not in sql_upper:
-        errors.append("⚠️  Aucun LIMIT détecté — ajoute LIMIT :limit pour sécuriser.")
+        errors.append('<i class="fa-solid fa-triangle-exclamation"></i> Aucun LIMIT détecté — ajoute LIMIT :limit pour sécuriser.')
     return len(errors) == 0, errors
 
 def extract_params(sql: str) -> list:
@@ -423,19 +425,19 @@ if "msg" not in st.session_state:
 
 # ─── Sidebar Navigation ────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### 🛠️ Admin Panel")
+    st.markdown('### <i class="fa-solid fa-screwdriver-wrench"></i> Admin Panel', unsafe_allow_html=True)
     st.markdown("---")
     page = st.radio(
         "Navigation",
         [
-            "📋 Liste des templates",
-            "➕ Nouveau template",
-            "🔍 Tester un template",
-            "📊 Statistiques",
-            "📈 Analytics (hybride)",
-            "⚙️ Cache & Audit",
-            "📈 Analytics (requêtes)",
-            "⚙️ Paramètres",
+            "Liste des templates",
+            "Nouveau template",
+            "Tester un template",
+            "Statistiques",
+            "Analytics (hybride)",
+            "Cache & Audit",
+            "Analytics (requêtes)",
+            "Paramètres",
         ],
         label_visibility="collapsed"
     )
@@ -447,7 +449,7 @@ with st.sidebar:
     **Dernière MAJ :** `{st.session_state.data.get('updated_at','—')[:10]}`
     """)
     st.markdown("---")
-    if st.button("🔄 Recharger depuis fichier", use_container_width=True):
+    if st.button("⟳ Recharger depuis fichier", use_container_width=True):
         st.session_state.data = load_templates()
         st.rerun()
 
@@ -455,7 +457,7 @@ with st.sidebar:
 st.markdown("""
 <div class="admin-header">
     <div>
-        <h1>🛠️ Interface Admin — Templates SQL</h1>
+        <h1><i class="fa-solid fa-screwdriver-wrench"></i> Interface Admin — Templates SQL</h1>
         <p>Chatbot Dolibarr · Gestion sécurisée des requêtes NL2SQL</p>
     </div>
 </div>
@@ -474,20 +476,20 @@ if st.session_state.msg:
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE 1 — Liste des templates (contenu inchangé)
 # ════════════════════════════════════════════════════════════════════════════════
-if page == "📋 Liste des templates":
+if page == "Liste des templates":
 
     templates = st.session_state.data.get("templates", {})
 
     col_f1, col_f2, col_f3 = st.columns([2, 1, 1])
     with col_f1:
-        search = st.text_input("🔎 Rechercher", placeholder="nom, intent, mot-clé SQL…")
+        search = st.text_input("⌕ Rechercher", placeholder="nom, intent, mot-clé SQL…")
     with col_f2:
         filter_status = st.selectbox("Statut", ["Tous", "Actifs", "Inactifs"])
     with col_f3:
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("💾 Tout sauvegarder", use_container_width=True, type="primary"):
+        if st.button("Tout sauvegarder", use_container_width=True, type="primary"):
             save_templates(st.session_state.data)
-            st.session_state.msg = ("success", "✅ Templates sauvegardés avec succès.")
+            st.session_state.msg = ("success", "✓ Templates sauvegardés avec succès.")
             st.rerun()
 
     st.markdown("---")
@@ -509,7 +511,7 @@ if page == "📋 Liste des templates":
         filtered[tid] = t
 
     if not filtered:
-        st.info("Aucun template trouvé. Crée-en un depuis **➕ Nouveau template**.")
+        st.info("Aucun template trouvé. Crée-en un depuis **Nouveau template**.")
     else:
         for tid, t in filtered.items():
             active = t.get("active", True)
@@ -540,7 +542,7 @@ if page == "📋 Liste des templates":
                 valid, errs = validate_sql(t.get("sql", ""))
                 if valid:
                     st.markdown(
-                        '<div class="security-ok">✔ Requête valide (SELECT-only, pas de mots interdits)</div>',
+                        '<div class="security-ok"><i class="fa-regular fa-circle-check"></i> Requête valide (SELECT-only, pas de mots interdits)</div>',
                         unsafe_allow_html=True
                     )
                 else:
@@ -575,7 +577,7 @@ if page == "📋 Liste des templates":
 
                 ca, cb, cc = st.columns(3)
                 with ca:
-                    if st.button("💾 Sauvegarder", key=f"save_{tid}", use_container_width=True, type="primary"):
+                    if st.button("Sauvegarder", key=f"save_{tid}", use_container_width=True, type="primary"):
                         valid_new, errs_new = validate_sql(new_sql)
                         if not valid_new:
                             st.session_state.msg = ("error", "SQL invalide : " + " | ".join(errs_new))
@@ -589,7 +591,7 @@ if page == "📋 Liste des templates":
                                 "updated_at":  datetime.now().isoformat(),
                             })
                             save_templates(st.session_state.data)
-                            st.session_state.msg = ("success", f"✅ Template `{tid}` mis à jour.")
+                            st.session_state.msg = ("success", f"✓ Template `{tid}` mis à jour.")
                         st.rerun()
                 with cb:
                     toggle_label = "⏸ Désactiver" if active else "▶ Activer"
@@ -599,7 +601,7 @@ if page == "📋 Liste des templates":
                         st.session_state.msg = ("success", f"Template `{tid}` {'désactivé' if active else 'activé'}.")
                         st.rerun()
                 with cc:
-                    if st.button("🗑️ Supprimer", key=f"del_{tid}", use_container_width=True):
+                    if st.button("✖ Supprimer", key=f"del_{tid}", use_container_width=True):
                         del st.session_state.data["templates"][tid]
                         save_templates(st.session_state.data)
                         st.session_state.msg = ("warning", f"⚠️ Template `{tid}` supprimé.")
@@ -609,9 +611,9 @@ if page == "📋 Liste des templates":
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE 2 — Nouveau template
 # ════════════════════════════════════════════════════════════════════════════════
-elif page == "➕ Nouveau template":
+elif page == "Nouveau template":
 
-    st.subheader("➕ Créer un nouveau template SQL")
+    st.subheader("Créer un nouveau template SQL")
     st.markdown("Tous les templates sont validés (SELECT-only) avant sauvegarde.")
     st.markdown("---")
 
@@ -654,7 +656,7 @@ elif page == "➕ Nouveau template":
         )
 
         st.markdown("---")
-        submitted = st.form_submit_button("✅ Valider et créer", type="primary", use_container_width=True)
+        submitted = st.form_submit_button("✓ Valider et créer", type="primary", use_container_width=True)
 
     if submitted:
         errors_form = []
@@ -688,10 +690,10 @@ elif page == "➕ Nouveau template":
                 "updated_at":  datetime.now().isoformat(),
             }
             save_templates(st.session_state.data)
-            st.session_state.msg = ("success", f"✅ Template `{new_id.strip()}` créé avec succès !")
+            st.session_state.msg = ("success", f"✓ Template `{new_id.strip()}` créé avec succès !")
             st.rerun()
 
-    with st.expander("📄 Voir la structure JSON d'un template"):
+    with st.expander("⌘ Voir la structure JSON d'un template"):
         example = {
             "intent":      "get_invoices_by_date",
             "description": "Factures entre deux dates avec total HT/TTC",
@@ -708,9 +710,9 @@ elif page == "➕ Nouveau template":
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE 3 — Tester un template
 # ════════════════════════════════════════════════════════════════════════════════
-elif page == "🔍 Tester un template":
+elif page == "Tester un template":
 
-    st.subheader("🔍 Tester un template (simulation sans DB)")
+    st.subheader("Tester un template (simulation sans DB)")
     st.markdown("Injecte des valeurs dans les paramètres et visualise le SQL final.")
     st.markdown("---")
 
@@ -726,10 +728,8 @@ elif page == "🔍 Tester un template":
         t              = templates[selected_id]
 
         st.markdown(f"**Description :** {t.get('description', '—')}")
-        st.markdown(
-            f'<div class="sql-block">{t.get("sql", "")}</div>',
-            unsafe_allow_html=True
-        )
+        formatted_sql = sqlparse.format(t.get("sql", ""), reindent=True, keyword_case='upper')
+        st.markdown(f'<div class="sql-block"><pre>{formatted_sql}</pre></div>', unsafe_allow_html=True)
 
         params = extract_params(t.get("sql", ""))
         if not params:
@@ -756,24 +756,21 @@ elif page == "🔍 Tester un template":
                 for p, v in param_values.items():
                     sql_result = sql_result.replace(f":{p}", f"'{v}'")
 
-                st.markdown("**SQL généré :**")
-                st.markdown(
-                    f'<div class="sql-block">{sql_result}</div>',
-                    unsafe_allow_html=True
-                )
-                st.markdown(
-                    '<div class="security-ok">✔ SQL prêt à l\'exécution (simulation — non connecté à la DB)</div>',
-                    unsafe_allow_html=True
-                )
-                st.code(sql_result, language="sql")
+                sql_result_formatted = sqlparse.format(sql_result, reindent=True, keyword_case='upper')
 
+                st.markdown("**SQL généré :**")
+                st.code(sql_result_formatted, language="sql")
+                st.markdown(
+        '<div class="security-ok"><i class="fa-regular fa-circle-check"></i> SQL prêt à l\'exécution (simulation — non connecté à la DB)</div>',
+        unsafe_allow_html=True
+    )
 
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE 4 — Statistiques templates
 # ════════════════════════════════════════════════════════════════════════════════
-elif page == "📊 Statistiques":
+elif page == "Statistiques":
 
-    st.subheader("📊 Statistiques des templates")
+    st.subheader("Statistiques des templates")
     st.markdown("---")
 
     stats     = get_stats(st.session_state.data)
@@ -815,7 +812,7 @@ elif page == "📊 Statistiques":
 
         st.markdown("---")
         st.download_button(
-            label="📥 Exporter templates.json",
+            label="↓ Exporter templates.json",
             data=json.dumps(st.session_state.data, ensure_ascii=False, indent=2),
             file_name=f"templates_v{stats['version']}_{datetime.now().strftime('%Y%m%d')}.json",
             mime="application/json",
@@ -828,14 +825,14 @@ elif page == "📊 Statistiques":
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE 5 — Analytics hybride (renommé et fusionné)
 # ════════════════════════════════════════════════════════════════════════════════
-elif page == "📈 Analytics (hybride)":
+elif page == "Analytics (hybride)":
 
-    st.subheader("📈 Analytics — Moteur hybride NL2SQL")
+    st.subheader("Analytics - Moteur hybride NL2SQL")
     st.caption("Statistiques sur les requêtes traitées par le moteur hybride (port 8001)")
 
     col_refresh, _ = st.columns([1, 4])
     with col_refresh:
-        if st.button("🔄 Actualiser", use_container_width=True):
+        if st.button("⟳ Actualiser", use_container_width=True):
             st.rerun()
 
     data = call_hybrid_api("/analytics")
@@ -950,7 +947,7 @@ elif page == "📈 Analytics (hybride)":
             with open(logs_path, "r", encoding="utf-8") as f:
                 raw_logs = f.read()
             st.download_button(
-                label="📥 Exporter les logs bruts (JSONL)",
+                label="↓ Exporter les logs bruts (JSONL)",
                 data=raw_logs.encode("utf-8"),
                 file_name=f"hybrid_logs_{datetime.now().strftime('%Y%m%d')}.jsonl",
                 mime="application/json",
@@ -961,14 +958,15 @@ elif page == "📈 Analytics (hybride)":
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE 6 — Cache & Audit (nouvel onglet déplacé depuis app.py)
 # ════════════════════════════════════════════════════════════════════════════════
-elif page == "⚙️ Cache & Audit":
+elif page == "Cache & Audit":
 
-    st.markdown("### ⚙️ Monitoring — Cache & Audit")
+    st.markdown("### Monitoring - Cache & Audit")
     c1, c2 = st.columns(2)
 
+    # ──────────────────── COLONNE CACHE ────────────────────
     with c1:
         st.markdown("#### Cache")
-        if st.button("🔄 Actualiser", key="btn_cache_refresh"):
+        if st.button("⟳ Actualiser", key="btn_cache_refresh"):
             stats = call_api_endpoint("/cache/stats")
             if stats:
                 st.metric("Taille", f"{stats.get('size', 0)} / {stats.get('max_size', 100)}")
@@ -982,15 +980,72 @@ elif page == "⚙️ Cache & Audit":
                                               columns=["Template", "Entrées"]))
             else:
                 st.info("API non disponible.")
-        if st.button("🗑 Vider le cache", type="secondary", key="btn_cache_clear"):
+        if st.button("✖ Vider le cache", type="secondary", key="btn_cache_clear"):
             call_api_endpoint("/cache/clear", method="POST")
             st.success("Cache vidé.")
 
+        # ── Top questions (déplacé ici) ──
+        # Récupération des données d'audit
+        audit = call_api_endpoint("/audit")
+        if audit and "total_requests" in audit:
+            top_q = audit.get("top_questions", {})
+            if top_q:
+                st.markdown("**Top questions**")
+
+                # Suppression de la variante sans majuscule
+                if "chiffre d affaires de janvier 2026" in top_q:
+                    del top_q["chiffre d affaires de janvier 2026"]
+
+                # Dédoublonnage (normalisation)
+                import unicodedata
+                def normalize_q(text: str) -> str:
+                    text = text.strip().lower()
+                    text = unicodedata.normalize("NFD", text)
+                    text = text.encode("ascii", "ignore").decode("utf-8")
+                    return text
+
+                merged = {}
+                for q_text, cnt in top_q.items():
+                    key = normalize_q(q_text)
+                    if key not in merged:
+                        merged[key] = {"display": q_text, "count": cnt}
+                    else:
+                        merged[key]["count"] += cnt
+                        current = merged[key]["display"]
+                        if q_text[0].isupper() and not current[0].isupper():
+                            merged[key]["display"] = q_text
+                        elif len(q_text) > len(current):
+                            merged[key]["display"] = q_text
+
+                sorted_merged = sorted(merged.values(), key=lambda x: -x["count"])
+
+                header = (
+                    '<div class="scroll-table">'
+                    '<div class="scroll-table-header">'
+                    '<span class="col-rank">#</span>'
+                    '<span class="col-ques">Question</span>'
+                    '<span class="col-count">Nb</span>'
+                    '</div>'
+                )
+                rows_html = ""
+                for rank, item in enumerate(sorted_merged, 1):
+                    q_esc = item["display"][:70] + ("…" if len(item["display"]) > 70 else "")
+                    rows_html += (
+                        f'<div class="scroll-table-row">'
+                        f'<span class="col-rank">{rank}</span>'
+                        f'<span class="col-ques">{q_esc}</span>'
+                        f'<span class="col-count">{item["count"]}</span>'
+                        f'</div>'
+                    )
+                st.markdown(header + rows_html + "</div>", unsafe_allow_html=True)
+        else:
+            st.info("Données d'audit non disponibles.")
+
+    # ──────────────────── COLONNE AUDIT ────────────────────
     with c2:
         st.markdown("#### Audit")
         audit = call_api_endpoint("/audit")
         if audit and "total_requests" in audit:
-
             m1, m2, m3, m4 = st.columns(4)
             m1.metric("Total requêtes", audit.get("total_requests", 0))
             m2.metric("Succès",         audit.get("success_count", 0))
@@ -1023,7 +1078,7 @@ elif page == "⚙️ Cache & Audit":
                     else:
                         st.warning(f"🟡 {msg}")
             else:
-                st.success("✅ Aucune alerte — système nominal")
+                st.success("✓ Aucune alerte — système nominal")
 
             trends = audit.get("trends", {})
             if trends.get("recent_24h", {}).get("count", 0) > 0:
@@ -1041,65 +1096,14 @@ elif page == "⚙️ Cache & Audit":
                     trend.capitalize(),
                     delta=f"{delta:+.1f}%"
                 )
-
-            top_q = audit.get("top_questions", {})
-            if top_q:
-                st.markdown("**Top questions**")
-
-    # ── Dédoublonnage côté front (normalisation casse + accents) ──
-                import unicodedata
-
-                def normalize_q(text: str) -> str:
-                    text = text.strip().lower()
-                    text = unicodedata.normalize("NFD", text)
-                    text = text.encode("ascii", "ignore").decode("utf-8")
-                    return text
-
-    # Regrouper par version normalisée, garder la version la mieux écrite
-    # (priorité : majuscule en début, puis la plus longue)
-                merged = {}
-                for q_text, cnt in top_q.items():
-                    key = normalize_q(q_text)
-                    if key not in merged:
-                        merged[key] = {"display": q_text, "count": cnt}
-                    else:
-                        merged[key]["count"] += cnt
-            # Préférer la version avec majuscule initiale
-                        current = merged[key]["display"]
-                        if q_text[0].isupper() and not current[0].isupper():
-                            merged[key]["display"] = q_text
-                        elif len(q_text) > len(current):
-                            merged[key]["display"] = q_text
-
-    # Trier par count décroissant
-                sorted_merged = sorted(merged.values(), key=lambda x: -x["count"])
-
-                header = (
-        '<div class="scroll-table">'
-        '<div class="scroll-table-header">'
-        '<span class="col-rank">#</span>'
-        '<span class="col-ques">Question</span>'
-        '<span class="col-count">Nb</span>'
-        '</div>'
-    )
-                rows_html = ""
-                for rank, item in enumerate(sorted_merged, 1):
-                    q_esc = item["display"][:70] + ("…" if len(item["display"]) > 70 else "")
-                    rows_html += (
-            f'<div class="scroll-table-row">'
-            f'<span class="col-rank">{rank}</span>'
-            f'<span class="col-ques">{q_esc}</span>'
-            f'<span class="col-count">{item["count"]}</span>'
-            f'</div>'
-        )
-                st.markdown(header + rows_html + "</div>", unsafe_allow_html=True)
         else:
             st.info("API non disponible.")
 
-    # ── Feedback utilisateurs (déplacé depuis app.py) ──
+    # ── Feedback utilisateurs (reste en bas, sous les deux colonnes) ──
     st.markdown("---")
     st.markdown("#### Feedback utilisateurs")
-
+    # ... (le reste du code feedback inchangé)
+    
     FEEDBACK_FILE_ADMIN = "logs/feedback.jsonl"
 
     def load_feedbacks_admin() -> list:
@@ -1139,14 +1143,14 @@ elif page == "⚙️ Cache & Audit":
     feedbacks = load_feedbacks_admin()
 
     if not feedbacks:
-        st.info("Aucun feedback enregistré. Utilisez 👍/👎 dans l'onglet Chatbot.")
+        st.info("Aucun feedback enregistré. Utilisez ✓/✗ dans l'onglet Chatbot.")
     else:
         pos = sum(1 for f in feedbacks if f.get("rating") == "positive")
         neg = sum(1 for f in feedbacks if f.get("rating") == "negative")
         m1, m2, m3 = st.columns(3)
         m1.metric("Total",       len(feedbacks))
-        m2.metric("👍 Positifs", pos)
-        m3.metric("👎 Négatifs", neg)
+        m2.metric("✓ Positifs", pos)
+        m3.metric("✗ Négatifs", neg)
 
         df_fb = pd.DataFrame(feedbacks)
 
@@ -1172,7 +1176,7 @@ elif page == "⚙️ Cache & Audit":
         )
 
         for i, fb in enumerate(feedbacks):
-            icon    = "👍" if fb.get("rating") == "positive" else "👎"
+            icon    = "✓" if fb.get("rating") == "positive" else "✗"
             ts      = fb.get("timestamp", "")[:16].replace("T", " ")
             q_text  = fb.get("question", "")[:60]
             comment = (fb.get("comment", "") or "—")[:50]
@@ -1190,8 +1194,7 @@ elif page == "⚙️ Cache & Audit":
                 st.rerun()
 
         st.markdown("")
-        if st.button("🗑 Supprimer tous les feedbacks", type="secondary",
-                     key="btn_delete_all_fb_admin"):
+        if st.button("✖ Supprimer tous les feedbacks", type="secondary", key="btn_delete_all_fb_admin"):
             save_feedbacks_admin([])
             st.success("Tous les feedbacks supprimés.")
             st.rerun()
@@ -1199,9 +1202,9 @@ elif page == "⚙️ Cache & Audit":
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE 7 — Analytics (requêtes) - déplacé depuis app.py
 # ════════════════════════════════════════════════════════════════════════════════
-elif page == "📈 Analytics (requêtes)":
+elif page == "Analytics (requêtes)":
 
-    st.markdown("### 📈 Analytics — Requêtes utilisateurs")
+    st.markdown("### Analytics - Requêtes utilisateurs")
     st.caption("Analyse comportementale basée sur les logs de production")
 
     data = call_api_endpoint("/analytics")
@@ -1337,9 +1340,9 @@ elif page == "📈 Analytics (requêtes)":
 # ════════════════════════════════════════════════════════════════════════════════
 # PAGE 8 — Paramètres
 # ════════════════════════════════════════════════════════════════════════════════
-elif page == "⚙️ Paramètres":
+elif page == "Paramètres":
 
-    st.subheader("⚙️ Paramètres de la whitelist")
+    st.subheader("Paramètres de la whitelist")
     st.markdown("---")
 
     st.markdown("**Version de la whitelist**")
@@ -1371,22 +1374,28 @@ elif page == "⚙️ Paramètres":
     # ── Statut API hybride ────────────────────────────────────────────────────
     st.markdown("**Statut du moteur hybride (port 8001)**")
     health = call_hybrid_api("/health")
+
+# Calculer les vrais chiffres depuis les templates en session
+    templates_data = st.session_state.data.get("templates", {})
+    total_actifs = sum(1 for t in templates_data.values() if t.get("active", True))
+    total_charges = len(templates_data)
+
     if health and health.get("status") == "ok":
         st.markdown(
-            f'<div style="background:#052e16;border:1px solid #166534;border-left:3px solid #4ade80;'
-            f'border-radius:8px;padding:12px 16px;color:#86efac;font-size:0.83rem;">'
-            f'✔ API hybride opérationnelle — '
-            f'{health.get("active_templates", 0)} templates actifs / '
-            f'{health.get("templates_loaded", 0)} chargés</div>',
-            unsafe_allow_html=True
-        )
+        f'<div style="background:#052e16;border:1px solid #166534;border-left:3px solid #4ade80;'
+        f'border-radius:8px;padding:12px 16px;color:#86efac;font-size:0.83rem;">'
+        f'<i class="fa-regular fa-circle-check" style="color:#86efac;"></i> API hybride opérationnelle — '
+        f'{total_actifs} templates actifs / '
+        f'{total_charges} chargés</div>',
+        unsafe_allow_html=True
+    )
     else:
         st.markdown(
-            '<div style="background:#2d1b00;border:1px solid #92400e;border-left:3px solid #f59e0b;'
-            'border-radius:8px;padding:12px 16px;color:#fcd34d;font-size:0.83rem;">'
-            '⚠️ API hybride inaccessible sur le port 8001</div>',
-            unsafe_allow_html=True
-        )
+        '<div style="background:#2d1b00;border:1px solid #92400e;border-left:3px solid #f59e0b;'
+        'border-radius:8px;padding:12px 16px;color:#fcd34d;font-size:0.83rem;">'
+        '<i class="fa-solid fa-triangle-exclamation" style="color:#fcd34d;"></i> API hybride inaccessible sur le port 8001</div>',
+        unsafe_allow_html=True
+    )
 
     st.markdown("---")
     st.markdown("**Importer un fichier templates.json**")
@@ -1402,7 +1411,7 @@ elif page == "⚙️ Paramètres":
                 if st.button("⬆️ Importer et remplacer", type="primary"):
                     st.session_state.data = imported
                     save_templates(st.session_state.data)
-                    st.session_state.msg = ("success", "✅ Templates importés avec succès.")
+                    st.session_state.msg = ("success", "✓ Templates importés avec succès.")
                     st.rerun()
         except json.JSONDecodeError:
             st.error("Fichier JSON invalide.")
@@ -1410,7 +1419,7 @@ elif page == "⚙️ Paramètres":
     st.markdown("---")
     with st.expander("🚨 Zone dangereuse"):
         st.warning("Supprimer tous les templates est irréversible.")
-        if st.button("🗑️ Vider tous les templates", type="secondary"):
+        if st.button("🗑 Vider tous les templates", type="secondary"):
             st.session_state.data["templates"] = {}
             save_templates(st.session_state.data)
             st.session_state.msg = ("warning", "⚠️ Tous les templates ont été supprimés.")

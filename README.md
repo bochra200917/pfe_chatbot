@@ -39,7 +39,7 @@ Port 8001  — API hybride     (moteur hybride Claude via OpenRouter)
 | Graphiques automatiques | Visualisation adaptée selon le type de requête |
 | Analyse prédictive | Prévision CA, alertes stock, scores fidélité clients |
 | Cache intelligent | LFU + TTL variable selon criticité des données |
-| Feedback utilisateur | 👍/👎 par réponse → apprentissage continu |
+| Feedback utilisateur | ✓/✗ par réponse → apprentissage continu |
 | Audit complet | Logs UUID + dashboard /audit |
 | Interface admin | Gestion CRUD des templates SQL + analytics hybride |
 | Moteur hybride | Claude (OpenRouter) en fallback pour questions complexes |
