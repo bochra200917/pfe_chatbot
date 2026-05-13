@@ -1,27 +1,27 @@
 {
   "greeting": "Que voulez-vous faire aujourd'hui ?",
   "categories": {
-    "💰 Achats & Dépenses": [
+    "<i class='fa-solid fa-coins'></i> Achats & Dépenses": [
       "Combien ai-je dépensé par catégorie ce trimestre ?",
       "Quelles sont mes factures fournisseurs non payées ?",
       "Quel est le montant total des achats de janvier 2026 ?"
     ],
-    "📈 Ventes & CA": [
+    "<i class='fa-solid fa-chart-line'></i> Ventes & CA": [
       "Quel est mon chiffre d'affaires de ce mois ?",
       "Quels sont mes meilleurs clients par CA en 2026 ?",
       "Quel est le montant total des factures émises par client en 2026 ?"
     ],
-    "📦 Stock & Produits": [
+    "<i class='fa-solid fa-box'></i> Stock & Produits": [
       "Quels produits ont un stock inférieur à 5 ?",
       "Quels produits n'ont jamais été commandés ?",
       "Donne moi le top 3 des produits les plus commandés"
     ],
-    "🧾 Factures": [
+    "<i class='fa-solid fa-receipt'></i> Factures": [
       "Quelles factures ne sont pas encore payées ?",
       "Factures entre 2026-01-01 et 2026-03-31",
       "Clients avec des factures non payées depuis plus de 30 jours"
     ],
-    "📊 Commandes": [
+    "<i class='fa-solid fa-cart-shopping'></i> Commandes": [
       "Combien de commandes ont été passées en mars 2026 ?",
       "Quels clients ont passé plus de 3 commandes ?",
       "Quel est le total des commandes du mois courant ?"

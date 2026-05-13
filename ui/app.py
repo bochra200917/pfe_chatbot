@@ -40,7 +40,7 @@ EXECUTE_URL    = f"{BASE_URL}/execute"
 
 st.set_page_config(
     page_title="Chatbot ZAI Informatique",
-    page_icon="💬",
+    page_icon="💬",  # emoji conservé car c'est l'icône du navigateur, pas visible dans l'app
     layout="wide"
 )
 
@@ -62,6 +62,7 @@ def month_name(m):
 # ─────────────────────────────────────────────
 st.markdown("""
 <style>
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css');
 @import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..900&display=swap');
 
 html, body, [class*="css"] {
@@ -70,7 +71,21 @@ html, body, [class*="css"] {
 code, pre, .stCode {
     font-family: 'JetBrains Mono', monospace !important;
 }
-
+/* Uniformiser la hauteur des boutons d'exemples et centrer le texte verticalement */
+.example-buttons-wrapper .stButton button {
+    min-height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    word-break: break-word;
+}
+.fa-solid, .fa-regular, .fa-brands {
+    font-size: inherit;
+    vertical-align: middle;
+    margin-right: 4px;
+}
 /* Tokens de couleurs (Dolibarr) */
 :root {
     --bg-doli: #f6f9ff;
@@ -266,10 +281,15 @@ div[role="dialog"] [data-testid="stMarkdownContainer"] p {
 }
 
 /* Champs de formulaire */
-.stTextInput > div > input, .stSelectbox > div > select, .stTextArea textarea, .stDateInput input {
+.stTextInput > div > input {
     border-radius: 12px !important;
-    border: 1px solid var(--border-doli) !important;
+    border: 2px solid #2563eb !important;   /* contour bleu permanent */
+    background-color: #ffffff;
     transition: 0.15s;
+}
+.stTextInput > div > input:focus {
+    border-color: #1e40af !important;       /* bleu plus foncé au focus */
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.2) !important;
 }
 .stTextInput > div > input:focus, .stSelectbox > div > select:focus, .stTextArea textarea:focus {
     border-color: var(--blue-doli) !important;
@@ -331,6 +351,118 @@ div[data-baseweb="radio"] label[data-checked="true"] span {
 [data-testid="stMetricDelta"] {
     font-size: 0.8rem;
 }
+/* Force le contour bleu permanent sur l'input */
+div[data-testid="stTextInput"] input {
+    border: 2px solid #2563eb !important;
+    border-radius: 12px !important;
+    background-color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+/* Au focus : bordure plus foncée */
+div[data-testid="stTextInput"] input:focus {
+    border-color: #1e40af !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.2) !important;
+    outline: none !important;
+}
+
+/* 🔥 Force le contour bleu de l'input (si toujours invisible) */
+div[data-testid="stTextInput"] input {
+    border: 2px solid #2563eb !important;
+    background: white !important;
+    border-radius: 12px !important;
+}
+div[data-testid="stTextInput"] input:focus {
+    border-color: #1e40af !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.2) !important;
+}
+/* Force l'uniformisation des boutons exemples - solution robuste */
+.example-buttons-wrapper div[data-testid="stButton"] button {
+    min-height: 70px !important;
+    height: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    vertical-align: middle !important;
+}
+/* Alternative : cible directement tous les boutons des 5 premières colonnes */
+div[data-testid="column"]:nth-child(-n+5) button {
+    min-height: 70px !important;
+    height: auto !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    white-space: normal !important;
+}
+/* Uniformisation des boutons dans le popup assistant (identique aux exemples) */
+div[role="dialog"] .stButton button {
+    background: linear-gradient(135deg, var(--blue-doli), var(--blue-2)) !important;
+    color: white !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    border: none !important;
+    box-shadow: 0 2px 6px rgba(37,99,235,0.2);
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+div[role="dialog"] .stButton button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(37,99,235,0.3);
+}
+div[role="dialog"] .stButton button:active {
+    transform: translateY(1px);
+}
+/* Forcer le texte blanc sur les boutons primaires du popup assistant */
+div[role="dialog"] .stButton button[kind="primary"] {
+    color: white !important;
+}
+            /* Alternative : tous les boutons du popup (même secondaires) */
+div[role="dialog"] .stButton button {
+    color: white !important;
+}
+            /* ── Force texte blanc sur TOUS les boutons du popup assistant ── */
+div[role="dialog"] button,
+div[role="dialog"] .stButton > button,
+div[role="dialog"] .stButton > button p,
+div[role="dialog"] .stButton > button span,
+div[role="dialog"] .stButton > button div {
+    color: white !important;
+    -webkit-text-fill-color: white !important;
+}
+
+/* Bouton Fermer (secondaire) aussi en blanc */
+div[role="dialog"] button[kind="secondary"],
+div[role="dialog"] button[kind="secondary"] p {
+    color: white !important;
+    -webkit-text-fill-color: white !important;
+}
+            /* ── Textarea du popup assistant — contour bleu permanent ── */
+div[role="dialog"] textarea,
+div[role="dialog"] .stTextArea textarea,
+div[role="dialog"] [data-testid="stTextArea"] textarea {
+    border: 2px solid #2563eb !important;
+    border-radius: 12px !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+/* Au focus : bleu plus foncé + halo */
+div[role="dialog"] textarea:focus,
+div[role="dialog"] .stTextArea textarea:focus {
+    border-color: #1e40af !important;
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.2) !important;
+    outline: none !important;
+}
+
+/* Placeholder visible */
+div[role="dialog"] textarea::placeholder {
+    color: #9ca3af !important;
+    opacity: 1 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -349,7 +481,6 @@ defaults = {
     "active_tab":         0,
     "delete_fb_idx":      -1,
     "do_clear_form":      False,
-    "popup_should_open":  False,   # ← ici dans defaults
     "popup_text":         "",
     "popup_counter":      0,
 }
@@ -368,12 +499,6 @@ if "popup_q" in query_params:
         st.session_state.last_popup_q     = q_from_popup
         st.query_params.clear()
         st.rerun()
-
-# ── Pop-up : toujours affiché à l'ouverture / rechargement ──
-# On utilise une clé séparée non incluse dans defaults
-# pour qu'elle soit réinitialisée à True à chaque nouveau chargement
-# ── Afficher le popup UNE seule fois au chargement ──
-
 
 
 # ─────────────────────────────────────────────
@@ -843,9 +968,9 @@ def get_etats_standards() -> list:
         return etats
     except (FileNotFoundError, KeyError, _json.JSONDecodeError):
         return [
-            {"label": "🔴 Factures non payées",          "question": "factures non payées"},
-            {"label": "📦 Produits stock faible (< 10)",  "question": "produits avec stock inférieur à 10"},
-            {"label": "🏆 Top clients (multi-commandes)", "question": "clients avec plus de 2 commandes"},
+            {"label": "• Factures non payées",          "question": "factures non payées"},
+            {"label": "• Produits stock faible (< 10)",  "question": "produits avec stock inférieur à 10"},
+            {"label": "• Top clients (multi-commandes)", "question": "clients avec plus de 2 commandes"},
         ]
 
 
@@ -1004,9 +1129,8 @@ def render_dataframe_with_links(df: pd.DataFrame, entity_type: str) -> None:
     )
  
     # Légende
-    st.caption(f"💡 Cliquez sur un lien pour ouvrir la fiche dans Dolibarr ({DOLIBARR_BASE_URL})")
- 
- 
+    st.markdown(f'<div style="font-size:0.8rem; color:#666;"><i class="fa-regular fa-circle-info"></i> Cliquez sur un lien pour ouvrir la fiche dans Dolibarr ({DOLIBARR_BASE_URL})</div>', unsafe_allow_html=True)
+
 # ── 2. Remplacer la fonction render_result complète ─────────────────────────
  
 def render_result(result: dict, question: str, context: str = "main"):
@@ -1025,12 +1149,12 @@ def render_result(result: dict, question: str, context: str = "main"):
  
     if status == "rejected":
         st.markdown(
-            f'<div class="rejected-box">🔒 <strong>Requête rejetée</strong><br>'
+            f'<div class="rejected-box"><i class="fa-solid fa-ban"></i> <strong>Requête rejetée</strong><br>'
             f'{html.escape(summary)}</div>', unsafe_allow_html=True)
         return
     if status == "clarification_required":
         st.markdown(
-            f'<div class="clarification-box">❓ <strong>Précision nécessaire</strong><br>'
+            f'<div class="clarification-box"><i class="fa-solid fa-circle-question"></i> <strong>Précision nécessaire</strong><br>'
             f'{html.escape(summary)}</div>', unsafe_allow_html=True)
         return
     if status == "error":
@@ -1039,33 +1163,31 @@ def render_result(result: dict, question: str, context: str = "main"):
  
     duration  = meta.get("duration_ms", 0)
     row_count = meta.get("row_count", 0)
-    cache_tag = " · cache ⚡" if from_cache else ""
+    cache_tag = ' · cache <i class="fa-solid fa-bolt"></i>' if from_cache else ""
+
  
     is_llm = bool(llm_mode) or str(template).startswith("llm:")
     if is_llm:
         st.markdown(
-            '<div class="llm-badge">🤖 <strong>Réponse générée par IA</strong> '
-            '— SQL validé et exécuté de manière sécurisée</div>',
-            unsafe_allow_html=True
-        )
+    '<div class="llm-badge"><i class="fa-solid fa-robot" style="margin-right:6px;"></i><strong>Réponse générée par IA</strong> — SQL validé et exécuté de manière sécurisée</div>',
+    unsafe_allow_html=True
+)
  
     chip_template = (
-        f'<span class="meta-chip-llm">🤖 {html.escape(str(template))}</span>'
+f'<span class="meta-chip-llm"><i class="fa-solid fa-robot"></i> {html.escape(str(template))}</span>'
         if is_llm else
-        f'<span class="meta-chip">📋 {html.escape(str(template))}</span>'
+f'<span class="meta-chip"><i class="fa-regular fa-note-sticky"></i> {html.escape(str(template))}</span>'
     )
  
     st.markdown(f"""
-    <div class="result-box">
-        ✅ <strong>{html.escape(summary)}</strong><br><br>
-        {chip_template}
-        <span class="meta-chip">📊 {row_count} ligne(s)</span>
-        <span class="meta-chip">⏱ {duration:.0f} ms{cache_tag}</span>
-        <span class="meta-chip" style="background:#e3f2fd;color:#1565c0;">
-            🔑 {html.escape(str(logs_id))[:8]}...
-        </span>
-    </div>
-    """, unsafe_allow_html=True)
+<div class="result-box">
+    <i class="fa-regular fa-circle-check" style="color:#4CAF50;"></i> <strong>{html.escape(summary)}</strong><br>
+    {chip_template}
+    <span class="meta-chip"><i class="fa-solid fa-table-list"></i> {row_count} ligne(s)</span>
+    <span class="meta-chip"><i class="fa-regular fa-clock"></i> {duration:.0f} ms{cache_tag}</span>
+    <span class="meta-chip" style="background:#eff4ff;color:#1f4fb0;border:1px solid #bfdbfe;"><i class="fa-solid fa-key"></i> {html.escape(str(logs_id))[:8]}...</span>
+</div>
+""", unsafe_allow_html=True)
  
     if warning:
         st.warning(f"⚠️ {warning}")
@@ -1132,17 +1254,15 @@ def render_result(result: dict, question: str, context: str = "main"):
                     st.caption(f"PDF indisponible : {e}")
  
         if sql_query:
-            with st.expander("🔍 Voir la requête SQL générée"):
+            with st.expander("⌘ Voir la requête SQL générée"):                
                 st.code(sql_query, language="sql")
  
     # ── Suggestions ───────────────────────────────────────────────────────────
     if suggestions:
         st.markdown("---")
         st.markdown(
-            '<div class="suggestion-box"><span style="color:#111;">💡 '
-            '<strong>Que souhaitez-vous faire ensuite ?</strong></span></div>',
-            unsafe_allow_html=True)
-        st.markdown("")
+    '<div class="suggestion-box"><span style="color:#111;"><i class="fa-regular fa-lightbulb" style="color:#2563eb;margin-right:6px;"></i><strong>Que souhaitez-vous faire ensuite ?</strong></span></div>',
+    unsafe_allow_html=True)
         sug_cols = st.columns(min(len(suggestions), 2))
         for i, s in enumerate(suggestions):
             if sug_cols[i % 2].button(f"→ {s}", key=f"sug_{pfx}_{i}", use_container_width=True):
@@ -1162,7 +1282,7 @@ def render_result(result: dict, question: str, context: str = "main"):
     if st.session_state.get(fb_done_key, False):
         return
  
-    st.markdown("#### Évaluer cette réponse")
+    st.markdown('<h4><i class="fa-regular fa-star" style="color:#2563eb;margin-right:6px;"></i>Évaluer cette réponse</h4>', unsafe_allow_html=True)
     fcol1, fcol2, fcol3 = st.columns([1, 1, 4])
     comment_key = f"comment_{pfx}"
     comment = st.text_input(
@@ -1172,10 +1292,9 @@ def render_result(result: dict, question: str, context: str = "main"):
         label_visibility="collapsed"
     )
     if comment and not st.session_state.get(f"clicked_{pfx}", False):
-        st.warning("⚠️ Veuillez choisir 👍 ou 👎 pour valider votre commentaire.")
- 
+        st.warning("⚠️ Veuillez choisir ✔ (Correcte) ou ✘ (Incorrecte) pour valider votre commentaire.")
     with fcol1:
-        if st.button("👍 Correcte", key=f"ok_{pfx}", use_container_width=True):
+        if st.button("✔ Correcte", key=f"ok_{pfx}", use_container_width=True):
             if not comment.strip():
                 st.error("❌ Veuillez ajouter un commentaire avant de valider.")
             else:
@@ -1183,7 +1302,7 @@ def render_result(result: dict, question: str, context: str = "main"):
                 st.session_state[fb_done_key] = True
                 st.rerun()
     with fcol2:
-        if st.button("👎 Incorrecte", key=f"ko_{pfx}", use_container_width=True):
+        if st.button("✘ Incorrecte", key=f"ko_{pfx}", use_container_width=True):
             if not comment.strip():
                 st.error("❌ Veuillez ajouter un commentaire avant de valider.")
             else:
@@ -1198,7 +1317,7 @@ def render_result(result: dict, question: str, context: str = "main"):
 assistant_prompts = load_assistant_prompts()
 
 
-@st.dialog("💬 Assistant ZAI — Que voulez-vous faire ?", width="large")
+@st.dialog("💬 Assistant ZAI - Que voulez-vous faire ?", width="large")
 def show_assistant_popup():
     prompts_by_cat = assistant_prompts.get("categories", {})
 
@@ -1211,26 +1330,26 @@ def show_assistant_popup():
 
     for cat, prompts in prompts_by_cat.items():
         st.markdown(
-            f"<p style='font-size:0.75rem;font-weight:600;color:#9ca3af;"
-            f"text-transform:uppercase;letter-spacing:0.06em;"
-            f"margin:0.8rem 0 0.25rem 0'>{cat}</p>",
-            unsafe_allow_html=True
-        )
+    f"<p style='font-size:0.75rem;font-weight:600;color:#6366f1;"
+    f"text-transform:uppercase;letter-spacing:0.06em;"
+    f"margin:0.8rem 0 0.25rem 0'>{cat}</p>",
+    unsafe_allow_html=True
+)
         nb_cols = min(len(prompts), 3)
         cols = st.columns(nb_cols)
         for i, p in enumerate(prompts):
             with cols[i % nb_cols]:
-                if st.button(p, key=f"popup_pick_{cat}_{i}", use_container_width=True):
+                if st.button(p, key=f"popup_pick_{cat}_{i}", use_container_width=True, type="primary"):
                     st.session_state.popup_text    = p
                     st.session_state.popup_counter += 1
                     st.rerun()
 
     st.markdown("---")
     st.markdown(
-        "<p style='font-size:0.82rem;color:#374151;margin-bottom:0.3rem;'>"
-        "✏️ <strong>Modifiez votre question si besoin :</strong></p>",
-        unsafe_allow_html=True
-    )
+    "<p style='font-size:0.82rem;color:#374151;margin-bottom:0.3rem;'>"
+    "<i class='fa-regular fa-pen-to-square'></i> <strong>Modifiez votre question si besoin :</strong></p>",
+    unsafe_allow_html=True
+)
 
     textarea_key = f"popup_textarea_{st.session_state.popup_counter}"
     q_popup = st.text_area(
@@ -1263,31 +1382,33 @@ def show_assistant_popup():
             st.rerun()
 
     with col_close:
-        if st.button("✕ Fermer", use_container_width=True, key="popup_close_btn"):
+        if st.button("✕ Fermer", use_container_width=True, key="popup_close_btn", type="primary"):
             st.session_state.popup_text        = ""
             st.session_state.popup_counter     = 0
             st.session_state.popup_should_open = False  # ← ferme définitivement
             st.rerun()
 
 
-# ── Ouvrir le popup UNE SEULE FOIS (quand popup_should_open est True) ──
+# ── Initialisation UNE SEULE FOIS par session ──
+if "popup_should_open" not in st.session_state:
+    st.session_state.popup_should_open = False
+
+# ── Ouvrir le popup seulement si demandé ──
 if st.session_state.popup_should_open:
     show_assistant_popup()
+    # Ne pas remettre à False ici — c'est le bouton Fermer/Envoyer qui le fait
 
-# ── Bouton flottant pour rouvrir manuellement ──
-if st.button(
-    "💬",
-    key="btn_reopen_popup",
-    help="Ouvrir l'assistant",
-    type="secondary"
-):
-    st.session_state.popup_should_open = True
-    st.rerun()
+# ── Bouton de réouverture ──
+col_reopen = st.columns([10, 1])[1]
+with col_reopen:
+    if st.button("💬", key="btn_reopen_popup", help="Ouvrir l'assistant"):
+        st.session_state.popup_should_open = True
+        st.rerun()
 
 # ─────────────────────────────────────────────
 # Layout — onglets (radio horizontal)
 # ─────────────────────────────────────────────
-tab_labels = ["💬 Chatbot", "🎯 Assistant guidé", "📊 Analyse prédictive"]
+tab_labels = ["Chatbot", "Assistant guidé", "Analyse prédictive"]
 
 selected_tab = st.radio(
     "",
@@ -1300,14 +1421,14 @@ st.session_state.active_tab = tab_labels.index(selected_tab)
 # ═══════════════════════════════════════════
 # Onglet 1 — Chatbot
 # ═══════════════════════════════════════════
-if selected_tab == "💬 Chatbot":
+if selected_tab == "Chatbot":
     col_main, col_history = st.columns([3, 1], gap="large")
 
     with col_main:
-        st.markdown('<div class="chat-title">💬 Chatbot ZAI Informatique</div>',
+        st.markdown('<div class="chat-title"><i class="fa-regular fa-comments"></i> Chatbot ZAI Informatique</div>',
                     unsafe_allow_html=True)
         st.markdown(
-            '<div class="chat-subtitle">Posez vos questions en langage naturel sur vos données Dolibarr</div>',
+            '<div class="chat-subtitle"><i class="fa-solid fa-database" style="color:#2563eb;margin-right:6px;"></i>Posez vos questions en langage naturel sur vos données Dolibarr</div>',
             unsafe_allow_html=True)
 
         with st.form(key="question_form", clear_on_submit=False):
@@ -1317,7 +1438,7 @@ if selected_tab == "💬 Chatbot":
                 label_visibility="collapsed",
                 key="form_question"
             )
-            submitted = st.form_submit_button("➤ Envoyer", use_container_width=True)
+            submitted = st.form_submit_button("Envoyer", use_container_width=True)
 
         if submitted and q_input.strip():
             st.session_state.pending_question = q_input.strip()
@@ -1325,7 +1446,7 @@ if selected_tab == "💬 Chatbot":
             st.session_state.active_tab       = 0
             st.rerun()
 
-        st.markdown("**États prêts à l'emploi :**")
+        st.markdown('<p style="font-weight:600;"><i class="fa-solid fa-bolt" style="color:#2563eb;margin-right:6px;"></i>États prêts à l\'emploi :</p>', unsafe_allow_html=True)
         etats = get_etats_standards()
         etat_labels = [e["label"] for e in etats]
         col_combo, col_btn = st.columns([4, 1])
@@ -1347,20 +1468,24 @@ if selected_tab == "💬 Chatbot":
                 st.session_state.active_tab       = 0
                 st.rerun()
 
-        st.markdown("**Exemples de questions :**")
+        st.markdown('<p style="font-weight:600;"><i class="fa-regular fa-lightbulb" style="color:#2563eb;margin-right:6px;"></i>Exemples de questions :</p>', unsafe_allow_html=True)
+
+# Conteneur personnalisé pour les boutons exemples
+        st.markdown('<div class="example-buttons-wrapper">', unsafe_allow_html=True)
         examples = [
-            "Factures entre 2026-01-01 et 2026-02-28",
-            "Factures non payées",
-            "Produits avec stock inférieur à 5",
-            "Clients avec plus de 2 commandes",
-            "Chiffre d'affaires de janvier 2026",
-        ]
-        ex_cols = st.columns(len(examples))
+    "Factures entre 2026-01-01 et 2026-02-28",
+    "Liste des factures non payées",
+    "Produits avec stock inférieur à 5",
+    "Clients avec plus de 2 commandes",
+    "Chiffre d'affaires de janvier 2026",
+]
+        ex_cols = st.columns(5)  # nombre exact d'exemples
         for i, ex in enumerate(examples):
             if ex_cols[i].button(ex, key=f"ex_chat_{i}", use_container_width=True):
                 st.session_state.pending_question = ex
                 st.session_state.result_context   = "chatbot"
                 st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
         if (st.session_state.last_result is not None
                 and st.session_state.result_context == "chatbot"):
@@ -1369,7 +1494,7 @@ if selected_tab == "💬 Chatbot":
                           context="chatbot")
 
     with col_history:
-        st.markdown("### 🕘 Historique")
+        st.markdown('<h3 style="font-size:1.1rem;font-weight:700;"><i class="fa-regular fa-clock" style="color:#2563eb;margin-right:8px;"></i>Historique</h3>', unsafe_allow_html=True)
         if not st.session_state.history:
             st.markdown('<div style="color:#aaa;font-size:0.85rem;">Aucune question posée</div>',
                         unsafe_allow_html=True)
@@ -1379,9 +1504,12 @@ if selected_tab == "💬 Chatbot":
                         unsafe_allow_html=True)
             items_html = ""
             for item in st.session_state.history:
-                icon = {"rejected": "🔒", "clarification_required": "❓",
-                        "error": "⚠️"}.get(item["status"], "✅")
-                llm_icon = " 🤖" if item.get("llm_mode") else ""
+                icon = {
+    "rejected":               '<i class="fa-solid fa-lock" style="color:#dc2626;"></i>',
+    "clarification_required": '<i class="fa-solid fa-circle-question" style="color:#d97706;"></i>',
+    "error":                  '<i class="fa-solid fa-triangle-exclamation" style="color:#d97706;"></i>',
+}.get(item["status"], '<i class="fa-solid fa-circle-check" style="color:#16a34a;"></i>')
+                llm_icon = ' <i class="fa-solid fa-robot" style="color:#7c3aed;font-size:0.8rem;"></i>' if item.get("llm_mode") else ""
                 q = html.escape(item["question"])
                 s = html.escape(item["summary"])
                 items_html += (
@@ -1404,8 +1532,8 @@ if selected_tab == "💬 Chatbot":
 # ═══════════════════════════════════════════
 # Onglet 2 — Assistant guidé
 # ═══════════════════════════════════════════
-elif selected_tab == "🎯 Assistant guidé":
-    st.markdown("## 🎯 Assistant guidé")
+elif selected_tab == "Assistant guidé":
+    st.markdown('<h2><i class="fa-solid fa-compass"></i> Assistant guidé</h2>', unsafe_allow_html=True)
     st.caption("Construisez votre requête sans taper de texte")
 
     form_key = f"guided_form_{st.session_state.guided_form_key}"
@@ -1426,7 +1554,7 @@ elif selected_tab == "🎯 Assistant guidé":
             end_date = st.date_input("Au", value=None)
         quick = st.selectbox("Période rapide (optionnel)",
                              ["-- Aucun --", "Ce mois", "Année en cours", "Tout 2026"])
-        submit_guided = st.form_submit_button("🚀 Lancer l'analyse", use_container_width=True)
+        submit_guided = st.form_submit_button("▶ Lancer l'analyse", use_container_width=True)
 
     if submit_guided:
         today = date.today()
@@ -1469,8 +1597,8 @@ elif selected_tab == "🎯 Assistant guidé":
 # ═══════════════════════════════════════════
 # Onglet 3 — Analyse prédictive (VRAIE PRÉDICTION)
 # ═══════════════════════════════════════════
-elif selected_tab == "📊 Analyse prédictive":
-    st.markdown("### 🔮 Analyse prédictive")
+elif selected_tab == "Analyse prédictive":
+    st.markdown('<h3><i class="fa-solid fa-wand-magic-sparkles" style="color:inherit; margin-right:8px;"></i>Analyse prédictive</h3>', unsafe_allow_html=True)
     st.caption("Prévisions basées sur les données historiques (Machine Learning)")
     
     # Importer les fonctions de prédiction
@@ -1479,18 +1607,18 @@ elif selected_tab == "📊 Analyse prédictive":
     from utils.predictive import predict_ca_mensuel, predict_stock_rupture, predict_fidelite_clients
     pred_type = st.selectbox(
         "Type d'analyse",
-        ["📈 CA mensuel — prévision", "📦 Stock — alerte rupture", "👥 Clients — fidélité prévue"]
+        ["• CA mensuel - prévision", "• Stock - alerte rupture", "• Clients - fidélité prévue"]
     )
     
-    if st.button("🚀 Lancer la prédiction", type="primary", key="btn_predict_real"):
-        with st.spinner("Analyse et prédiction en cours..."):
+    if st.button("▶ Lancer la prédiction", type="primary", key="btn_predict_real"):
+        with st.spinner("⏳ Analyse et prédiction en cours..."):
             
             # ─── PRÉDICTION CA MENSUEL ─────────────────────────────────────────
             if "CA mensuel" in pred_type:
-                st.markdown("#### 📈 Prédiction du Chiffre d'Affaires")
+                st.markdown("#### Prédiction du Chiffre d'Affaires")
     
     # Une seule requête pour récupérer TOUS les mois
-                with st.spinner("Récupération des données historiques..."):
+                with st.spinner("📜 Récupération des données historiques..."):
                     result = call_api("évolution chiffre d affaires mensuel")
                     table = result.get("table", [])
     
@@ -1511,7 +1639,7 @@ elif selected_tab == "📊 Analyse prédictive":
         # Trier par date
                     months_data.sort(key=lambda x: x["mois"])
         
-                    st.info(f"📊 {len(months_data)} mois de données historiques récupérées")
+                    st.info(f"➤ {len(months_data)} mois de données historiques récupérées")
                     df_hist = pd.DataFrame(months_data)
                     st.dataframe(df_hist, use_container_width=True, hide_index=True)
     
@@ -1523,7 +1651,7 @@ elif selected_tab == "📊 Analyse prédictive":
                         st.error(prediction["error"])
                     else:
             # Afficher les prédictions
-                        st.markdown("**🔮 Prédictions (prochain mois)**")
+                        st.markdown("**Prédictions (prochain mois)**")
                         df_pred = pd.DataFrame(prediction["predictions"])
                         st.dataframe(df_pred, use_container_width=True, hide_index=True)
             
@@ -1565,7 +1693,7 @@ elif selected_tab == "📊 Analyse prédictive":
                     st.warning(f"Données insuffisantes pour la prédiction ({len(months_data)}/3 mois minimum).")              
             # ─── PRÉDICTION STOCK ─────────────────────────────────────────────
             elif "Stock" in pred_type:
-                st.markdown("#### 📦 Prédiction des ruptures de stock")
+                st.markdown("#### Prédiction des ruptures de stock")
                 
                 r = call_api("produits avec stock inférieur à 20")
                 products_data = r.get("table", [])
@@ -1595,9 +1723,9 @@ elif selected_tab == "📊 Analyse prédictive":
                         critique = sum(1 for a in alerts if a.get("niveau_risque") == "critique")
                         eleve = sum(1 for a in alerts if a.get("niveau_risque") == "elevé")
                         col1, col2, col3 = st.columns(3)
-                        col1.metric("🚨 Risque critique", critique, delta="< 7 jours")
-                        col2.metric("⚠️ Risque élevé", eleve, delta="< 30 jours")
-                        col3.metric("📦 Stock faible", len(alerts) - critique - eleve, delta="< seuil")
+                        col1.metric("Risque critique", critique, delta="< 7 jours")
+                        col2.metric("Risque élevé", eleve, delta="< 30 jours")
+                        col3.metric("Stock faible", len(alerts) - critique - eleve, delta="< seuil")
                     else:
                         st.success("✅ Aucun produit en risque de rupture détecté")
                 else:
@@ -1605,7 +1733,7 @@ elif selected_tab == "📊 Analyse prédictive":
             
             # ─── PRÉDICTION FIDÉLITÉ CLIENTS ───────────────────────────────────
             elif "fidélité" in pred_type:
-                st.markdown("#### 👥 Prédiction de fidélité clients")
+                st.markdown("#### Prédiction de fidélité clients")
                 
                 r = call_api("clients avec plus de 2 commandes")
                 clients_data = r.get("table", [])
@@ -1632,9 +1760,9 @@ elif selected_tab == "📊 Analyse prédictive":
                     a_risque = sum(1 for p in predictions if p["prediction_rachat"] == "faible")
                     
                     col1, col2, col3 = st.columns(3)
-                    col1.metric("👑 Clients fidèles", fideles, delta="score > 70")
-                    col2.metric("⚠️ Risque de départ", a_risque, delta="prédiction faible")
-                    col3.metric("📊 Total clients analysés", len(predictions))
+                    col1.metric("Clients fidèles", fideles, delta="score > 70")
+                    col2.metric("Risque de départ", a_risque, delta="prédiction faible")
+                    col3.metric("Total clients analysés", len(predictions))
                     
                     # Graphique distribution
                     fig, ax = plt.subplots(figsize=(8, 4))
