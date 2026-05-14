@@ -350,8 +350,10 @@ FORBIDDEN_KEYWORDS = [
 ]
 
 ALLOWED_TABLES = [
-    "m38h_facture", "m38h_facturedet", "m38h_facture_fourn", "m38h_facture_fourn_det",
-    "m38h_commande", "m38h_commandedet", "m38h_commande_fournisseur", "m38h_commande_fournisseur_det",
+    "m38h_facture", "m38h_facturedet", "m38h_facture_fourn",
+    "m38h_facture_fourn_det",
+    "m38h_commande", "m38h_commandedet", "m38h_commande_fournisseur",
+    "m38h_commande_fournisseur_det",
     "m38h_societe", "m38h_socpeople",
     "m38h_product", "m38h_product_stock", "m38h_product_price",
     "m38h_stock_mouvement", "m38h_entrepot",
@@ -1369,7 +1371,7 @@ elif page == "Paramètres":
 
     st.markdown("---")
     st.markdown("**Tables autorisées (whitelist)**")
-    st.code("\n".join(ALLOWED_TABLES), language="text")
+    st.code(ALLOWED_TABLES, language="text")
     st.info("Pour modifier les tables autorisées, édite `ALLOWED_TABLES` dans `admin_templates.py`.")
 
     st.markdown("---")

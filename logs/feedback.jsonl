@@ -3,3 +3,4 @@
 {"timestamp": "2026-04-22T11:21:09.951771", "logs_id": "28854496-39c8-49e7-ab99-c16d6598cf5d", "question": "Factures entre 2026-01-01 et 2026-02-28", "rating": "negative", "comment": "fact"}
 {"timestamp": "2026-04-22T11:58:15.867732", "logs_id": "fdd3c465-6cd2-4d58-8fbe-3a623c5fb976", "question": "Clients avec plus de 2 commandes", "rating": "negative", "comment": "faux"}
 {"timestamp": "2026-05-12T09:28:51.662037", "logs_id": "3ed5b6c7-051b-4286-ac1a-da7515abc8d3", "question": "Factures non payées", "rating": "positive", "comment": "résulat correct"}
+{"timestamp": "2026-05-14T11:00:38.026547", "logs_id": "0dc97dea-37f1-48a8-8ef5-acd96cad3579", "question": "factures partiellement payées", "rating": "positive", "comment": "pas de liens cliquables"}
