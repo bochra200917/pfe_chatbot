@@ -13,7 +13,6 @@ ALLOWED_TABLES = {
     "m38h_categorie", "m38h_categorie_product",
     "m38h_accounting_account", "m38h_accounting_bookkeeping",
     "m38h_bank", "m38h_bank_account",
-    "m38h_user", "m38h_salary",
     "m38h_bom_bom", "m38h_bom_bom_line",
     "m38h_mrp_mo",
     "m38h_holiday", "m38h_usergroup",
@@ -125,12 +124,6 @@ ALLOWED_COLUMNS = {
     },
 
     # RH / Utilisateurs
-    "m38h_user": {
-        "rowid", "login", "name", "entity"
-    },
-    "m38h_salary": {
-        "rowid", "fk_user", "amount", "date", "entity"
-    },
     "m38h_holiday": {
         "rowid", "fk_user", "date_start", "date_end", "status", "entity"
     },
@@ -172,8 +165,6 @@ ALLOWED_COLUMNS = {
 
 ALLOWED_JOINS = {
     ("m38h_cashdaily", "m38h_bank"),
-    ("m38h_cashdaily", "m38h_user"),
-    ("m38h_cashcontrol", "m38h_user"),
     ("m38h_facture_fourn", "m38h_societe"),
     ("m38h_societe", "m38h_facture_fourn"),
     ("m38h_facture",    "m38h_societe"),

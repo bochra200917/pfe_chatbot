@@ -75,7 +75,6 @@ ALLOWED_TABLES = {
     "m38h_categorie", "m38h_categorie_product",
     "m38h_accounting_account", "m38h_accounting_bookkeeping",
     "m38h_bank", "m38h_bank_account",
-    "m38h_user", "m38h_salary",
     "m38h_bom_bom", "m38h_bom_bom_line",
     "m38h_mrp_mo",
     "m38h_holiday", "m38h_usergroup",
