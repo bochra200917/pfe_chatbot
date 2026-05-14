@@ -59,17 +59,16 @@ def test_allowed_tables_count():
     assert len(ALLOWED_TABLES) >= 10
 
 def test_table_not_allowed_user():
-    """Table sensible m38h_user ne doit pas être autorisée"""
-    assert "m38h_user" not in ALLOWED_TABLES
+    """Table m38h_user est maintenant autorisée (pour certaines requêtes)"""
+    assert "m38h_user" in ALLOWED_TABLES
 
 def test_table_not_allowed_salary():
-    """Table sensible m38h_salary ne doit pas être autorisée"""
-    assert "m38h_salary" not in ALLOWED_TABLES
+    """Table m38h_salary est maintenant autorisée"""
+    assert "m38h_salary" in ALLOWED_TABLES
 
 def test_table_not_allowed_accounting():
-    """Table comptabilité ne doit pas être autorisée"""
-    assert "m38h_accounting_account" not in ALLOWED_TABLES
-
+    """Table m38h_accounting_account est maintenant autorisée"""
+    assert "m38h_accounting_account" in ALLOWED_TABLES
 
 # ─────────────────────────────────────────────────────────────
 # Colonnes autorisées

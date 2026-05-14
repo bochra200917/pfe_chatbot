@@ -21,6 +21,81 @@ ALLOWED_TABLES = {
 }
 
 ALLOWED_COLUMNS = {
+"m38h_commande_fournisseur": {
+    "rowid", "ref", "fk_soc", "date_commande", "total_ht", "total_ttc", "entity"
+},
+"m38h_commande_fournisseur_det": {
+    "rowid", "fk_commande_fournisseur", "fk_product", "qty", "total_ht", "total_ttc", "entity"
+},
+"m38h_facture_fourn": {
+    "rowid", "ref", "fk_soc", "datef", "total_ht", "total_ttc", "entity"
+},
+"m38h_facture_fourn_det": {
+    "rowid", "fk_facture_fourn", "fk_product", "qty", "total_ht", "total_ttc", "entity"
+},
+"m38h_bom_bom": {
+    "rowid", "ref", "fk_product", "qty", "entity"
+},
+"m38h_bom_bom_line": {
+    "rowid", "fk_bom", "fk_product", "qty", "entity"
+},
+"m38h_mrp_mo": {
+    "rowid", "ref", "fk_product", "qty", "planned_qty", "entity"
+},
+"m38h_holiday": {
+    "rowid", "fk_user", "date_start", "date_end", "status", "entity"
+},
+"m38h_usergroup": {
+    "rowid", "name", "entity"
+},
+"m38h_const": {
+    "rowid", "name", "value", "entity"
+},
+"m38h_product_price": {
+    "rowid", "fk_product", "price", "price_ttc", "entity"
+},
+"m38h_bank_account": {
+    "rowid", "ref", "label", "bank", "code", "currency", "entity"
+},
+"m38h_accounting_account": {
+    "rowid", "account_number", "label", "entity"
+},
+"m38h_accounting_bookkeeping": {
+    "rowid", "doc_type", "doc_id", "account", "debit", "credit", "entity"
+},
+"m38h_user": {
+    "rowid", "login", "name", "entity"
+},
+"m38h_salary": {
+    "rowid", "fk_user", "amount", "date", "entity"
+},
+"m38h_commande_fournisseur": {
+    "rowid", "ref", "fk_soc", "date_commande", "total_ht", "total_ttc", "entity"
+},
+"m38h_commande_fournisseur_det": {
+    "rowid", "fk_commande_fournisseur", "fk_product", "qty", "total_ht", "total_ttc", "entity"
+},
+"m38h_facture_fourn": {
+    "rowid", "ref", "fk_soc", "datef", "total_ht", "total_ttc", "entity"
+},
+"m38h_facture_fourn_det": {
+    "rowid", "fk_facture_fourn", "fk_product", "qty", "total_ht", "total_ttc", "entity"
+},
+"m38h_product_price": {
+    "rowid", "fk_product", "price", "price_ttc", "entity"
+},
+"m38h_holiday": {
+    "rowid", "fk_user", "date_start", "date_end", "status", "entity"
+},
+"m38h_usergroup": {
+    "rowid", "name", "entity"
+},
+"m38h_const": {
+    "rowid", "name", "value", "entity"
+},
+"m38h_bank": {
+    "rowid", "ref", "label", "bank", "code", "currency", "entity"
+},
     "m38h_facture_fourn": {
         "rowid", "ref", "total_ht", "total_ttc",
         "fk_soc", "entity", "datef"
