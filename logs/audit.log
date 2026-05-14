@@ -1704,3 +1704,8 @@
 [2026-05-13 12:44:56] uuid=3af4fbef-db99-41ae-bd0b-49b1fff88644 | status=success | template=ca_mois_courant | rows=1 | duration=194.59ms | question=chiffre d affaires total par mois pour 2026
 [2026-05-13 12:47:51] uuid=bd3f082c-5d16-447d-9f1e-da2d13614acc | status=success | template=get_monthly_growth_revenue | rows=6 | duration=198.9ms | question=Évolution mensuelle du chiffre d'affaires avec taux de croissance
 [2026-05-13 12:51:06] uuid=88b9fe98-5c0b-4b02-a2dd-99afd733bb40 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=509.21ms | question=évolution mensuelle du chiffre d'affaires
+[2026-05-13 14:59:21] uuid=9babf015-7fa4-4fae-abf3-f67faff44641 | status=success | template=top_fournisseurs_achats | rows=4 | duration=204.76ms | question=Top des fournisseurs selon le montant total des achats
+[2026-05-13 15:02:00] uuid=c1f16121-88a0-4c73-86d3-9d21602b9752 | status=success | template=top_fournisseurs_achats | rows=4 | duration=197.82ms | question=Top des fournisseurs selon le montant total des achats
+[2026-05-14 08:50:55] uuid=f6a50586-9ced-4095-8e71-f6b57318c35f | status=success | template=get_ca_par_trimestre | rows=2 | duration=184.76ms | question=Combien ai-je dépensé par catégorie ce trimestre ?
+[2026-05-14 09:24:05] uuid=f96eb1e5-94f7-4ba5-9557-0f525e5dd5c1 | status=success | template=top_produits_ca | rows=10 | duration=401.24ms | question=Produits générant le plus de CA
+[2026-05-14 09:24:32] uuid=c8086449-7330-43b6-86a5-47b410b02ba9 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=406.5ms | question=Évolution mensuelle du chiffre d'affaires

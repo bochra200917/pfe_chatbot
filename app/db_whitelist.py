@@ -2,25 +2,36 @@
 WHITELIST_VERSION = "v1.1"
 
 ALLOWED_TABLES = {
-    "m38h_categorie",            
-    "m38h_categorie_product",
-    "m38h_facture",
-    "m38h_facturedet",
-    "m38h_societe",
-    "m38h_socpeople",
-    "m38h_paiement",
-    "m38h_paiement_facture",
-    "m38h_product",
-    "m38h_product_stock",
-    "m38h_stock_mouvement",
-    "m38h_entrepot",
-    "m38h_commande",
-    "m38h_commandedet",
-    "m38h_projet",
-    "m38h_projet_task",
+    "m38h_facture", "m38h_facturedet", "m38h_facture_fourn", "m38h_facture_fourn_det",
+    "m38h_commande", "m38h_commandedet", "m38h_commande_fournisseur", "m38h_commande_fournisseur_det",
+    "m38h_societe", "m38h_socpeople",
+    "m38h_product", "m38h_product_stock", "m38h_product_price",
+    "m38h_stock_mouvement", "m38h_entrepot",
+    "m38h_paiement", "m38h_paiement_facture",
+    "m38h_projet", "m38h_projet_task",
+    "m38h_categorie", "m38h_categorie_product",
+    "m38h_accounting_account", "m38h_accounting_bookkeeping",
+    "m38h_bank", "m38h_bank_account",
+    "m38h_user", "m38h_salary",
+    "m38h_bom_bom", "m38h_bom_bom_line",
+    "m38h_mrp_mo",
+    "m38h_holiday", "m38h_usergroup",
+    "m38h_const", "m38h_cashdaily", "m38h_cashcontrol"
 }
 
 ALLOWED_COLUMNS = {
+    "m38h_facture_fourn": {
+        "rowid", "ref", "total_ht", "total_ttc",
+        "fk_soc", "entity", "datef"
+    },
+    "m38h_cashdaily": {
+    "rowid", "fk_user", "date_cash", "label", "amount", "fk_bank",
+    "f_type", "account_type", "payment_method", "currency_code"
+},
+"m38h_cashcontrol": {
+    "rowid", "fk_user", "date_start", "date_end", "start_amount",
+    "end_amount", "total_sell", "total_paid", "total_change"
+},
     "m38h_facture": {
         "ref", "total_ht", "total_ttc", "datef",
         "fk_soc", "entity", "rowid", "fk_statut"
@@ -82,6 +93,11 @@ ALLOWED_COLUMNS = {
 }
 
 ALLOWED_JOINS = {
+    ("m38h_cashdaily", "m38h_bank"),
+("m38h_cashdaily", "m38h_user"),
+("m38h_cashcontrol", "m38h_user"),
+    ("m38h_facture_fourn", "m38h_societe"),
+    ("m38h_societe", "m38h_facture_fourn"),
     ("m38h_facture",    "m38h_societe"),
     ("m38h_societe",    "m38h_commande"),
     ("m38h_facture",    "m38h_paiement_facture"),
