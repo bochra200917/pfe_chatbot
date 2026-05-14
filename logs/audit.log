@@ -1709,3 +1709,5 @@
 [2026-05-14 08:50:55] uuid=f6a50586-9ced-4095-8e71-f6b57318c35f | status=success | template=get_ca_par_trimestre | rows=2 | duration=184.76ms | question=Combien ai-je dépensé par catégorie ce trimestre ?
 [2026-05-14 09:24:05] uuid=f96eb1e5-94f7-4ba5-9557-0f525e5dd5c1 | status=success | template=top_produits_ca | rows=10 | duration=401.24ms | question=Produits générant le plus de CA
 [2026-05-14 09:24:32] uuid=c8086449-7330-43b6-86a5-47b410b02ba9 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=406.5ms | question=Évolution mensuelle du chiffre d'affaires
+[2026-05-14 10:12:46] uuid=6e4092d8-64b3-43ce-874f-0a30c985426d | status=success | template=get_factures_non_payees | rows=93 | duration=191.02ms | question=Liste des factures non payées
+[2026-05-14 10:13:15] uuid=ac0fbcf3-684b-4ab6-bd58-65d5f87a3faa | status=success | template=get_top_clients_ca | rows=6 | duration=181.89ms | question=Top 6 clients avec le chiffre d'affaires le plus élevé
