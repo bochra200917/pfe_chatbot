@@ -767,7 +767,11 @@ def call_api(question: str) -> dict:
             table  = result.get("table", [])
 
             # ✅ Template trouvé avec données → retour direct
-            if status == "success" and table:
+            if status == "success":
+                return result
+    
+            # ✅ Template forcé (même si 0 résultats) → retour direct sans LLM
+            if status == "success" and logs_id in ("forced_manual", "forced_achats"):
                 return result
 
             # 🔒 Injection SQL détectée → stop, pas de LLM
@@ -1568,19 +1572,57 @@ elif selected_tab == "Assistant guidé":
             start_date = date(2026, 1, 1)
             end_date   = date(2026, 12, 31)
 
+        # Dates par défaut si non renseignées
+        _start = start_date or date(today.year, 1, 1)
+        _end   = end_date   or today
+
         q_parts = {
-            ("Factures", "Non payées"):           "factures non payées",
-            ("Factures", "Partiellement payées"): "factures partiellement payées",
-            ("Factures", "Par client"):           "donne moi les factures",
-            ("Factures", "Total"):                f"factures entre {start_date} et {end_date}",
-            ("Clients",  "Multiples commandes"):  "clients avec plus de 2 commandes",
-            ("Produits", "Stock faible"):         "produits avec stock inférieur à 5",
-        }
+    # ── Factures ──
+    ("Factures", "Total"):
+        f"factures entre {_start} et {_end}",
+
+    ("Factures", "Non payées"):
+        f"factures non payées entre {_start} et {_end}",    # ← ajout dates
+
+    ("Factures", "Partiellement payées"):
+        f"factures partiellement payées entre {_start} et {_end}",  # ← ajout dates
+
+    ("Factures", "Par client"):
+        "donne moi les factures",
+
+    # ── Paiements ──
+    ("Paiements", "Total"):
+        f"total des paiements entre {_start} et {_end}",
+    ("Paiements", "Non payées"):
+        f"factures non payées entre {_start} et {_end}",    # ← ajout dates
+    ("Paiements", "Partiellement payées"):
+        f"factures partiellement payées entre {_start} et {_end}",
+    ("Paiements", "Par client"):          "donne moi les factures",
+    ("Paiements", "Stock faible"):        "produits avec stock inférieur à 5",
+    ("Paiements", "Multiples commandes"): "clients avec plus de 2 commandes",
+
+    # ── Clients ──
+    ("Clients", "Total"):                 "liste tous les clients",
+    ("Clients", "Multiples commandes"):   "clients avec plus de 2 commandes",
+    ("Clients", "Non payées"):            f"factures non payées entre {_start} et {_end}",
+    ("Clients", "Par client"):            "liste tous les clients",
+    ("Clients", "Stock faible"):          "liste tous les clients",
+    ("Clients", "Partiellement payées"):  f"factures partiellement payées entre {_start} et {_end}",
+
+    # ── Produits ──
+    ("Produits", "Stock faible"):         "produits avec stock inférieur à 5",
+    ("Produits", "Total"):                "produits avec stock inférieur à 5",
+    ("Produits", "Non payées"):           "produits avec stock inférieur à 5",
+    ("Produits", "Par client"):           "produits avec stock inférieur à 5",
+    ("Produits", "Multiples commandes"):  "produits avec stock inférieur à 5",
+    ("Produits", "Partiellement payées"): "produits avec stock inférieur à 5",
+}
+
         question = q_parts.get(
             (data_type, analysis_type),
-            f"factures entre {start_date} et {end_date}"
-            if start_date and end_date else "factures non payées"
+            f"factures entre {_start} et {_end}"
         )
+
         st.session_state.pending_question = question
         st.session_state.result_context   = "guided"
         st.session_state.guided_form_key += 1

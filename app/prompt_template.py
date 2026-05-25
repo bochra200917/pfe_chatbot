@@ -58,6 +58,12 @@ TEMPLATES DISPONIBLES
      → template=get_total_ventes_mois, annee=2026, mois=null (toute l'année)
    → Règle : si aucun mois précisé mais année précisée → retourner tous les mois de l'année
 
+7. get_factures_payees
+   → Factures entièrement réglées (montant payé >= total TTC)
+   → Paramètres : aucun
+   → Déclencheurs : "factures payées", "factures totalement payées",
+     "factures réglées", "factures soldées", "factures entièrement payées"
+
 ══════════════════════════════════════════════
 FORMAT DE RÉPONSE — JSON UNIQUEMENT
 ══════════════════════════════════════════════
@@ -156,6 +162,22 @@ MAPPING_RULES = [
             "intent":     "get_factures_non_payees",
             "params":     {},
             "confidence": 0.98,
+        },
+    ),
+
+    # ── 4b. Factures totalement payées ──
+    (
+        re.compile(
+        r"(factures?\s+(totalement|enti[eè]rement|compl[eè]tement)\s+pay[eé][eé]?s?"
+        r"|factures?\s+r[eé]gl[eé][eé]?s?"
+        r"|factures?\s+sold[eé][eé]?s?"
+        r"|factures?\s+pay[eé][eé]?s?(?!\s*(non|pas|impay|partiel)))",
+        re.IGNORECASE
+        ),
+        lambda m, q: {
+        "intent":     "get_factures_payees",
+        "params":     {},
+        "confidence": 0.96,
         },
     ),
 

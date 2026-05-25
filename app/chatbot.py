@@ -34,7 +34,6 @@ COMPLEX_KEYWORDS = [
     "semestre",
     "mais pas", "sauf en", "pas en",
     "jamais commandé", "n ont jamais", "n a jamais",
-    "depuis plus de", "depuis plus",
     "comparer", "comparaison",
 ]
 
@@ -155,20 +154,43 @@ def match_question(question: str):
 
     match = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
     if match:
-        return "get_factures_between", {"start_date": match.group(1), "end_date": match.group(2)}
+        # Ne pas retourner get_factures_between si la question concerne les achats fournisseurs
+        if not any(term in q for term in ["achat", "fournisseur", "entrepot", "magasin", "reception"]):
+            return "get_factures_between", {"start_date": match.group(1), "end_date": match.group(2)}
 
     if "partiellement pay" in q or "partiel" in q:
         return "get_factures_partiellement_payees", {}
+
+    # Dans match_question(), AVANT le bloc "non pay" existant :
+
+    # ── Factures non payées AVEC dates ──────────────────────────
+    match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+    if match_dates and any(w in q for w in ["non pay", "impaye", "non regle"]):
+        return "get_factures_non_payees", {
+        "start_date": match_dates.group(1),
+        "end_date":   match_dates.group(2)
+    }
+
+    # ── Factures non payées SANS dates (toutes) ──────────────────
+    if ("non pay" in q or "impaye" in q or "non regle" in q
+        or "pas regle" in q or "montant restant" in q):
+        from datetime import date as _date
+        today = _date.today()
+        return "get_factures_non_payees", {
+        "start_date": "2000-01-01",   # depuis toujours
+        "end_date":   str(today)
+    }
 
     # ── Factures non payées depuis N jours — PRIORITÉ SUR le template générique ──
     match_jours = re.search(r'(\d+)\s*jours?', q)
     if match_jours and any(w in q for w in ["non pay", "impaye", "non regle", "retard"]):
         return "get_factures_non_payees_30j", {}
-    
-    if "30 jours" in q or "trente jours" in q or "depuis plus" in q:
+
+    if any(w in q for w in ["30 jours", "trente jours", "depuis plus", "depuis plus de",
+                         "un mois", "plus d un mois", "plus d'un mois"]):
         if any(w in q for w in ["non pay", "impaye", "non regle", "retard", "facture"]):
             return "get_factures_non_payees_30j", {}
-    
+
     if ("non pay" in q or "impaye" in q or "non regle" in q
             or "pas regle" in q or "pas ete regle" in q
             or "n ont pas" in q or "montant restant" in q):
@@ -176,6 +198,15 @@ def match_question(question: str):
 
     if "paiement partiel" in q or "cours de paiement" in q:
         return "get_factures_partiellement_payees", {}
+
+    # Factures payées / totalement réglées / soldées
+    if any(w in q for w in [
+    "totalement pay", "entierement pay", "completement pay",
+    "totalement regle", "entierement regle",
+    "factures payees", "factures reglees", "factures soldees",
+]) and not any(w in q for w in ["non", "pas", "impay", "partiel"]):
+        return "get_factures_payees", {}
+
 
     if "negatif" in q or "negativ" in q or "avoir" in q:
         return "get_factures_negatives", {}
@@ -481,43 +512,85 @@ def match_admin_template(question: str) -> tuple:
 def _extract_admin_params(question: str, placeholders: set) -> dict:
     params = {}
     q = normalize(question)
-    _stop = {
-        "avec", "et", "ou", "pour", "de", "du", "des", "les", "la", "le",
-        "total", "ht", "ttc", "montant", "facture", "factures", "entre",
-        "depuis", "par", "sur", "en", "au", "aux", "un", "une",
-        "non", "pas", "plus", "moins",
-    }
+
     for p in placeholders:
         p_lower = p.lower()
         if "limit" in p_lower:
             m = re.search(r'\b(\d+)\b', q)
             params[p] = m.group(1) if m else "10"
+
         elif "annee" in p_lower or "year" in p_lower:
+            # Cherche une année 4 chiffres
             m = re.search(r'\b(20\d{2})\b', question)
             params[p] = m.group(1) if m else "2026"
+
+        elif "fournisseur" in p_lower:
+            # Pattern : "fournisseur NOM" jusqu'à virgule ou fin
+            m = re.search(
+                r'fournisseur\s+([A-Z][A-Z0-9\s\-\.]{1,50}?)(?:\s*,|\s+rayon|\s+famille|\s+marque|\s+saison|\s+matiere|$)',
+                question, re.IGNORECASE
+            )
+            params[p] = m.group(1).strip() if m else None
+
+        elif "rayon" in p_lower:
+            m = re.search(
+                r'rayon\s+([A-Z][A-Z0-9\s\-]{1,30}?)(?:\s*,|\s+famille|\s+marque|\s+saison|\s+matiere|$)',
+                question, re.IGNORECASE
+            )
+            params[p] = m.group(1).strip() if m else None
+
+        elif "famille" in p_lower and "sous" not in p_lower:
+            m = re.search(
+                r'famille\s+([^,]+?)(?:\s*,|\s+sous|$)',
+                question, re.IGNORECASE
+            )
+            params[p] = m.group(1).strip() if m else None
+
+        elif "sous_famille" in p_lower or "sous-famille" in p_lower:
+            m = re.search(
+                r'sous[- ]famille\s+([^,]+?)(?:\s*,|$)',
+                question, re.IGNORECASE
+            )
+            params[p] = m.group(1).strip() if m else None
+
+        elif "marque" in p_lower:
+            m = re.search(
+                r'marque\s+([^,]+?)(?:\s*,|$)',
+                question, re.IGNORECASE
+            )
+            params[p] = m.group(1).strip() if m else None
+
+        elif "matiere" in p_lower:
+            m = re.search(
+                r'mati[èe]re\s+([^,]+?)(?:\s*,|$)',
+                question, re.IGNORECASE
+            )
+            params[p] = m.group(1).strip() if m else None
+
+        elif "saison" in p_lower:
+            m = re.search(
+                r'saison\s+([^,]+?)(?:\s*,|$)',
+                question, re.IGNORECASE
+            )
+            params[p] = m.group(1).strip() if m else None
+
         elif "mois" in p_lower or "month" in p_lower:
             from datetime import datetime as _dt
-            MOIS_MAP_LOCAL = {
-                "janvier": "01", "fevrier": "02", "mars": "03", "avril": "04",
-                "mai": "05", "juin": "06", "juillet": "07", "aout": "08",
-                "septembre": "09", "octobre": "10", "novembre": "11", "decembre": "12",
-            }
-            mois_trouve = None
-            for nom, num in MOIS_MAP_LOCAL.items():
-                if nom in q:
-                    mois_trouve = num
-                    break
-            params[p] = mois_trouve if mois_trouve else str(_dt.today().month).zfill(2)
+            params[p] = str(_dt.today().month).zfill(2)
+
         elif "seuil" in p_lower or "stock_min" in p_lower:
             m = re.search(r'\b(\d+)\b', q)
             params[p] = m.group(1) if m else "10"
+
         elif p_lower == "client":
             client = _extract_client_name(question)
             params[p] = f"%{client}%" if client else "%"
+
         else:
             m = re.search(r'\b(\d+)\b', q)
             if m:
                 params[p] = m.group(1)
+
     return params
 
 def get_response(question: str) -> dict:
@@ -527,11 +600,315 @@ def get_response(question: str) -> dict:
         "quels sont les 5 produits avec le plus grand nombre de lignes de commande distinctes"
     ]
     q_lower = question.lower().strip()
+    start_time = time.time()
+
+    # ===== FORCAGE BRUTAL POUR LE RÉCAPITULATIF =====
+    if "récapitulatif des ventes" in q_lower or "ventes et règlements" in q_lower:
+        print(">>> DÉTECTION DU RÉCAPITULATIF - EXÉCUTION FORCÉE DU TEMPLATE")
+        import json, os
+        from app.db import execute_query
+
+        templates_file = os.path.join(os.path.dirname(__file__), "..", "ui", "templates.json")
+        with open(templates_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        tpl = data["templates"]["recap_ventes_reglements"]
+        sql_template = tpl["sql"]
+
+        params = {}
+        dates = re.findall(r'\d{4}-\d{2}-\d{2}', question)
+        if len(dates) >= 2:
+            params["date_debut"] = dates[0]
+            params["date_fin"]   = dates[1]
+        else:
+            params["date_debut"] = "2026-01-01"
+            params["date_fin"]   = "2026-12-31"
+
+        mag_match = re.search(r'magasin\s+([A-Za-z0-9_]+)', question, re.IGNORECASE)
+        params["magasin"] = mag_match.group(1) if mag_match else None
+        params["limit"]   = "200"
+
+        sql = sql_template
+        for key, value in params.items():
+            if value is None:
+                sql = sql.replace(f":{key}", "NULL")
+            else:
+                safe_value = str(value).replace("'", "''")
+                sql = sql.replace(f":{key}", f"'{safe_value}'")
+
+        try:
+            columns, rows, _ = execute_query(sql, {})
+            duration    = round((time.time() - start_time) * 1000, 2)
+            result_rows = [dict(zip(columns, row)) for row in rows]
+            return {
+                "table":   result_rows,
+                "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
+                "metadata": {
+                    "status":      "success",
+                    "template":    "recap_ventes_reglements",
+                    "duration_ms": duration,
+                    "row_count":   len(result_rows),
+                    "params":      params,
+                    "logs_id":     "forced_manual",
+                    "sql_query":   sql,
+                    "from_cache":  False,
+                    "suggestions": []
+                }
+            }
+        except Exception as e:
+            print(f"ERREUR SQL lors de l'exécution forcée : {e}")
+            # En cas d'erreur on laisse le code continuer (fallback normal)
+
+    # ===== FORCER LE TEMPLATE ACHATS PAR FOURNISSEUR (réceptions) =====
+    q_lower_local = question.lower()
+    if ("achats par fournisseur" in q_lower_local or 
+        ("fournisseur" in q_lower_local and "entrepot" in q_lower_local)):
+        print(">>> DÉTECTION ACHATS PAR FOURNISSEUR - EXÉCUTION FORCÉE")
+        import json, os
+        from app.db import execute_query
+
+        templates_file = os.path.join(os.path.dirname(__file__), "..", "ui", "templates.json")
+        with open(templates_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        tpl = data["templates"]["achats_par_fournisseur"]
+        sql_template = tpl["sql"]   # doit contenir la requête avec :entrepot, :fournisseur, :date_debut, :date_fin, :limit
+
+        params = {}
+
+        # Entrepôt (magasin)
+        entrepot_match = re.search(r'entrepot\s+([A-Za-z0-9_]+)', question, re.IGNORECASE)
+        params["entrepot"] = entrepot_match.group(1) if entrepot_match else None
+
+        # Fournisseur : extraction robuste (dernière occurrence après "fournisseur")
+        fournisseur = None
+        # Chercher "fournisseur XXXX" jusqu'à la prochaine virgule ou "entre" ou fin
+        match_f = re.search(r'fournisseur\s+([A-Za-z0-9_ ]+?)(?:\s+entre|\s+pour|\s+et|,|$)', question, re.IGNORECASE)
+        if match_f:
+            candidate = match_f.group(1).strip()
+            if candidate and not any(bad in candidate.lower() for bad in ['pour', 'l\'année', 'entrepot', 'magasin', 'date']):
+                fournisseur = candidate
+        # Fallback : découpage par "fournisseur"
+        if not fournisseur:
+            parts = question.lower().split("fournisseur")
+            if len(parts) >= 2:
+                after = parts[-1].strip()
+                if ',' in after:
+                    candidate = after[:after.index(',')].strip()
+                else:
+                    candidate = after.strip()
+                if candidate and not any(bad in candidate for bad in ['pour', 'l\'année', 'entrepot', 'magasin']):
+                    fournisseur = candidate
+        params["fournisseur"] = fournisseur
+        print(f"[DEBUG] fournisseur extrait = {fournisseur}")
+
+        # Dates
+        dates = re.findall(r'\d{4}-\d{2}-\d{2}', question)
+        if len(dates) >= 2:
+            params["date_debut"] = dates[0]
+            params["date_fin"]   = dates[1]
+        else:
+            params["date_debut"] = "2026-01-01"
+            params["date_fin"]   = "2026-12-31"
+
+        params["limit"] = "200"
+
+        # Injection des paramètres
+        sql = sql_template
+        for key, value in params.items():
+            if value is None:
+                sql = sql.replace(f":{key}", "NULL")
+            else:
+                safe_value = str(value).replace("'", "''")
+                sql = sql.replace(f":{key}", f"'{safe_value}'")
+
+        try:
+            columns, rows, _ = execute_query(sql, {})
+            duration = round((time.time() - start_time) * 1000, 2)
+            result_rows = [dict(zip(columns, row)) for row in rows]
+            return {
+                "table": result_rows,
+                "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
+                "metadata": {
+                    "status": "success",
+                    "template": "achats_par_fournisseur",
+                    "duration_ms": duration,
+                    "row_count": len(result_rows),
+                    "params": params,
+                    "logs_id": "forced_achats",
+                    "sql_query": sql,
+                    "from_cache": False,
+                    "suggestions": []
+                }
+            }
+        except Exception as e:
+            print(f"ERREUR achats par fournisseur : {e}")
+
+        # ===== FORCER LE TEMPLATE LISTES APPROVISIONNEMENTS =====
+    q_lower_local = question.lower()
+    if ("listes des approvisionnements" in q_lower_local or 
+        ("approvisionnements" in q_lower_local and "magasin" in q_lower_local)):
+        print(">>> DÉTECTION LISTES APPROVISIONNEMENTS - EXÉCUTION FORCÉE")
+        import json, os
+        from app.db import execute_query
+
+        templates_file = os.path.join(os.path.dirname(__file__), "..", "ui", "templates.json")
+        with open(templates_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        tpl = data["templates"]["listes_approvisionnements"]
+        sql_template = tpl["sql"]
+
+        params = {}
+
+        # Magasin (entrepôt)
+        magasin_match = re.search(r'magasin\s+([A-Za-z0-9_]+)', question, re.IGNORECASE)
+        params["magasin"] = magasin_match.group(1) if magasin_match else None
+
+        # Fournisseur (dernière occurrence après "fournisseur")
+        fournisseur = None
+        parts = question.lower().split("fournisseur")
+        if len(parts) >= 2:
+            after = parts[-1].strip()
+            if ',' in after:
+                candidate = after[:after.index(',')].strip()
+            else:
+                candidate = after.strip()
+            if candidate and not any(bad in candidate for bad in ['pour', 'l\'année', 'entrepot', 'magasin', 'entre']):
+                fournisseur = candidate
+        params["fournisseur"] = fournisseur
+
+        # Nature (optionnel – laisser NULL)
+        params["nature"] = None
+
+        # Référence
+        ref_match = re.search(r'reference\s+([A-Za-z0-9_\-]+)', question, re.IGNORECASE)
+        params["reference"] = ref_match.group(1) if ref_match else None
+
+        # Dates
+        dates = re.findall(r'\d{4}-\d{2}-\d{2}', question)
+        if len(dates) >= 2:
+            params["date_debut"] = dates[0]
+            params["date_fin"]   = dates[1]
+        else:
+            params["date_debut"] = "2026-01-01"
+            params["date_fin"]   = "2026-12-31"
+
+        params["limit"] = "200"
+
+        sql = sql_template
+        for key, value in params.items():
+            if value is None:
+                sql = sql.replace(f":{key}", "NULL")
+            else:
+                safe_value = str(value).replace("'", "''")
+                sql = sql.replace(f":{key}", f"'{safe_value}'")
+
+        try:
+            columns, rows, _ = execute_query(sql, {})
+            duration = round((time.time() - start_time) * 1000, 2)
+            result_rows = [dict(zip(columns, row)) for row in rows]
+            return {
+                "table": result_rows,
+                "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
+                "metadata": {
+                    "status": "success",
+                    "template": "listes_approvisionnements",
+                    "duration_ms": duration,
+                    "row_count": len(result_rows),
+                    "params": params,
+                    "logs_id": "forced_appro",
+                    "sql_query": sql,
+                    "from_cache": False,
+                    "suggestions": []
+                }
+            }
+        except Exception as e:
+            print(f"ERREUR listes approvisionnements : {e}")
+
+    # ===== FORCER LE TEMPLATE ANALYSE MOUVEMENTS STOCK =====
+    q_lower_local = question.lower()
+    if ("analyse des mouvements de stock" in q_lower_local or "mouvements de stock" in q_lower_local):
+        print(">>> DÉTECTION ANALYSE MOUVEMENTS STOCK - EXÉCUTION FORCÉE")
+        import json, os, re
+        from app.db import execute_query
+
+        templates_file = os.path.join(os.path.dirname(__file__), "..", "ui", "templates.json")
+        with open(templates_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        tpl = data["templates"]["analyse_mouvements_stock"]
+        sql_template = tpl["sql"]
+
+        # (Facultatif) Vérification du template
+        print("DEBUG SQL TEMPLATE (début) :", repr(sql_template[:200]))
+
+        params = {}
+
+        # === Dates ===
+        dates = re.findall(r'\d{4}-\d{2}-\d{2}', question)
+        if len(dates) >= 2:
+            params["date_debut"] = dates[0]
+            params["date_fin"]   = dates[1]
+        else:
+            params["date_debut"] = "2026-01-01"
+            params["date_fin"]   = "2026-12-31"
+
+        # === Entrepôt ===
+        entrepot_match = re.search(r'entrepot\s+([A-Za-z0-9_]+)', question, re.IGNORECASE)
+        if entrepot_match:
+            params["entrepot"] = entrepot_match.group(1)
+
+        # === Catégorie ===
+        cat_match = re.search(r'categorie\s+([A-Za-z0-9_\-]+)', question, re.IGNORECASE)
+        if cat_match:
+            params["categorie"] = cat_match.group(1)
+
+        # === Nature produit (RowMaterial / Finished) ===
+        nature_match = re.search(r'nature\s+([A-Za-z0-9_\-]+)', question, re.IGNORECASE)
+        if nature_match:
+            candidate = nature_match.group(1).strip()
+            candidate_norm = candidate[0].upper() + candidate[1:].lower() if candidate else ''
+            if candidate_norm in ('Rowmaterial', 'Finished'):
+                params["nature"] = candidate_norm
+            # Si la valeur n'est pas reconnue, on ne filtre pas sur ce champ
+
+        # === Limite ===
+        params["limit"] = 200   # entier (sera interprété correctement)
+
+        # Tous les autres paramètres (produit, type_mouvement, taille, couleur, rayon, saison, marque, matiere)
+        # ne sont pas utilisés dans la requête SQL actuelle – on les ignore pour éviter les erreurs.
+
+        # Exécution avec paramètres nommés (pas de remplacement manuel !)
+        try:
+            columns, rows, _ = execute_query(sql_template, params)
+            duration = round((time.time() - start_time) * 1000, 2)
+            result_rows = [dict(zip(columns, row)) for row in rows]
+            return {
+                "table": result_rows,
+                "summary": f"{len(result_rows)} mouvement(s) trouvé(s).",
+                "metadata": {
+                    "status": "success",
+                    "template": "analyse_mouvements_stock",
+                    "duration_ms": duration,
+                    "row_count": len(result_rows),
+                    "params": params,
+                    "logs_id": "forced_stock_mvt",
+                    "sql_query": sql_template,
+                    "from_cache": False,
+                    "suggestions": []
+                }
+            }
+        except Exception as e:
+            print(f"ERREUR analyse mouvements stock : {e}")
+            # Vous pouvez aussi retourner une réponse d'erreur explicite
+            return {
+                "table": [],
+                "summary": f"Erreur SQL : {str(e)}",
+                "metadata": {"status": "error"}
+            }
+
+    # ── Force LLM pour questions complexes spécifiques ──
     if any(forced in q_lower for forced in force_llm_questions):
-        # Appel direct au moteur hybride (port 8001)
         from ui.hybrid_engine import ask_hybrid
         return ask_hybrid(question)
-    
+
     if SentenceTransformer is None:
         raise RuntimeError("Model not available")
 
@@ -539,8 +916,7 @@ def get_response(question: str) -> dict:
     if hybrid_engine is None:
         from ui.hybrid_engine import HybridEngine
         hybrid_engine = HybridEngine()
-    
-    start_time = time.time()
+
     suggestions = []
 
     # ── 1. Sécurité ──
@@ -548,60 +924,55 @@ def get_response(question: str) -> dict:
         detect_injection(question)
     except Exception:
         return {
-            "table": [],
-            "summary": "Requête rejetée pour des raisons de sécurité.",
+            "table":    [],
+            "summary":  "Requête rejetée pour des raisons de sécurité.",
             "metadata": {"status": "rejected", "suggestions": []}
         }
 
     q_lower = normalize(question)
 
-    # ── NOUVEAU : questions complexes → LLM directement, skip tout le routing ──
-    
-    q_norm = normalize(question)
-    
+    # ── Questions complexes → réponse d'erreur directe (pas de LLM) ──
     if any(kw in q_lower for kw in COMPLEX_KEYWORDS):
         return {
-        "table": [],
-        "summary": "Je ne peux pas répondre à cette question.",
-        "metadata": {"status": "error", "suggestions": []}
-    }
-
-    q_lower = normalize(question)
+            "table":    [],
+            "summary":  "Je ne peux pas répondre à cette question.",
+            "metadata": {"status": "error", "suggestions": []}
+        }
 
     # ── 2. Ambiguïtés simples ──
     if q_lower.strip() in ["facture", "factures"]:
         return {
-            "table": [],
-            "summary": "Veuillez préciser votre demande (ex: factures non payées, factures par client...).",
+            "table":    [],
+            "summary":  "Veuillez préciser votre demande (ex: factures non payées, factures par client...).",
             "metadata": {"status": "clarification_required", "suggestions": []}
         }
 
     if q_lower.strip() in ["vente", "ventes"]:
         return {
-            "table": [],
-            "summary": "Veuillez préciser votre demande (ex: chiffre d'affaires par mois...).",
+            "table":    [],
+            "summary":  "Veuillez préciser votre demande (ex: chiffre d'affaires par mois...).",
             "metadata": {"status": "clarification_required", "suggestions": []}
         }
 
     # ── 2b. Ambiguïtés avancées ──
     if re.search(r'factures?\s+(du\s+)?client\s*$', q_lower):
         return {
-            "table": [],
-            "summary": "Veuillez préciser le nom du client.",
+            "table":    [],
+            "summary":  "Veuillez préciser le nom du client.",
             "metadata": {"status": "clarification_required", "suggestions": []}
         }
 
     if "client" in q_lower and re.search(r'\d{4}-\d{2}-\d{2}.*\d{4}-\d{2}-\d{2}', q_lower):
         return {
-            "table": [],
-            "summary": "Souhaitez-vous filtrer par client ou par période ?",
+            "table":    [],
+            "summary":  "Souhaitez-vous filtrer par client ou par période ?",
             "metadata": {"status": "clarification_required", "suggestions": []}
         }
 
     if q_lower.strip() == "produits":
         return {
-            "table": [],
-            "summary": "Veuillez préciser votre demande sur les produits.",
+            "table":    [],
+            "summary":  "Veuillez préciser votre demande sur les produits.",
             "metadata": {"status": "clarification_required", "suggestions": []}
         }
 
@@ -609,61 +980,77 @@ def get_response(question: str) -> dict:
         "ventes du mois", "donne moi les ventes", "factures du mois dernier",
         "factures janvier", "factures fevrier", "factures mars",
         "donne moi les factures", "ventes 2026",
-        "factures payees", "factures totalement payees",
     ]
-
     for p in ambiguous_patterns:
         if p in q_lower:
             if p == "donne moi les factures" and re.search(r'\d{4}-\d{2}-\d{2}', q_lower):
                 continue
             if p == "donne moi les factures" and "client" in q_lower:
                 continue
+            if p == "donne moi les factures" and any(w in q_lower for w in [
+            "payee", "payees", "regle", "reglees", "soldee", "soldees",
+            "paye", "totalement", "entierement", "completement"
+        ]):
+                continue                                        # ← ajouté
             if p == "ventes 2026" and re.search(r'\d{4}-\d{2}', q_lower):
                 continue
             return {
-                "table": [],
-                "summary": "Veuillez préciser votre demande.",
-                "metadata": {"status": "clarification_required", "suggestions": []}
+            "table":    [],
+            "summary":  "Veuillez préciser votre demande.",
+            "metadata": {"status": "clarification_required", "suggestions": []}
             }
 
     # ── 2c. EARLY MATCH — templates V1/V2 prioritaires (avant admin templates) ──
     early_match, early_params = match_question(question)
     if early_match in (
-    "get_top_clients_ca", "get_commandes_par_mois",
-    "liste_clients_simple", "get_top_produits_commandes",
-    "get_ca_par_trimestre",
-    "get_produits_stock_faible",      # ← ajouter
-    "get_factures_par_client",        # ← ajouter
-    "get_factures_non_payees",        # ← ajouter
-    "get_factures_non_payees_30j",    # ← ajouter
-):
+        "get_top_clients_ca",
+        "get_commandes_par_mois",
+        "liste_clients_simple",
+        "get_top_produits_commandes",
+        "get_ca_par_trimestre",
+        "get_produits_stock_faible",
+        "get_factures_par_client",
+        "get_factures_non_payees",
+        "get_factures_non_payees_30j",
+        "get_factures_payees",
+    ):
         return _execute_template(question, early_match, early_params, start_time)
 
-    # ── 2c. Templates admin (priorité sur tout le routing) ──────────────
+    # ── 2d. Templates admin ──
     admin_tid, admin_sql, admin_params = match_admin_template(question)
     if admin_tid and admin_sql:
         logger.info(f"[ADMIN TEMPLATE MATCH] {admin_tid}")
         sql_placeholders = set(re.findall(r':(\w+)', admin_sql))
-        sql_params = {k: v for k, v in admin_params.items() if k in sql_placeholders}
+        sql_params       = {k: v for k, v in admin_params.items() if k in sql_placeholders}
+
+        # Injection manuelle sécurisée
+        sql_injected = admin_sql
+        for key, value in sql_params.items():
+            if value is None:
+                sql_injected = sql_injected.replace(
+                    f"= :{key}", "IS NOT NULL OR 1=1"
+                ).replace(f":{key}", "NULL")
+            else:
+                safe_value   = str(value).replace("'", "''")
+                sql_injected = sql_injected.replace(f":{key}", f"'{safe_value}'")
+
         try:
-            validate_sql_query(admin_sql)
-            columns, rows, _ = execute_query(admin_sql, sql_params)
-            duration = round((time.time() - start_time) * 1000, 2)
+            columns, rows, _ = execute_query(sql_injected, {})
+            duration    = round((time.time() - start_time) * 1000, 2)
             result_rows = [dict(zip(columns, row)) for row in rows]
-            if "limit" in admin_params:
+
+            if "limit" in admin_params and admin_params["limit"]:
                 try:
                     result_rows = result_rows[:int(admin_params["limit"])]
                 except (ValueError, TypeError):
                     pass
+
             log_id = log_query(
-                question, admin_sql, duration, len(result_rows),
+                question, sql_injected, duration, len(result_rows),
                 admin_tid, sql_params, "success", None, from_cache=False
             )
-            chatbot_cache.set(admin_tid, admin_params, {
-                "table": result_rows, "sql_query": admin_sql
-            })
             return {
-                "table": result_rows,
+                "table":   result_rows,
                 "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
                 "metadata": {
                     "status":      "success",
@@ -672,15 +1059,16 @@ def get_response(question: str) -> dict:
                     "row_count":   len(result_rows),
                     "params":      sql_params,
                     "logs_id":     log_id,
-                    "sql_query":   admin_sql,
+                    "sql_query":   sql_injected,
                     "from_cache":  False,
                     "suggestions": generate_suggestions(admin_tid, admin_params),
                 }
             }
         except Exception as e:
             logger.warning(f"Erreur template admin {admin_tid} : {e}")
+            # Fallback vers le routing normal si le template admin échoue
 
-    # ── 4. Mapping rules ── (supprimez le bloc _skip_mapping, plus nécessaire)
+    # ── 3. Mapping rules ──
     mapping_result = apply_mapping_rules(question)
     print("🔍 MAPPING RESULT:", mapping_result)
 
@@ -689,32 +1077,34 @@ def get_response(question: str) -> dict:
 
         if intent == "rejected":
             return {
-                "table": [],
-                "summary": "Requête rejetée pour des raisons de sécurité.",
+                "table":    [],
+                "summary":  "Requête rejetée pour des raisons de sécurité.",
                 "metadata": {"status": "rejected", "suggestions": suggestions}
             }
 
         if intent == "clarification_required":
             return {
-                "table": [],
-                "summary": mapping_result.get(
-                    "clarification_message", "Veuillez préciser votre demande."),
+                "table":    [],
+                "summary":  mapping_result.get(
+                    "clarification_message", "Veuillez préciser votre demande."
+                ),
                 "metadata": {"status": "clarification_required", "suggestions": suggestions}
             }
 
         template_name, params = _convert_mapping_result(mapping_result)
         if template_name is not None:
             return _execute_template(question, template_name, params, start_time)
-    
-    # ── 5. Match question (fallback règles) ──
+
+    # ── 4. Match question (fallback règles regex) ──
     template_name, params = match_question(question)
-    # ── 6. LLM fallback ──
+
+    # ── 5. Aucune solution trouvée ──
     if template_name is None:
         return {
-        "table": [],
-        "summary": "Je ne peux pas répondre à cette question.",
-        "metadata": {"status": "error", "suggestions": []}
-    }
+            "table":    [],
+            "summary":  "Je ne peux pas répondre à cette question.",
+            "metadata": {"status": "error", "suggestions": []}
+        }
 
-    # ── 7. Exécution SQL ──
+    # ── 6. Exécution SQL ──
     return _execute_template(question, template_name, params, start_time)

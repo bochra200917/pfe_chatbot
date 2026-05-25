@@ -599,6 +599,75 @@ Identifie l'intent et extrais les paramètres.
             "reason": "fallback JSON parsing failed"
         }
 
+def format_sql(sql: str) -> str:
+    """
+    Formate un SQL mono-ligne en SQL indenté lisible.
+    Style : SELECT col1,\n       col2\nFROM ...\nJOIN ...\nWHERE ...\nGROUP BY ...\nORDER BY ...\nLIMIT n
+    """
+    sql = re.sub(r'\s+', ' ', sql.strip())
+
+    MAIN_KEYWORDS = [
+        'SELECT', 'FROM', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN',
+        'JOIN', 'WHERE', 'GROUP BY', 'HAVING', 'ORDER BY', 'LIMIT',
+        'UNION ALL', 'UNION',
+    ]
+    pattern = r'\b(' + '|'.join(re.escape(kw) for kw in MAIN_KEYWORDS) + r')\b'
+    sql = re.sub(pattern, r'\n\1', sql, flags=re.IGNORECASE)
+
+    lines = [l.strip() for l in sql.strip().split('\n') if l.strip()]
+    result = []
+
+    for line in lines:
+        if re.match(r'(?i)^SELECT\b', line):
+            after = line[6:].strip()
+            cols = _split_top_level(after, ',')
+            if len(cols) > 1:
+                indent = ' ' * 7
+                result.append('SELECT ' + (',\n' + indent).join(c.strip() for c in cols))
+            else:
+                result.append(line)
+
+        elif re.match(r'(?i)^GROUP\s+BY\b', line):
+            after = re.sub(r'(?i)^GROUP\s+BY\s*', '', line).strip()
+            cols = _split_top_level(after, ',')
+            if len(cols) > 1:
+                indent = ' ' * 9
+                result.append('GROUP BY ' + (',\n' + indent).join(c.strip() for c in cols))
+            else:
+                result.append(line)
+
+        elif re.match(r'(?i)^ORDER\s+BY\b', line):
+            after = re.sub(r'(?i)^ORDER\s+BY\s*', '', line).strip()
+            cols = _split_top_level(after, ',')
+            if len(cols) > 1:
+                indent = ' ' * 9
+                result.append('ORDER BY ' + (',\n' + indent).join(c.strip() for c in cols))
+            else:
+                result.append(line)
+
+        else:
+            result.append(line)
+
+    return '\n'.join(result)
+
+
+def _split_top_level(s: str, sep: str) -> list:
+    """Split sur sep en ignorant le contenu des parenthèses."""
+    parts, depth, current = [], 0, []
+    for ch in s:
+        if ch == '(':
+            depth += 1; current.append(ch)
+        elif ch == ')':
+            depth -= 1; current.append(ch)
+        elif ch == sep and depth == 0:
+            parts.append(''.join(current).strip()); current = []
+        else:
+            current.append(ch)
+    if current:
+        parts.append(''.join(current).strip())
+    return [p for p in parts if p]
+
+
 def llm_generate_sql(question: str, cache: dict = None) -> dict:    
     """
     Génère du SQL via Ollama (robuste, sans dépendance stricte au JSON)
@@ -693,21 +762,24 @@ def llm_generate_sql(question: str, cache: dict = None) -> dict:
         sql = enforce_business_rules(sql)
     except Exception as e:
         return {
-        "sql": "",
-        "explanation": str(e),
-        "confidence": 0
-    }
+            "sql": "",
+            "explanation": str(e),
+            "confidence": 0
+        }
 
-
-    # ── Étape 5 : sécurisation LIMIT ──
+    # ── Formater le SQL généré ──
+    try:
+        sql = format_sql(sql)
+    except Exception:
+        pass  # Si le formateur échoue, garder le SQL tel quel
 
     if cache is not None:
         cache[cache_key] = {
-        "sql": sql,
-        "explanation": explanation or "SQL généré via Ollama",
-        "confidence": confidence or 0.7
-    }
-    
+            "sql": sql,
+            "explanation": explanation or "SQL généré via Ollama",
+            "confidence": confidence or 0.7
+        }
+        
     return {
         "sql": sql,
         "explanation": explanation or "SQL généré via Ollama",

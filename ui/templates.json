@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_at": "2026-05-13T14:27:46.532892",
+  "updated_at": "2026-05-25T10:02:22.852927",
   "templates": {
     "ventes_par_categorie": {
       "intent": "ventes_par_categorie",
@@ -226,9 +226,110 @@
         "top achats",
         "montant achats fournisseurs"
       ],
-      "active": true,
+      "active": false,
       "created_at": "2026-05-13T13:01:20.297374",
       "updated_at": "2026-05-13T13:01:20.297382"
+    },
+    "recap_ventes_reglements": {
+      "intent": "get_sales_and_payments_summary",
+      "description": "Récapitulatif comptable des ventes et des règlements par magasin et période",
+      "sql": "SELECT\n    f.datef AS DATE,\n    CASE WHEN f.type = 2 THEN 'AVOIR' WHEN f.type = 0 THEN 'FAC' ELSE 'TK' END AS TYPE,\n    f.ref AS NFACT,\n    CASE WHEN f.type <> 2 THEN ROUND(f.total_ttc, 3) ELSE 0 END AS VENTESTTC,\n    CASE WHEN f.type = 2 THEN ROUND(ABS(f.total_ttc), 3) ELSE 0 END AS AVOIRSTTC,\n    ROUND(f.total_ht, 3) AS MONTANTHTAvantRemise,\n    0 AS REMISE,\n    ROUND(f.total_ht, 3) AS MONTANTHT,\n    ROUND(f.total_ttc - f.total_ht, 3) AS TVA,\n    ROUND(f.total_ttc, 3) AS MONTANTTTC,\n    ROUND(COALESCE(f.revenuestamp, 0), 3) AS TIMBRE,\n    ROUND(f.total_ttc + COALESCE(f.revenuestamp, 0), 3) AS `NET A Payer`,\n    ROUND(SUM(CASE WHEN cp.code = 'LIQ' THEN COALESCE(pf.amount, 0) ELSE 0 END), 3) AS ESPECES,\n    ROUND(SUM(CASE WHEN cp.code IN ('CB', 'BANCON', 'CARTE') THEN COALESCE(pf.amount, 0) ELSE 0 END), 3) AS CARTES,\n    ROUND(SUM(CASE WHEN cp.code = 'CHQ' THEN COALESCE(pf.amount, 0) ELSE 0 END), 3) AS CHEQUE,\n    ROUND(SUM(CASE WHEN cp.code = 'VIR' THEN COALESCE(pf.amount, 0) ELSE 0 END), 3) AS VIREMENT,\n    ROUND(SUM(CASE WHEN cp.code IN ('FID', 'BON') THEN COALESCE(pf.amount, 0) ELSE 0 END), 3) AS BonAchatCRK,\n    0 AS TotalRS,\n    CASE WHEN f.type = 2 THEN ROUND(ABS(f.total_ttc), 3) ELSE 0 END AS TotalAv,\n    0 AS TotalAc,\n    f.pos_source_name AS MAGASIN\nFROM m38h_facture f\nLEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid\nLEFT JOIN m38h_paiement p ON p.rowid = pf.fk_paiement\nLEFT JOIN m38h_c_paiement cp ON cp.id = p.fk_paiement\nWHERE f.entity = 1\n  AND f.datef BETWEEN :date_debut AND :date_fin\n  AND (:magasin IS NULL OR f.pos_source_name = :magasin)\nGROUP BY f.rowid, f.datef, f.type, f.ref, f.total_ttc, f.total_ht, f.revenuestamp, f.pos_source_name\nORDER BY f.datef ASC, f.ref ASC\nLIMIT :limit",
+      "params": [
+        "date_debut",
+        "date_fin",
+        "magasin",
+        "limit"
+      ],
+      "keywords": [
+        "récapitulatif ventes",
+        "règlements",
+        "ventes et règlements",
+        "état des ventes",
+        "recettes",
+        "paiements par magasin",
+        "relevé de caisse"
+      ],
+      "active": true,
+      "created_at": "2026-05-18T10:23:24.857136",
+      "updated_at": "2026-05-21T11:00:00.000000"
+    },
+    "achats_par_fournisseur": {
+      "intent": "get_purchases_by_supplier",
+      "description": "Achats par fournisseur",
+      "sql": "SELECT\n    e.ref AS Entrepot,\n    YEAR(r.tms) AS An,\n    DATE_FORMAT(r.tms, '%M') AS `Libelle Mois`,\n    s.nom AS Fournisseur,\n    SUM(rd.qty) AS TotalQte,\n    ROUND(SUM(rd.cost_price), 3) AS TotalAchat\nFROM m38h_reception r\nLEFT JOIN m38h_receptiondet_batch rd ON r.rowid = rd.fk_reception\nLEFT JOIN m38h_entrepot e ON e.rowid = rd.fk_entrepot\nLEFT JOIN m38h_societe s ON r.fk_soc = s.rowid\nWHERE r.fk_statut = 2\n  AND (e.ref = :entrepot OR :entrepot IS NULL)\n  AND (s.nom = :fournisseur OR :fournisseur IS NULL)\n  AND r.tms BETWEEN :date_debut AND :date_fin\nGROUP BY e.ref, YEAR(r.tms), DATE_FORMAT(r.tms, '%M'), s.nom\nORDER BY An DESC, `Libelle Mois` ASC, TotalAchat, Fournisseur, Entrepot DESC\nLIMIT :limit",
+      "params": [
+        "entrepot",
+        "fournisseur",
+        "date_debut",
+        "date_fin",
+        "limit"
+      ],
+      "keywords": [
+        "achats par fournisseur",
+        "total achats fournisseur",
+        "montant achats",
+        "quantité achetée",
+        "achats fournisseur année"
+      ],
+      "active": true,
+      "created_at": "2026-05-19T10:06:52.552625",
+      "updated_at": "2026-05-21T10:06:44.201032"
+    },
+    "listes_approvisionnements": {
+      "intent": "get_supply_list",
+      "description": "Liste des approvisionnements (réceptions) par magasin, fournisseur, nature, référence et période",
+      "sql": "SELECT\n    e.ref AS Magasin,\n    DATE_FORMAT(r.tms, '%d/%m/%Y') AS Date,\n    s.nom AS Fournisseur,\n    'Réception' AS Nature,\n    r.ref AS Reference,\n    0 AS Echeance,\n    0 AS Cloture,\n    SUM(rd.qty) AS TotalQuantite,\n    ROUND(SUM(rd.cost_price), 3) AS TotalHT\nFROM m38h_reception r\nLEFT JOIN m38h_receptiondet_batch rd ON r.rowid = rd.fk_reception\nLEFT JOIN m38h_entrepot e ON e.rowid = rd.fk_entrepot\nLEFT JOIN m38h_societe s ON r.fk_soc = s.rowid\nWHERE r.fk_statut = 2\n  AND (e.ref = :magasin OR :magasin IS NULL)\n  AND (s.nom = :fournisseur OR :fournisseur IS NULL)\n  AND (r.ref = :reference OR :reference IS NULL)\n  AND r.tms BETWEEN :date_debut AND :date_fin\nGROUP BY e.ref, r.tms, s.nom, r.ref\nORDER BY r.tms ASC\nLIMIT :limit;",
+      "params": [
+        "magasin",
+        "date_fin",
+        "date_debut",
+        "nature",
+        "limit",
+        "reference",
+        "fournisseur"
+      ],
+      "keywords": [
+        "listes des approvisionnements",
+        "approvisionnements",
+        "réceptions",
+        "entrées stock",
+        "magasin",
+        "fournisseur"
+      ],
+      "active": true,
+      "created_at": "2026-05-21T11:41:34.438283",
+      "updated_at": "2026-05-21T11:51:37.082589"
+    },
+    "analyse_mouvements_stock": {
+      "intent": "get_stock_movements",
+      "description": "Analyse des mouvements de stock (entrées, sorties, ventes, réceptions, transferts, inventaires)",
+      "sql": "SELECT  \n    DATE(sm.datem) AS `Date`,\n    COALESCE(e.ref, 'Sans Entrepôt') AS `Entrepôt`,\n    p.ref AS `Reference`,\n    p.barcode AS `Barcode`,\n    p.label AS `Designation`,\n    CASE sm.type_mouvement \n        WHEN 0 THEN 'Entree'\n        WHEN 1 THEN 'Sortie'\n        WHEN 2 THEN 'Vente'\n        WHEN 3 THEN 'Reception'\n        WHEN 4 THEN 'Transfert'\n        WHEN 5 THEN 'Inventaire'\n        ELSE ''\n    END AS `Type Mouvement`,\n    sm.value AS `Quantite`,\n    sm.label AS `Libelle Mouvement`,\n    ROUND(sm.price, 3) AS `Prix Unitaire`,\n    ROUND(sm.price * sm.value, 2) AS `Valeur Totale`,\n    \n    (SELECT GROUP_CONCAT(DISTINCT pav.value SEPARATOR '/')\n     FROM m38h_product_attribute_combination pac2\n     JOIN m38h_product_attribute_combination2val pac2v2 ON pac2.rowid = pac2v2.fk_prod_combination\n     JOIN m38h_product_attribute_value pav ON pac2v2.fk_prod_attr_val = pav.rowid\n     JOIN m38h_product_attribute pa2 ON pac2v2.fk_prod_attr = pa2.rowid\n     WHERE pac2.fk_product_child = p.rowid AND pa2.label = 'Taille') AS `Taille`,\n    \n    (SELECT GROUP_CONCAT(DISTINCT pav.value SEPARATOR '/')\n     FROM m38h_product_attribute_combination pac2\n     JOIN m38h_product_attribute_combination2val pac2v2 ON pac2.rowid = pac2v2.fk_prod_combination\n     JOIN m38h_product_attribute_value pav ON pac2v2.fk_prod_attr_val = pav.rowid\n     JOIN m38h_product_attribute pa2 ON pac2v2.fk_prod_attr = pa2.rowid\n     WHERE pac2.fk_product_child = p.rowid AND pa2.label = 'Couleur') AS `Couleur`,\n    \n    COALESCE(ef.matiere, (SELECT ef2.matiere FROM m38h_product_extrafields ef2 JOIN m38h_product p2 ON p2.rowid = ef2.fk_object WHERE p2.ref = SUBSTRING_INDEX(p.ref, '-', 1) LIMIT 1)) AS `Matiere`,\n    COALESCE(ef.saison, (SELECT ef2.saison FROM m38h_product_extrafields ef2 JOIN m38h_product p2 ON p2.rowid = ef2.fk_object WHERE p2.ref = SUBSTRING_INDEX(p.ref, '-', 1) LIMIT 1)) AS `Saison`,\n    COALESCE(ef.marque, (SELECT ef2.marque FROM m38h_product_extrafields ef2 JOIN m38h_product p2 ON p2.rowid = ef2.fk_object WHERE p2.ref = SUBSTRING_INDEX(p.ref, '-', 1) LIMIT 1)) AS `Marque`,\n    COALESCE(ef.rayon, (SELECT ef2.rayon FROM m38h_product_extrafields ef2 JOIN m38h_product p2 ON p2.rowid = ef2.fk_object WHERE p2.ref = SUBSTRING_INDEX(p.ref, '-', 1) LIMIT 1)) AS `Rayon`,\n    c.label AS `Categorie`,\n    pn.label AS `Nature`\nFROM m38h_stock_mouvement sm\nLEFT JOIN m38h_product p ON p.rowid = sm.fk_product\nLEFT JOIN m38h_entrepot e ON e.rowid = sm.fk_entrepot\nLEFT JOIN m38h_product_extrafields ef ON ef.fk_object = p.rowid\nLEFT JOIN m38h_categorie_product cp ON cp.fk_product = p.rowid\nLEFT JOIN m38h_categorie c ON c.rowid = cp.fk_categorie\nLEFT JOIN m38h_c_product_nature pn ON pn.code = p.fk_product_type\nWHERE \n    DATE(sm.datem) BETWEEN :date_debut AND :date_fin\n    AND e.ref = :entrepot\n    AND c.label = :categorie\n    AND pn.label = :nature\nORDER BY sm.datem, e.ref, p.ref\nLIMIT :limit;",
+      "params": [
+        "date_debut",
+        "date_fin",
+        "entrepot",
+        "produit",
+        "categorie",
+        "nature_produit",
+        "type_mouvement",
+        "taille",
+        "couleur",
+        "rayon",
+        "saison",
+        "marque",
+        "matiere",
+        "limit"
+      ],
+      "keywords": [
+        "analyse des mouvements de stock",
+        "mouvements de stock",
+        "stock mouvement",
+        "inventaire",
+        "entrées sorties stock"
+      ],
+      "active": true,
+      "created_at": "2026-05-25T09:08:36.820336",
+      "updated_at": "2026-05-25T09:43:08.340006"
     }
   }
 }

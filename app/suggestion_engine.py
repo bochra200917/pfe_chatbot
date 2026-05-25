@@ -38,6 +38,7 @@ def generate_suggestions(intent: str, params: dict) -> list:
             "Factures non payées",
             "Factures entre 2026-01-01 et 2026-03-31",
             "Clients avec plus de 2 commandes",
+            "Top clients par CA",  
         ]
 
     elif intent == "get_factures_between":
@@ -55,6 +56,7 @@ def generate_suggestions(intent: str, params: dict) -> list:
             f"Clients avec plus de 2 commandes",
             "Factures non payées",
             f"Factures entre 2026-01-01 et 2026-03-31",
+            "Top clients par CA",  
         ]
 
     elif intent == "get_factures_negatives":
@@ -62,6 +64,7 @@ def generate_suggestions(intent: str, params: dict) -> list:
             "Factures non payées",
             "Factures partiellement payées",
             f"Chiffre d'affaires de janvier {year}",
+            "Top clients par CA",  
         ]
 
     elif intent == "get_clients_multiple_commandes":
@@ -69,6 +72,7 @@ def generate_suggestions(intent: str, params: dict) -> list:
             "Factures non payées",
             "Factures entre 2026-01-01 et 2026-03-31",
             f"Chiffre d'affaires de janvier {year}",
+            "Top clients par CA",  
         ]
 
     elif intent == "get_produits_stock_faible":
@@ -76,6 +80,7 @@ def generate_suggestions(intent: str, params: dict) -> list:
             "Produits avec stock inférieur à 3",
             "Produits avec stock inférieur à 10",
             "Clients avec plus de 2 commandes",
+            "Top clients par CA",
         ]
 
     elif intent == "get_total_paiements":
@@ -83,6 +88,15 @@ def generate_suggestions(intent: str, params: dict) -> list:
             "Factures non payées",
             f"Chiffre d'affaires de janvier {year}",
             "Factures partiellement payées",
+            "Top clients par CA",  
+        ]
+    
+    elif intent == "get_factures_payees":
+        return [
+            "Factures non payées",
+            "Factures partiellement payées",
+            "Top clients par CA",
+            "Chiffre d'affaires de janvier 2026",           
         ]
 
     else:
@@ -92,7 +106,6 @@ def generate_suggestions(intent: str, params: dict) -> list:
             "Clients avec plus de 2 commandes",
             f"Chiffre d'affaires de janvier {year}",
         ]
-
 
 def _month_name(month: str) -> str:
     """Convertit un numéro de mois en nom français"""

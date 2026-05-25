@@ -107,12 +107,13 @@ def get_factures_non_payees():
         f.total_ht,
         f.total_ttc,
         f.datef         AS date_facture,
-        COALESCE(SUM(pf.amount), 0)                           AS montant_paye,
-        (f.total_ttc - COALESCE(SUM(pf.amount), 0))          AS montant_restant
+        COALESCE(SUM(pf.amount), 0) AS montant_paye,
+        (f.total_ttc - COALESCE(SUM(pf.amount), 0)) AS montant_restant
     FROM m38h_facture f
-    LEFT JOIN m38h_societe s         ON f.fk_soc      = s.rowid
+    LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
     LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
     WHERE f.entity = 1
+      AND f.datef BETWEEN :start_date AND :end_date
     GROUP BY f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
     HAVING (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
     ORDER BY f.datef ASC
@@ -134,6 +135,7 @@ def get_factures_partiellement_payees():
     LEFT JOIN m38h_societe s         ON f.fk_soc      = s.rowid
     LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
     WHERE f.entity = 1
+        AND f.datef BETWEEN :start_date AND :end_date
     GROUP BY f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
     HAVING COALESCE(SUM(pf.amount), 0) > 0
        AND (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
@@ -276,8 +278,31 @@ def get_ca_par_trimestre():
     LIMIT 4
     """
 
+def get_factures_payees():
+    return """
+    SELECT
+        f.rowid         AS id,
+        f.ref           AS facture_ref,
+        s.nom           AS client,
+        f.total_ht,
+        f.total_ttc,
+        f.datef         AS date_facture,
+        COALESCE(SUM(pf.amount), 0)                      AS montant_paye,
+        (f.total_ttc - COALESCE(SUM(pf.amount), 0))     AS montant_restant
+    FROM m38h_facture f
+    LEFT JOIN m38h_societe s           ON f.fk_soc      = s.rowid
+    LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
+    WHERE f.entity = 1
+    GROUP BY f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
+    HAVING COALESCE(SUM(pf.amount), 0) >= f.total_ttc
+       AND COALESCE(SUM(pf.amount), 0) > 0
+    ORDER BY f.datef DESC
+    LIMIT 100
+    """
+
 # ─── Mapping template_name → fonction SQL ─────────────────────────────────────
 TEMPLATE_MAPPING = {
+    "get_factures_payees":            get_factures_payees,
     "get_factures_between":           get_factures_between,
     "get_factures_par_client":        get_factures_par_client,
     "get_factures_negatives":         get_factures_negatives,
