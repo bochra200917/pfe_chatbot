@@ -1185,8 +1185,7 @@ def get_response(question: str) -> dict:
             )
             return {
                 "table": result_rows,
-                "summary": f"{
-                    len(result_rows)} résultat(s) trouvé(s).",
+                "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
                 "metadata": {
                     "status": "success",
                     "template": admin_tid,
