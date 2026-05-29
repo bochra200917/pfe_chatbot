@@ -98,6 +98,14 @@ def generate_suggestions(intent: str, params: dict) -> list:
             "Top clients par CA",
             "Chiffre d'affaires de janvier 2026",           
         ]
+    
+    elif intent == "get_avoirs":
+            return [
+                "Factures non payées",
+                "Factures partiellement payées",
+                "Factures négatives",
+                "Top clients par CA",  
+            ]
 
     else:
         return [

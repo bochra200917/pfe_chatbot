@@ -135,14 +135,12 @@ def get_factures_partiellement_payees():
     LEFT JOIN m38h_societe s         ON f.fk_soc      = s.rowid
     LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
     WHERE f.entity = 1
-        AND f.datef BETWEEN :start_date AND :end_date
     GROUP BY f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
     HAVING COALESCE(SUM(pf.amount), 0) > 0
        AND (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
     ORDER BY f.datef ASC
     LIMIT 100
     """
-
 
 def get_total_paiements():
     return """
@@ -300,6 +298,24 @@ def get_factures_payees():
     LIMIT 100
     """
 
+def get_avoirs():
+    return """
+    SELECT
+        f.rowid         AS id,
+        f.ref           AS avoir_ref,
+        s.nom           AS client,
+        f.total_ht,
+        f.total_ttc,
+        f.datef         AS date_avoir,
+        f.type          AS type_facture
+    FROM m38h_facture f
+    LEFT JOIN m38h_societe s ON f.fk_soc = s.rowid
+    WHERE f.entity = 1
+      AND f.type = 2
+    ORDER BY f.datef DESC
+    LIMIT 100
+    """
+
 # ─── Mapping template_name → fonction SQL ─────────────────────────────────────
 TEMPLATE_MAPPING = {
     "get_factures_payees":            get_factures_payees,
@@ -320,9 +336,8 @@ TEMPLATE_MAPPING = {
     "get_top_produits_commandes": get_top_produits_commandes,
     "get_ca_par_trimestre": get_ca_par_trimestre,
     "get_low_stock_products": get_produits_stock_faible,
-"get_produits_stock_faible": get_produits_stock_faible,
-
-"get_produits_non_commandes": get_produits_non_commandes,
-
-"get_top_clients_ca": get_top_clients_ca,
+    "get_produits_stock_faible": get_produits_stock_faible,
+    "get_produits_non_commandes": get_produits_non_commandes,
+    "get_top_clients_ca": get_top_clients_ca,
+    "get_avoirs": get_avoirs,
 }

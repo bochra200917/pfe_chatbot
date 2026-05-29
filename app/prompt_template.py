@@ -64,6 +64,12 @@ TEMPLATES DISPONIBLES
    → Déclencheurs : "factures payées", "factures totalement payées",
      "factures réglées", "factures soldées", "factures entièrement payées"
 
+8. get_avoirs
+   → Factures de type avoir (credit notes, type=2)
+   → Paramètres : aucun
+   → Déclencheurs : "avoirs", "notes de crédit", "factures avoir",
+     "credit notes", "affiche les avoirs", "liste des avoirs"
+
 ══════════════════════════════════════════════
 FORMAT DE RÉPONSE — JSON UNIQUEMENT
 ══════════════════════════════════════════════
@@ -178,6 +184,22 @@ MAPPING_RULES = [
         "intent":     "get_factures_payees",
         "params":     {},
         "confidence": 0.96,
+        },
+    ),
+
+    # ── 4c. Avoirs (credit notes) ──
+    (
+        re.compile(
+        r"(avoirs?"
+        r"|notes?\s+de\s+cr[eé]dit"
+        r"|factures?\s+avoir"
+        r"|cr[eé]dit\s+notes?)",
+        re.IGNORECASE
+        ),
+        lambda m, q: {
+        "intent":     "get_avoirs",
+        "params":     {},
+        "confidence": 0.97,
         },
     ),
 
@@ -344,11 +366,6 @@ _BYPASS_PATTERNS = [
         and ("top" in q or "meilleur" in q)
         and ("ca" in q or "chiffre" in q or "revenu" in q)
     ),
-    # ── ÉVOLUTION / CROISSANCE CA ──
-    lambda q: (
-        ("evolution" in q or "croissance" in q or "progression" in q)
-        and ("ca" in q or "chiffre" in q or "vente" in q or "revenu" in q)
-    ),
     # ── VALEUR MOYENNE COMMANDE ──
     lambda q: (
         ("valeur" in q or "moyenne" in q or "panier" in q or "aov" in q)
@@ -419,12 +436,16 @@ def apply_mapping_rules(question: str) -> dict | None:
         }
 
     # ── Produits non commandés : UNIQUEMENT si "jamais" ou "non commandé" ──
-    if any(w in q for w in ["jamais commande", "non commande", "sans commande", "pas commande"]):
+    if any(w in q for w in [
+    "jamais commande", "jamais ete commande",
+    "non commande", "sans commande", "pas commande",
+    "n ont jamais", "n a jamais",
+]) and any(w in q for w in ["produit", "article", "reference"]):
         return {
-            "intent": "get_produits_non_commandes",
-            "params": {"limit": 10},
-            "confidence": 0.99,
-        }
+        "intent": "get_produits_non_commandes",
+        "params": {"limit": 10},
+        "confidence": 0.99,
+    }
 
     # Guard : bypass pour les templates admin
     for bypass_check in _BYPASS_PATTERNS:

@@ -1860,3 +1860,62 @@
 [2026-05-25 09:38:41] uuid=3487229c-73e8-4f50-871c-017ae6d894d3 | status=success | template=get_total_ventes_mois | rows=1 | duration=4462.29ms | question=Analyse des mouvements de stock pour l'entrepôt MARSA, catégorie pull, nature Ro
 [2026-05-25 09:43:44] uuid=245e99b7-28f3-4678-a77b-318eb0bc5f88 | status=success | template=get_total_ventes_mois | rows=1 | duration=4434.2ms | question=Analyse des mouvements de stock pour l'entrepôt MARSA, catégorie pull, nature Ro
 [2026-05-25 09:46:48] uuid=193c4a62-33b7-4deb-bb72-1aab8fa859b3 | status=success | template=get_total_ventes_mois | rows=1 | duration=4164.94ms | question=Analyse des mouvements de stock pour l'entrepôt MARSA, catégorie pull, nature Ro
+[2026-05-29 08:51:41] uuid=32608ab0-54d5-4fa7-99b8-cde7edc8eb7b | status=success | template=get_factures_non_payees | rows=93 | duration=4024.23ms | question=Liste des factures non payées
+[2026-05-29 08:57:43] uuid=23ccd36a-5b0c-4937-b790-44902bcba69d | status=success | template=get_factures_non_payees | rows=93 | duration=212.16ms | question=factures non payées
+[2026-05-29 08:57:56] uuid=aa51c007-3f86-496e-a9a0-4169508b89f0 | status=success | template=get_produits_stock_faible | rows=100 | duration=196.26ms | question=produits avec stock inférieur à 5
+[2026-05-29 08:58:13] uuid=36f936ec-96d2-4d8e-bf6a-d9ceac399d3b | status=success | template=get_clients_multiple_commandes | rows=6 | duration=187.0ms | question=clients avec plus de 2 commandes
+[2026-05-29 08:58:24] uuid=903fe4e6-75ff-478f-9949-bc525910a7ab | status=success | template=get_total_ventes_mois | rows=1 | duration=184.96ms | question=chiffre d affaires de janvier 2026
+[2026-05-29 08:59:57] uuid=2d25705c-7ac5-4184-ae1e-fde0021d3fd3 | status=success | template=get_factures_payees | rows=100 | duration=193.78ms | question=factures payées
+[2026-05-29 09:26:21] uuid=cc5014ad-91b7-4306-8819-69b602bb2cc6 | status=success | template=get_factures_between | rows=200 | duration=560.1ms | question=factures entre 2026-01-01 et 2026-03-31
+[2026-05-29 09:26:35] uuid=06d840ac-adb8-4a5c-b04f-fc38a9d35a29 | status=success | template=get_factures_between | rows=128 | duration=424.64ms | question=factures entre 2026-05-01 et 2026-05-31
+[2026-05-29 09:26:48] uuid=4cd1a54a-f66e-454f-8528-7f158010ba00 | status=success | template=get_factures_non_payees | rows=93 | duration=408.26ms | question=factures non payées
+[2026-05-29 09:26:56] uuid=af72639c-2454-499f-9d3e-f5a73bffefcb | status=error | template=get_factures_partiellement_payees | rows=0 | duration=6.02ms | question=factures partiellement payées
+[2026-05-29 09:28:04] uuid=287c72b4-b10b-41ae-b333-3ff8199cfeea | status=error | template=get_factures_partiellement_payees | rows=0 | duration=4.54ms | question=factures partiellement payées
+[2026-05-29 09:28:07] uuid=8dfb7779-8fd3-425a-8527-48d643d40093 | status=success | template=get_factures_negatives | rows=50 | duration=607.96ms | question=affiche les avoirs
+[2026-05-29 09:28:07] uuid=36332e07-e722-4785-93bb-24c425e8d6fc | status=success | template=get_factures_negatives | rows=50 | duration=2.11ms | question=affiche les avoirs
+[2026-05-29 09:28:33] uuid=2fa69096-7d70-436b-b42a-62bdd89e1d0e | status=success | template=get_produits_stock_faible | rows=100 | duration=1044.68ms | question=produits avec stock inférieur à 3
+[2026-05-29 09:28:44] uuid=751bfe73-cfb0-48b2-ad7b-1336bb594074 | status=success | template=get_clients_multiple_commandes | rows=3 | duration=685.71ms | question=clients avec plus de 3 commandes
+[2026-05-29 09:28:57] uuid=ed272c68-3bc7-4fa6-b43b-dd30b7cec867 | status=success | template=get_total_ventes_mois | rows=1 | duration=182.14ms | question=chiffre d affaires de avril 2026
+[2026-05-29 09:29:06] uuid=3e5ad097-127a-486b-a0e9-0695ff2e7f40 | status=success | template=get_total_ventes_mois | rows=1 | duration=1.11ms | question=chiffre d affaires d'avril 2026
+[2026-05-29 09:29:14] uuid=306472e6-8247-4367-9ce2-0d78fce8862d | status=success | template=get_factures_par_client | rows=8 | duration=184.57ms | question=factures du client Win Win Para
+[2026-05-29 09:29:27] uuid=8d4fc548-5909-404f-a286-8bec46c3ccbf | status=success | template=get_factures_par_client | rows=0 | duration=179.28ms | question=factures du client bochra
+[2026-05-29 09:29:33] uuid=83f720f5-2e22-4b92-824c-c44ec8dbacf8 | status=success | template=get_commandes_par_mois | rows=1 | duration=178.82ms | question=combien de commandes ont été passées en mars 2026
+[2026-05-29 09:29:42] uuid=7180f779-dbb2-4257-842c-a9660d279793 | status=success | template=get_top_clients_ca | rows=5 | duration=186.03ms | question=donne moi les 5 meilleurs clients par chiffre d affaires
+[2026-05-29 09:29:58] uuid=6f24a85b-8195-4fb1-b029-ca0b2e5c2faa | status=success | template=get_factures_non_payees | rows=93 | duration=192.78ms | question=donne moi les clients qui ont des factures non payées depuis plus de 30 jours
+[2026-05-29 09:31:45] uuid=6e19bc5f-03e3-488d-9007-2c334ca467a0 | status=error | template=get_factures_partiellement_payees | rows=0 | duration=7.29ms | question=factures partiellement payées
+[2026-05-29 09:37:32] uuid=94fe3dcf-0fdc-4cf9-af17-1bd856189c1c | status=success | template=get_factures_non_payees | rows=93 | duration=4303.25ms | question=donne moi les clients qui ont des factures non payées depuis plus de 30 jours
+[2026-05-29 09:43:34] uuid=56ba9ed6-15b4-44d8-b13c-d1884693de8a | status=success | template=get_factures_non_payees_30j | rows=78 | duration=4238.08ms | question=donne moi les clients qui ont des factures non payées depuis plus de 30 jours
+[2026-05-29 09:53:22] uuid=beab6cdc-ee9e-449b-8ea7-0d09e7c0dab1 | status=success | template=get_avoirs | rows=37 | duration=4108.47ms | question=affiche les avoirs
+[2026-05-29 09:58:00] uuid=9fb3ec83-205b-4ab7-ae5d-1464b079569d | status=success | template=get_produits_non_commandes | rows=100 | duration=4196.07ms | question=quels sont les produits qui n ont jamais été commandés ?
+[2026-05-29 10:02:48] uuid=25e2a111-8d63-4c5e-88d5-b59627ffcb64 | status=error | template=get_factures_partiellement_payees | rows=0 | duration=4074.77ms | question=factures partiellement payées
+[2026-05-29 10:03:57] uuid=76778843-b333-4254-9041-248c6ff71376 | status=error | template=get_factures_partiellement_payees | rows=0 | duration=7.95ms | question=factures partiellement payées
+[2026-05-29 10:06:50] uuid=0c6917b4-1095-42ae-a882-67b7ec872071 | status=error | template=get_factures_partiellement_payees | rows=0 | duration=3975.0ms | question=factures partiellement payées
+[2026-05-29 10:16:32] uuid=4a6db114-a61f-4814-8525-04041b3203ef | status=success | template=get_factures_partiellement_payees | rows=9 | duration=4222.14ms | question=factures partiellement payées
+[2026-05-29 10:16:49] uuid=20252772-c338-46ad-9b1d-2203bd342f01 | status=success | template=get_factures_between | rows=128 | duration=183.38ms | question=factures entre 2026-05-01 et 2026-05-29
+[2026-05-29 10:16:58] uuid=746a550a-9852-4991-a4bd-a9d1eb9cee1c | status=success | template=get_total_ventes_mois | rows=1 | duration=187.62ms | question=chiffre d affaires de mai 2026
+[2026-05-29 10:17:07] uuid=3b20035d-431b-43a5-b73e-133ec3183c81 | status=success | template=get_factures_non_payees | rows=93 | duration=192.93ms | question=factures non payées
+[2026-05-29 10:17:14] uuid=fcae0e78-ef8a-42d2-9ad1-2ead8da4ba57 | status=success | template=get_factures_partiellement_payees | rows=9 | duration=0.13ms | question=factures partiellement payées
+[2026-05-29 10:17:22] uuid=687fcb42-0985-41da-9881-e749bca8bb60 | status=success | template=get_produits_stock_faible | rows=100 | duration=188.9ms | question=produits avec stock inférieur à 10
+[2026-05-29 10:17:31] uuid=164e0aa7-2863-4ec2-b118-957d9413c2a4 | status=success | template=get_clients_multiple_commandes | rows=6 | duration=182.47ms | question=clients avec plus de 2 commandes
+[2026-05-29 10:21:55] uuid=3e2ad041-f704-4864-8f54-c530691a555c | status=success | template=get_factures_between | rows=200 | duration=237.98ms | question=factures entre 2026-01-01 et 2026-05-29
+[2026-05-29 10:22:03] uuid=22f6eea2-a736-4b04-b986-ba1909ae3f4f | status=success | template=get_factures_between | rows=200 | duration=233.09ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-29 10:22:21] uuid=8c39bf40-42eb-4557-b434-9c929dae8e49 | status=success | template=get_factures_between | rows=124 | duration=188.2ms | question=Factures entre 2026-01-01 et 2026-02-10
+[2026-05-29 10:22:31] uuid=e561f41b-68cf-4cac-9b47-d7b44f0f763c | status=success | template=get_factures_non_payees | rows=93 | duration=193.14ms | question=Liste des factures non payées
+[2026-05-29 10:22:38] uuid=c295125f-ed02-45df-b0e5-c8babe26a680 | status=success | template=get_produits_stock_faible | rows=100 | duration=183.01ms | question=Produits avec stock inférieur à 5
+[2026-05-29 10:22:45] uuid=e3bc6891-65bf-4390-b831-f229212a63e5 | status=success | template=get_clients_multiple_commandes | rows=6 | duration=0.31ms | question=Clients avec plus de 2 commandes
+[2026-05-29 10:22:52] uuid=aa4030ea-efd9-4a1d-b476-2f652320901c | status=success | template=get_total_ventes_mois | rows=1 | duration=183.13ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-29 10:37:20] uuid=c0fed0a7-6caa-4393-817f-9b09ce7d7954 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=4182.08ms | question=évolution mensuelle du chiffre d'affaires
+[2026-05-29 10:37:28] uuid=38f7448e-1b15-4260-a71a-46fd38f9c66d | status=success | template=get_monthly_growth_revenue | rows=6 | duration=180.03ms | question=évolution mensuelle du chiffre d'affaires
+[2026-05-29 10:41:07] uuid=de92f240-ab34-40ab-a63f-240d58251b4a | status=success | template=get_factures_between | rows=200 | duration=227.8ms | question=Factures entre 2026-01-01 et 2026-02-28
+[2026-05-29 11:05:41] uuid=d64b4fb7-9b99-4d61-83b6-e352e8633763 | status=success | template=get_monthly_growth_revenue | rows=6 | duration=4415.29ms | question=évolution mensuelle du chiffre d'affaires
+[2026-05-29 11:33:02] uuid=bdade866-27f9-4d11-b5b2-df736aad8f87 | status=success | template=get_factures_non_payees | rows=93 | duration=4138.09ms | question=Liste des factures non payées
+[2026-05-29 11:33:25] uuid=97ff2b6e-b742-476c-8917-9daac3859263 | status=success | template=get_total_ventes_mois | rows=1 | duration=182.22ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-29 11:37:51] uuid=3ffe33c0-f924-4a04-84d2-49d639386a86 | status=success | template=get_factures_non_payees | rows=93 | duration=4053.92ms | question=Liste des factures non payées
+[2026-05-29 11:37:55] uuid=07bdbb7d-9d98-4934-ac51-9e83ddd626b7 | status=success | template=get_total_ventes_mois | rows=1 | duration=190.55ms | question=Chiffre d'affaires de janvier 2026
+[2026-05-29 11:51:08] uuid=5eb1d628-8a97-4242-8da8-0869f66f596c | status=success | template=get_produits_stock_faible | rows=100 | duration=4064.57ms | question=Produits avec stock inférieur à 5
+[2026-05-29 12:00:41] uuid=3bf093ad-02e3-4e88-88cf-e35fdc8b9f1e | status=success | template=top_produits_ca | rows=10 | duration=192.09ms | question=Liste des produits
+[2026-05-29 12:01:11] uuid=dd1a1bb7-2f8b-4318-a482-6eceda205b77 | status=success | template=ventes_par_categorie | rows=8 | duration=186.28ms | question=Vente par produit
+[2026-05-29 12:01:22] uuid=5ac189e1-d85f-41b1-85ff-7bb5d8a0b411 | status=success | template=ventes_par_categorie | rows=8 | duration=188.25ms | question=Vente par produit
+[2026-05-29 12:01:27] uuid=bbda46e4-8167-4cbd-a043-40e3c302ecdd | status=success | template=get_average_order_value_by_client | rows=10 | duration=183.51ms | question=Vente par période
+[2026-05-29 12:01:44] uuid=a1535be0-3696-4414-bc42-96b0f42cecb4 | status=success | template=get_average_order_value_by_client | rows=10 | duration=179.75ms | question=Analyse des prix par Tarif
+[2026-05-29 12:01:59] uuid=8346ef33-934e-45fc-9d3b-a773be6af714 | status=success | template=top_produits_ca | rows=10 | duration=184.83ms | question=liste des produits selon l'entrepot

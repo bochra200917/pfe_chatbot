@@ -35,7 +35,6 @@ MONTHS = {
 COMPLEX_KEYWORDS = [
     "semestre",
     "mais pas", "sauf en", "pas en",
-    "jamais commandé", "n ont jamais", "n a jamais",
     "comparer", "comparaison",
 ]
 
@@ -121,7 +120,6 @@ def match_question(question: str):
         return "get_top_clients_ca", {"limit": limit}
 
     # ── Commandes par mois — PRIORITÉ HAUTE ───────────────────────
-    # ── Commandes par mois — PRIORITÉ HAUTE ───────────────────────
     if (
         "commande" in q
         and any(w in q for w in ["combien", "nombre", "total"])
@@ -189,58 +187,36 @@ def match_question(question: str):
     if "partiellement pay" in q or "partiel" in q:
         return "get_factures_partiellement_payees", {}
 
-    # Dans match_question(), AVANT le bloc "non pay" existant :
+    # ── Factures non payées depuis N jours — PRIORITÉ ABSOLUE ─────────
+    match_jours = re.search(r'(\d+)\s*jours?', q)
+    if match_jours and any(w in q for w in ["non pay", "impaye", "non regle", "retard"]):
+        return "get_factures_non_payees_30j", {}
 
-    # ── Factures non payées AVEC dates ──────────────────────────
+    if any(w in q for w in [
+    "30 jours", "trente jours",
+    "depuis plus", "depuis plus de",
+    "un mois", "plus d un mois", "plus d'un mois"
+]):
+        if any(w in q for w in ["non pay", "impaye", "non regle", "retard", "facture"]):
+            return "get_factures_non_payees_30j", {}
+
+# ── Factures non payées AVEC dates ────────────────────────────────
     match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
     if match_dates and any(w in q for w in ["non pay", "impaye", "non regle"]):
         return "get_factures_non_payees", {
-            "start_date": match_dates.group(1),
-            "end_date": match_dates.group(2)
-        }
+        "start_date": match_dates.group(1),
+        "end_date":   match_dates.group(2)
+    }
 
-    # ── Factures non payées SANS dates (toutes) ──────────────────
+# ── Factures non payées SANS dates (toutes) ───────────────────────
     if ("non pay" in q or "impaye" in q or "non regle" in q
-            or "pas regle" in q or "montant restant" in q):
+        or "pas regle" in q or "montant restant" in q):
         from datetime import date as _date
         today = _date.today()
         return "get_factures_non_payees", {
-            "start_date": "2000-01-01",   # depuis toujours
-            "end_date": str(today)
-        }
-
-    # ── Factures non payées depuis N jours — PRIORITÉ SUR le template générique ──
-    match_jours = re.search(r'(\d+)\s*jours?', q)
-    if match_jours and any(
-        w in q for w in [
-            "non pay",
-            "impaye",
-            "non regle",
-            "retard"]):
-        return "get_factures_non_payees_30j", {}
-
-    if any(
-        w in q for w in [
-            "30 jours",
-            "trente jours",
-            "depuis plus",
-            "depuis plus de",
-            "un mois",
-            "plus d un mois",
-            "plus d'un mois"]):
-        if any(
-            w in q for w in [
-                "non pay",
-                "impaye",
-                "non regle",
-                "retard",
-                "facture"]):
-            return "get_factures_non_payees_30j", {}
-
-    if ("non pay" in q or "impaye" in q or "non regle" in q
-            or "pas regle" in q or "pas ete regle" in q
-            or "n ont pas" in q or "montant restant" in q):
-        return "get_factures_non_payees", {}
+        "start_date": "2000-01-01",
+        "end_date":   str(today)
+    }
 
     if "paiement partiel" in q or "cours de paiement" in q:
         return "get_factures_partiellement_payees", {}
@@ -253,8 +229,11 @@ def match_question(question: str):
     ]) and not any(w in q for w in ["non", "pas", "impay", "partiel"]):
         return "get_factures_payees", {}
 
-    if "negatif" in q or "negativ" in q or "avoir" in q:
+    if "negatif" in q or "negativ" in q:
         return "get_factures_negatives", {}
+
+    if "avoir" in q or "avoirs" in q or "note de credit" in q or "note credit" in q:
+        return "get_avoirs", {}
 
     client_name = _extract_client_name(q)
     if client_name and "facture" in q:
@@ -312,6 +291,19 @@ def match_question(question: str):
             "start_date": start.strftime("%Y-%m-%d"),
             "end_date": end.strftime("%Y-%m-%d")
         }
+    
+    # ── Produits jamais commandés ─────────────────────────────────────
+    if any(w in q for w in [
+    "jamais commande", "jamais ete commande",
+    "n ont jamais", "n a jamais",
+    "non commande", "sans commande", "pas commande",
+]) and any(w in q for w in ["produit", "article", "reference"]):
+        return "get_produits_non_commandes", {}
+
+    # ── Questions clients + jamais → LLM (pas de template) ───────────
+    if any(w in q for w in ["jamais commande", "n ont jamais", "n a jamais"]) \
+   and "client" in q:
+        return None, None   # → LLM
 
     return None, None
 
@@ -562,8 +554,8 @@ def match_admin_template(question: str) -> tuple:
             best_score = total_score
             best_match = (tid, t)
 
-    # ── Seuil relevé de 2 à 4 ──
-    if best_match and best_score >= 4:
+    # ── Seuil relevé de 2 à 3 ──
+    if best_match and best_score >= 3:
         tid, t = best_match
         sql = t.get("sql", "")
         placeholders = set(re.findall(r':(\w+)', sql))
@@ -659,6 +651,7 @@ def _extract_admin_params(question: str, placeholders: set) -> dict:
 
 
 def get_response(question: str) -> dict:
+    from app.db import execute_query 
     # Règle d'exception pour les questions qui doivent obligatoirement passer
     # par le LLM
     force_llm_questions = [
@@ -937,7 +930,6 @@ def get_response(question: str) -> dict:
         print(">>> DÉTECTION ANALYSE MOUVEMENTS STOCK - EXÉCUTION FORCÉE")
         import json
         import os
-        import re
         from app.db import execute_query
 
         templates_file = os.path.join(
@@ -1140,6 +1132,13 @@ def get_response(question: str) -> dict:
         "get_factures_non_payees",
         "get_factures_non_payees_30j",
         "get_factures_payees",
+        "get_factures_partiellement_payees",   # ← ajouté
+        "get_factures_negatives",              # ← ajouté (même problème potentiel)
+        "get_factures_between",               # ← ajouté
+        "get_total_paiements",                # ← ajouté
+        "get_total_ventes_mois",              # ← ajouté
+        "get_avoirs",
+        "get_produits_non_commandes",
     ):
         return _execute_template(
             question,
@@ -1150,7 +1149,7 @@ def get_response(question: str) -> dict:
     # ── 2d. Templates admin ──
     admin_tid, admin_sql, admin_params = match_admin_template(question)
     if admin_tid and admin_sql:
-        logger.info(f"[ADMIN TEMPLATE MATCH] {admin_tid}")
+        logging.getLogger(__name__).info(f"[ADMIN TEMPLATE MATCH] {admin_tid}")
         sql_placeholders = set(re.findall(r':(\w+)', admin_sql))
         sql_params = {
             k: v for k,

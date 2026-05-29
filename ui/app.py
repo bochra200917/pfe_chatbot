@@ -5,6 +5,7 @@ import pandas as pd
 import html
 import io
 import json
+import re
 import os
 import streamlit.components.v1 as components
 import matplotlib.pyplot as plt  # Déjà présent
@@ -1010,6 +1011,11 @@ DOLIBARR_LINKS = {
         "id", "commande_ref",
         DOLIBARR_BASE_URL + "/fourn/commande/card.php?id={id}&save_lastsearch_values=1"
     ),
+    "reception": (
+        "id",          # colonne contenant l'ID
+        "Reference",   # colonne à rendre cliquable (exact nom retourné par la requête)
+        DOLIBARR_BASE_URL + "/reception/card.php?id={id}"
+),
 }
  
 def detect_entity_type(df: pd.DataFrame) -> str | None:
@@ -1135,6 +1141,68 @@ def render_dataframe_with_links(df: pd.DataFrame, entity_type: str) -> None:
     # Légende
     st.markdown(f'<div style="font-size:0.8rem; color:#666;">ℹ️ Cliquez sur un lien pour ouvrir la fiche dans Dolibarr ({DOLIBARR_BASE_URL})</div>', unsafe_allow_html=True)
 
+
+def build_report_json(question: str, template: str, sql_query: str, params: dict) -> str:
+    """Génère un JSON au format souhaité (liste de paramètres + métadonnées)"""
+    now = datetime.now().isoformat(timespec='milliseconds')
+    report_ref = template.replace("get_", "").replace("_", "_")[:50]
+
+    # Liste des paramètres (même ordre que params)
+    parameters = []
+    for key, value in params.items():
+        if value is None:
+            value = ""
+        # Déterminer le type
+        if "date" in key.lower() and isinstance(value, str) and re.match(r'\d{4}-\d{2}-\d{2}', value):
+            param_type = "date"
+            source_sql = ""
+        elif key in ["entrepot", "entrepot_ref", "magasin"]:
+            param_type = "sql_select"
+            source_sql = "select ref as value from entrepot where ref is not null"
+        elif key in ["fournisseur", "supplier"]:
+            param_type = "sql_select"
+            source_sql = "select distinct nom as value, nom as label from societe where nom is not null and code_fournisseur is not null order by nom"
+        else:
+            param_type = "text"
+            source_sql = ""
+
+        # Construire l'objet paramètre
+        param_obj = {
+            "label": key.replace("_", " ").capitalize(),
+            "code": key,
+            "type": param_type,
+            "required": 1 if key in ["date_debut", "date_fin"] else 0,
+            "default": str(value),
+            "static_options": "",
+            "source_sql": source_sql,
+            "source_value_column": "value" if param_type == "sql_select" else "",
+            "source_label_column": "label" if param_type == "sql_select" else "",
+            "help_text": ""
+        }
+        parameters.append(param_obj)
+
+    # Structure complète (si besoin d'ajouter d'autres métadonnées)
+    report_data = {
+        "schema": "cielooreport.report",
+        "version": 1,
+        "exported_at": now,
+        "report": {
+            "ref": report_ref,
+            "title": question[:200],
+            "description": "",
+            "category": "",
+            "icon": "fas fa-chart-bar",
+            "sql_query": sql_query,
+            "temp_tables_sql": "",
+            "separator_char": ";",
+            "allowed_formats": "csv,txt,html,pdf",
+            "preview_limit": "100",
+            "is_active": "1"
+        },
+        "parameters": parameters
+    }
+    return json.dumps(report_data, ensure_ascii=False, indent=2)
+
 # ── 2. Remplacer la fonction render_result complète ─────────────────────────
  
 def render_result(result: dict, question: str, context: str = "main"):
@@ -1202,8 +1270,11 @@ f'<span class="meta-chip"><i class="fa-regular fa-note-sticky"></i> {html.escape
         st.markdown("#### Résultats")
  
         # ── Détection entité + affichage avec liens ──────────────────────────
-        entity_type = detect_entity_type(df)
- 
+        if template == "listes_approvisionnements":
+            entity_type = "reception"
+        else:
+            entity_type = detect_entity_type(df)
+
         if entity_type and entity_type in DOLIBARR_LINKS:
             render_dataframe_with_links(df, entity_type)
         else:
@@ -1216,7 +1287,18 @@ f'<span class="meta-chip"><i class="fa-regular fa-note-sticky"></i> {html.escape
         fig = auto_chart(df, template)
  
         # Pour l'export CSV/Excel/PDF on garde le df complet (avec id)
-        col_csv, col_xlsx, col_pdf, _ = st.columns([1, 1, 1, 2])
+        col_csv, col_xlsx, col_pdf, col_json, _ = st.columns([1, 1, 1, 1, 2])
+        with col_json:
+            # Générer le JSON avec les données actuelles
+            json_data = build_report_json(question, template, sql_query, meta.get("params", {}))
+            st.download_button(
+        "⬇ JSON",
+        data=json_data,
+        file_name=f"{template}_{ts}.json",
+        mime="application/json",
+        use_container_width=True,
+        key=f"json_{pfx}"
+    )
         with col_csv:
             st.download_button("⬇ CSV", data=df_to_csv_bytes(df),
                                file_name=f"{template}_{ts}.csv", mime="text/csv",
