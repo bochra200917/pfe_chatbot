@@ -189,34 +189,46 @@ def match_question(question: str):
 
     # ── Factures non payées depuis N jours — PRIORITÉ ABSOLUE ─────────
     match_jours = re.search(r'(\d+)\s*jours?', q)
-    if match_jours and any(w in q for w in ["non pay", "impaye", "non regle", "retard"]):
+    if match_jours and any(
+        w in q for w in [
+            "non pay",
+            "impaye",
+            "non regle",
+            "retard"]):
         return "get_factures_non_payees_30j", {}
 
     if any(w in q for w in [
-    "30 jours", "trente jours",
-    "depuis plus", "depuis plus de",
-    "un mois", "plus d un mois", "plus d'un mois"
-]):
-        if any(w in q for w in ["non pay", "impaye", "non regle", "retard", "facture"]):
+        "30 jours", "trente jours",
+        "depuis plus", "depuis plus de",
+        "un mois", "plus d un mois", "plus d'un mois"
+    ]):
+        if any(
+            w in q for w in [
+                "non pay",
+                "impaye",
+                "non regle",
+                "retard",
+                "facture"]):
             return "get_factures_non_payees_30j", {}
 
-# ── Factures non payées AVEC dates ────────────────────────────────
+    # ── Factures non payées AVEC dates ────────────────────────────────
     match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
     if match_dates and any(w in q for w in ["non pay", "impaye", "non regle"]):
         return "get_factures_non_payees", {
-        "start_date": match_dates.group(1),
-        "end_date":   match_dates.group(2)
-    }
+            "start_date": match_dates.group(1),
+            "end_date": match_dates.group(2)
+        }
 
-# ── Factures non payées SANS dates (toutes) ───────────────────────
+    # ── Factures non payées SANS dates (toutes) ───────────────────────
     if ("non pay" in q or "impaye" in q or "non regle" in q
-        or "pas regle" in q or "montant restant" in q):
+            or "pas regle" in q or "montant restant" in q):
+
         from datetime import date as _date
         today = _date.today()
         return "get_factures_non_payees", {
-        "start_date": "2000-01-01",
-        "end_date":   str(today)
-    }
+            "start_date": "2000-01-01",
+            "end_date": str(today)
+        }
 
     if "paiement partiel" in q or "cours de paiement" in q:
         return "get_factures_partiellement_payees", {}
@@ -291,18 +303,18 @@ def match_question(question: str):
             "start_date": start.strftime("%Y-%m-%d"),
             "end_date": end.strftime("%Y-%m-%d")
         }
-    
+
     # ── Produits jamais commandés ─────────────────────────────────────
     if any(w in q for w in [
-    "jamais commande", "jamais ete commande",
-    "n ont jamais", "n a jamais",
-    "non commande", "sans commande", "pas commande",
-]) and any(w in q for w in ["produit", "article", "reference"]):
+        "jamais commande", "jamais ete commande",
+        "n ont jamais", "n a jamais",
+        "non commande", "sans commande", "pas commande",
+    ]) and any(w in q for w in ["produit", "article", "reference"]):
         return "get_produits_non_commandes", {}
 
     # ── Questions clients + jamais → LLM (pas de template) ───────────
     if any(w in q for w in ["jamais commande", "n ont jamais", "n a jamais"]) \
-   and "client" in q:
+            and "client" in q:
         return None, None   # → LLM
 
     return None, None
@@ -651,7 +663,7 @@ def _extract_admin_params(question: str, placeholders: set) -> dict:
 
 
 def get_response(question: str) -> dict:
-    from app.db import execute_query 
+    from app.db import execute_query
     # Règle d'exception pour les questions qui doivent obligatoirement passer
     # par le LLM
     force_llm_questions = [
@@ -1133,7 +1145,8 @@ def get_response(question: str) -> dict:
         "get_factures_non_payees_30j",
         "get_factures_payees",
         "get_factures_partiellement_payees",   # ← ajouté
-        "get_factures_negatives",              # ← ajouté (même problème potentiel)
+        # ← ajouté (même problème potentiel)
+        "get_factures_negatives",
         "get_factures_between",               # ← ajouté
         "get_total_paiements",                # ← ajouté
         "get_total_ventes_mois",              # ← ajouté

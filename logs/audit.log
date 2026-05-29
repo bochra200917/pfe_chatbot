@@ -1919,3 +1919,8 @@
 [2026-05-29 12:01:27] uuid=bbda46e4-8167-4cbd-a043-40e3c302ecdd | status=success | template=get_average_order_value_by_client | rows=10 | duration=183.51ms | question=Vente par période
 [2026-05-29 12:01:44] uuid=a1535be0-3696-4414-bc42-96b0f42cecb4 | status=success | template=get_average_order_value_by_client | rows=10 | duration=179.75ms | question=Analyse des prix par Tarif
 [2026-05-29 12:01:59] uuid=8346ef33-934e-45fc-9d3b-a773be6af714 | status=success | template=top_produits_ca | rows=10 | duration=184.83ms | question=liste des produits selon l'entrepot
+[2026-05-29 12:26:43] uuid=a24b8eb5-a0ce-46cd-a3f0-03e2b51bda0c | status=success | template=get_top_clients_ca | rows=17 | duration=486.1ms | question=Quels sont mes meilleurs clients par CA en 2026 ?
+[2026-05-29 12:27:36] uuid=5917d76d-5032-4fdd-a859-1b536e8baa37 | status=success | template=get_factures_between | rows=128 | duration=410.68ms | question=factures non payées entre 2026-05-01 et 2026-05-29
+[2026-05-29 12:28:00] uuid=a14026ff-cf7b-4ad7-86a4-f6c8271c6cd5 | status=success | template=get_factures_between | rows=128 | duration=0.16ms | question=factures partiellement payées entre 2026-05-01 et 2026-05-29
+[2026-05-29 12:28:26] uuid=83f98c59-1f8b-4bec-8714-2a4780ac0818 | status=success | template=get_produits_stock_faible | rows=100 | duration=414.85ms | question=produits avec stock inférieur à 5
+[2026-05-29 12:28:45] uuid=7fce5d7f-f292-4f18-8200-1dfb9ea10918 | status=success | template=get_clients_multiple_commandes | rows=6 | duration=417.28ms | question=clients avec plus de 2 commandes
