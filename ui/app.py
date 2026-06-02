@@ -1368,7 +1368,7 @@ f'<span class="meta-chip"><i class="fa-regular fa-note-sticky"></i> {html.escape
     if st.session_state.get(fb_done_key, False):
         return
  
-    st.markdown('<h4><i class="fa-regular fa-star" style="color:#2563eb;margin-right:6px;"></i>Évaluer cette réponse</h4>', unsafe_allow_html=True)
+    st.markdown('<h4>Évaluer cette réponse</h4>', unsafe_allow_html=True)
     fcol1, fcol2, fcol3 = st.columns([1, 1, 4])
     comment_key = f"comment_{pfx}"
     comment = st.text_input(
@@ -1494,13 +1494,16 @@ with col_reopen:
 # ─────────────────────────────────────────────
 # Layout — onglets (radio horizontal)
 # ─────────────────────────────────────────────
-tab_labels = ["Chatbot", "Assistant guidé", "Analyse prédictive"]
+
+# tab_labels = ["Chatbot", "Assistant guidé", "Analyse prédictive"]
+tab_labels = ["Chatbot", "Assistant guidé"]
 
 selected_tab = st.radio(
-    "",
+    "Navigation",           # label non vide
     tab_labels,
     horizontal=True,
-    index=st.session_state.active_tab
+    index=st.session_state.active_tab,
+    label_visibility="collapsed"   # cache le label visuellement
 )
 st.session_state.active_tab = tab_labels.index(selected_tab)
 
@@ -1616,95 +1619,66 @@ if selected_tab == "Chatbot":
                 st.rerun()
 
 # ═══════════════════════════════════════════
-# Onglet 2 — Assistant guidé
+# Onglet 2 — Assistant guidé (version corrigée)
 # ═══════════════════════════════════════════
 elif selected_tab == "Assistant guidé":
     st.markdown('<h2><i class="fa-solid fa-compass"></i> Assistant guidé</h2>', unsafe_allow_html=True)
     st.caption("Construisez votre requête sans taper de texte")
 
-    form_key = f"guided_form_{st.session_state.guided_form_key}"
-
-    with st.form(form_key):
-        col1, col2 = st.columns(2)
-        with col1:
-            data_type = st.selectbox("Type de données",
-                                     ["Factures", "Paiements", "Clients", "Produits"])
-        with col2:
-            analysis_type = st.selectbox("Type d'analyse",
-                                         ["Total", "Non payées", "Partiellement payées",
-                                          "Par client", "Stock faible", "Multiples commandes"])
-        col3, col4 = st.columns(2)
-        with col3:
-            start_date = st.date_input("Du", value=None)
-        with col4:
-            end_date = st.date_input("Au", value=None)
-        quick = st.selectbox("Période rapide (optionnel)",
-                             ["-- Aucun --", "Ce mois", "Année en cours", "Tout 2026"])
-        submit_guided = st.form_submit_button("▶ Lancer l'analyse", use_container_width=True)
-
-    if submit_guided:
-        today = date.today()
-        if quick == "Ce mois":
-            start_date = date(today.year, today.month, 1)
-            end_date   = today
-        elif quick == "Année en cours":
-            start_date = date(today.year, 1, 1)
-            end_date   = today
-        elif quick == "Tout 2026":
-            start_date = date(2026, 1, 1)
-            end_date   = date(2026, 12, 31)
-
-        # Dates par défaut si non renseignées
-        _start = start_date or date(today.year, 1, 1)
-        _end   = end_date   or today
-
-        q_parts = {
-    # ── Factures ──
-    ("Factures", "Total"):
-        f"factures entre {_start} et {_end}",
-
-    ("Factures", "Non payées"):
-        f"factures non payées entre {_start} et {_end}",    # ← ajout dates
-
-    ("Factures", "Partiellement payées"):
-        f"factures partiellement payées entre {_start} et {_end}",  # ← ajout dates
-
-    ("Factures", "Par client"):
-        "donne moi les factures",
-
-    # ── Paiements ──
-    ("Paiements", "Total"):
-        f"total des paiements entre {_start} et {_end}",
-    ("Paiements", "Non payées"):
-        f"factures non payées entre {_start} et {_end}",    # ← ajout dates
-    ("Paiements", "Partiellement payées"):
-        f"factures partiellement payées entre {_start} et {_end}",
-    ("Paiements", "Par client"):          "donne moi les factures",
-    ("Paiements", "Stock faible"):        "produits avec stock inférieur à 5",
-    ("Paiements", "Multiples commandes"): "clients avec plus de 2 commandes",
-
-    # ── Clients ──
-    ("Clients", "Total"):                 "liste tous les clients",
-    ("Clients", "Multiples commandes"):   "clients avec plus de 2 commandes",
-    ("Clients", "Non payées"):            f"factures non payées entre {_start} et {_end}",
-    ("Clients", "Par client"):            "liste tous les clients",
-    ("Clients", "Stock faible"):          "liste tous les clients",
-    ("Clients", "Partiellement payées"):  f"factures partiellement payées entre {_start} et {_end}",
-
-    # ── Produits ──
-    ("Produits", "Stock faible"):         "produits avec stock inférieur à 5",
-    ("Produits", "Total"):                "produits avec stock inférieur à 5",
-    ("Produits", "Non payées"):           "produits avec stock inférieur à 5",
-    ("Produits", "Par client"):           "produits avec stock inférieur à 5",
-    ("Produits", "Multiples commandes"):  "produits avec stock inférieur à 5",
-    ("Produits", "Partiellement payées"): "produits avec stock inférieur à 5",
-}
-
-        question = q_parts.get(
-            (data_type, analysis_type),
-            f"factures entre {_start} et {_end}"
+    col1, col2 = st.columns(2)
+    with col1:
+        data_type = st.selectbox(
+            "Type de données",
+            ["Factures", "Paiements", "Clients", "Produits"],
+            key="guided_data_type"
         )
+    with col2:
+        if data_type == "Factures":
+            analysis_options = ["Total", "Non payées", "Partiellement payées"]
+        elif data_type == "Paiements":
+            analysis_options = ["Total", "Par client"]
+        elif data_type == "Clients":
+            analysis_options = ["Total", "Multiples commandes"]
+        else:  # Produits
+            analysis_options = ["Stock faible"]
+        analysis_type = st.selectbox("Type d'analyse", analysis_options, key="guided_analysis_type")
 
+    col3, col4 = st.columns(2)
+    with col3:
+        start_date = st.date_input("Du", value=None)
+    with col4:
+        end_date = st.date_input("Au", value=None)
+
+    if st.button("▶ Lancer l'analyse", type="primary", use_container_width=True):
+        today = date.today()
+        _start = start_date if start_date is not None else date(today.year, 1, 1)
+        _end   = end_date   if end_date   is not None else today
+
+        if data_type == "Factures":
+            if analysis_type == "Total":
+                question = f"factures entre {_start} et {_end}"
+            elif analysis_type == "Non payées":
+                question = f"factures non payées entre {_start} et {_end}"
+            elif analysis_type == "Partiellement payées":
+                question = f"factures partiellement payées entre {_start} et {_end}"
+            else:
+                question = "donne moi les factures"   # (option "Par client" non utilisée)
+
+        elif data_type == "Paiements":
+            if analysis_type == "Total":
+                question = f"total des paiements entre {_start} et {_end}"
+            else:  # "Par client"
+                question = f"total des paiements par client entre {_start} et {_end}"
+
+        elif data_type == "Clients":
+            if analysis_type == "Total":
+                question = "liste tous les clients"
+            else:  # "Multiples commandes"
+                question = "clients avec plus de 2 commandes"
+
+        else:  # Produits
+            question = "produits avec stock inférieur à 5"
+        
         st.session_state.pending_question = question
         st.session_state.result_context   = "guided"
         st.session_state.guided_form_key += 1
@@ -1717,189 +1691,3 @@ elif selected_tab == "Assistant guidé":
         render_result(st.session_state.last_result,
                       st.session_state.last_question,
                       context="guided")
-
-# ═══════════════════════════════════════════
-# Onglet 3 — Analyse prédictive (VRAIE PRÉDICTION)
-# ═══════════════════════════════════════════
-elif selected_tab == "Analyse prédictive":
-    st.markdown('<h3><i class="fa-solid fa-wand-magic-sparkles" style="color:inherit; margin-right:8px;"></i>Analyse prédictive</h3>', unsafe_allow_html=True)
-    st.caption("Prévisions basées sur les données historiques (Machine Learning)")
-    
-    # Importer les fonctions de prédiction
-    import sys
-    sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-    from utils.predictive import predict_ca_mensuel, predict_stock_rupture, predict_fidelite_clients
-    pred_type = st.selectbox(
-        "Type d'analyse",
-        ["• CA mensuel - prévision", "• Stock - alerte rupture", "• Clients - fidélité prévue"]
-    )
-    
-    if st.button("▶ Lancer la prédiction", type="primary", key="btn_predict_real"):
-        with st.spinner("⏳ Analyse et prédiction en cours..."):
-            
-            # ─── PRÉDICTION CA MENSUEL ─────────────────────────────────────────
-            if "CA mensuel" in pred_type:
-                st.markdown("#### Prédiction du Chiffre d'Affaires")
-    
-    # Une seule requête pour récupérer TOUS les mois
-                with st.spinner("📜 Récupération des données historiques..."):
-                    result = call_api("évolution chiffre d affaires mensuel")
-                    table = result.get("table", [])
-    
-                months_data = []
-                if table:
-                    for row in table:
-                        if isinstance(row, dict):
-                            annee = row.get("annee")
-                            mois = row.get("mois")
-                            ca = row.get("chiffre_affaires")
-                
-                            if annee and mois and ca and float(ca) > 0:
-                                months_data.append({
-                        "mois": f"{annee}-{str(mois).zfill(2)}",
-                        "CA_HT": float(ca)
-                    })
-        
-        # Trier par date
-                    months_data.sort(key=lambda x: x["mois"])
-        
-                    st.info(f"➤ {len(months_data)} mois de données historiques récupérées")
-                    df_hist = pd.DataFrame(months_data)
-                    st.dataframe(df_hist, use_container_width=True, hide_index=True)
-    
-                if len(months_data) >= 3:
-        # Faire la prédiction
-                    prediction = predict_ca_mensuel(months_data, months_ahead=1)
-        
-                    if "error" in prediction:
-                        st.error(prediction["error"])
-                    else:
-            # Afficher les prédictions
-                        st.markdown("**Prédictions (prochain mois)**")
-                        df_pred = pd.DataFrame(prediction["predictions"])
-                        st.dataframe(df_pred, use_container_width=True, hide_index=True)
-            
-            # Métriques
-                        # Dans l'affichage des métriques
-                        col1, col2, col3 = st.columns(3)
-                        col1.metric("Qualité du modèle (R²)", f"{prediction['model_score']:.2f}")
-                        col2.metric("Tendance", "📈 Hausse" if prediction["tendance"] == "hausse" else "📉 Baisse")
-
-                        dernier_ca = months_data[-1]["CA_HT"]
-                        ca_prevu = prediction["predictions"][0]["CA_HT_predit"]
-                        variation = ((ca_prevu - dernier_ca) / dernier_ca * 100) if dernier_ca > 0 else 0
-
-# Ajouter un avertissement si la variation est extrême
-                        if abs(variation) > 50:
-                            st.warning(f"⚠️ Variation extrême de {variation:+.1f}% détectée. La prédiction peut être peu fiable en raison de données volatiles.")
-
-                        col3.metric("Prévision mois prochain", f"{ca_prevu:,.0f} TND", delta=f"{variation:+.1f}%")
-            # Graphique
-                        fig, ax = plt.subplots(figsize=(10, 4))
-                        hist_months = [d["mois"] for d in months_data]
-                        hist_values = [d["CA_HT"] for d in months_data]
-                        pred_months = [d["mois"] for d in prediction["predictions"]]
-                        pred_values = [d["CA_HT_predit"] for d in prediction["predictions"]]
-            
-                        ax.plot(hist_months, hist_values, 'b-o', label="Historique", linewidth=2, markersize=6)
-                        ax.plot(pred_months, pred_values, 'r--o', label="Prédiction", linewidth=2, markersize=6)
-                        ax.axvline(x=len(hist_months)-0.5, color='gray', linestyle='--', alpha=0.5)
-                        ax.set_ylabel("CA HT (TND)")
-                        ax.set_xlabel("Mois")
-                        ax.set_title("Évolution et prédiction du Chiffre d'Affaires")
-                        ax.legend()
-                        ax.grid(True, alpha=0.3)
-                        plt.xticks(rotation=45)
-                        fig.tight_layout()
-                        st.pyplot(fig)
-                        plt.close(fig)
-                else:
-                    st.warning(f"Données insuffisantes pour la prédiction ({len(months_data)}/3 mois minimum).")              
-            # ─── PRÉDICTION STOCK ─────────────────────────────────────────────
-            elif "Stock" in pred_type:
-                st.markdown("#### Prédiction des ruptures de stock")
-                
-                r = call_api("produits avec stock inférieur à 20")
-                products_data = r.get("table", [])
-                
-                if products_data:
-                    # Convertir les tuples en dictionnaires
-                    formatted_products = []
-                    for p in products_data:
-                        if isinstance(p, (tuple, list)):
-                            # Adapter l'index selon votre requête SQL
-                            # Exemple: SELECT p.ref, p.label, p.stock
-                            formatted_products.append({
-    "produit_nom": p[1] if len(p) > 1 else "",  # ← "produit_nom" pas "produit_ref"
-    "stock_actuel": float(p[2]) if len(p) > 2 and p[2] is not None else 0  # ← "stock_actuel"
-})
-                        else:
-                            formatted_products.append(p)
-                    
-                    alerts = predict_stock_rupture(formatted_products, seuil=10)
-                    
-                    if alerts:
-                        st.warning(f"⚠️ {len(alerts)} produit(s) en risque de rupture")
-                        df_alerts = pd.DataFrame(alerts)
-                        st.dataframe(df_alerts, use_container_width=True, hide_index=True)
-                        
-                        # Niveaux de risque
-                        critique = sum(1 for a in alerts if a.get("niveau_risque") == "critique")
-                        eleve = sum(1 for a in alerts if a.get("niveau_risque") == "elevé")
-                        col1, col2, col3 = st.columns(3)
-                        col1.metric("Risque critique", critique, delta="< 7 jours")
-                        col2.metric("Risque élevé", eleve, delta="< 30 jours")
-                        col3.metric("Stock faible", len(alerts) - critique - eleve, delta="< seuil")
-                    else:
-                        st.success("✓ Aucun produit en risque de rupture détecté")
-                else:
-                    st.info("Aucun produit avec stock faible détecté")
-            
-            # ─── PRÉDICTION FIDÉLITÉ CLIENTS ───────────────────────────────────
-            elif "fidélité" in pred_type:
-                st.markdown("#### Prédiction de fidélité clients")
-                
-                r = call_api("clients avec plus de 2 commandes")
-                clients_data = r.get("table", [])
-                
-                if clients_data:
-                    formatted_clients = []
-                    for c in clients_data:
-                        if isinstance(c, (tuple, list)):
-                            formatted_clients.append({
-                                "nom": c[0] if len(c) > 0 else "",
-                                "nombre_commandes": int(c[1]) if len(c) > 1 and c[1] is not None else 0
-                            })
-                        else:
-                            formatted_clients.append(c)
-                    
-                    predictions = predict_fidelite_clients(formatted_clients)
-                    
-                    st.markdown("**Top clients par score de fidélité**")
-                    df_fidelite = pd.DataFrame(predictions[:10])
-                    st.dataframe(df_fidelite, use_container_width=True, hide_index=True)
-                    
-                    # Statistiques
-                    fideles = sum(1 for p in predictions if p["score_fidelite"] > 70)
-                    a_risque = sum(1 for p in predictions if p["prediction_rachat"] == "faible")
-                    
-                    col1, col2, col3 = st.columns(3)
-                    col1.metric("Clients fidèles", fideles, delta="score > 70")
-                    col2.metric("Risque de départ", a_risque, delta="prédiction faible")
-                    col3.metric("Total clients analysés", len(predictions))
-                    
-                    # Graphique distribution
-                    fig, ax = plt.subplots(figsize=(8, 4))
-                    scores = [p["score_fidelite"] for p in predictions]
-                    ax.hist(scores, bins=20, color='#4CAF50', alpha=0.7, edgecolor='black')
-                    ax.set_xlabel("Score de fidélité")
-                    ax.set_ylabel("Nombre de clients")
-                    ax.set_title("Distribution des scores de fidélité")
-                    ax.axvline(x=70, color='red', linestyle='--', label="Seuil fidèle")
-                    ax.axvline(x=30, color='orange', linestyle='--', label="Seuil risque")
-                    ax.legend()
-                    fig.tight_layout()
-                    st.pyplot(fig)
-                    plt.close(fig)
-                else:
-                    st.info("Aucune donnée client disponible")

@@ -1,6 +1,6 @@
 {
   "version": "1.0",
-  "updated_at": "2026-05-29T11:12:15.723408",
+  "updated_at": "2026-06-02T09:55:51.900972",
   "templates": {
     "ventes_par_categorie": {
       "intent": "ventes_par_categorie",
@@ -327,6 +327,22 @@
       "active": true,
       "created_at": "2026-05-25T09:08:36.820336",
       "updated_at": "2026-05-25T09:43:08.340006"
+    },
+    "paiements_par_client": {
+      "intent": "get_paiements_par_client",
+      "description": "Paiements par client",
+      "sql": "SELECT\n    s.nom AS client,\n    SUM(p.amount) AS total_paiements\nFROM m38h_paiement p\nJOIN m38h_paiement_facture pf ON pf.fk_paiement = p.rowid\nJOIN m38h_facture f ON f.rowid = pf.fk_facture\nJOIN m38h_societe s ON s.rowid = f.fk_soc\nWHERE p.datep BETWEEN :start_date AND :end_date\nGROUP BY s.nom\nORDER BY total_paiements DESC\nLIMIT :limit",
+      "params": [
+        "end_date",
+        "limit",
+        "start_date"
+      ],
+      "keywords": [
+        "total des paiements par client"
+      ],
+      "active": true,
+      "created_at": "2026-06-02T09:55:12.883745",
+      "updated_at": "2026-06-02T09:55:12.883754"
     }
   }
 }

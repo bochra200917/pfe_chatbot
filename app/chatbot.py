@@ -80,80 +80,181 @@ def _extract_client_name(q: str) -> str | None:
     client = " ".join(clean_tokens).strip()
     return client if client else None
 
-
 def match_question(question: str):
+    # Version brute (sans normalisation) pour capturer les questions de l'assistant guidé
+    q_raw = question.lower()
+    
+    print("🔍 match_question called with raw:", q_raw)
+
+    # ✅ Paiements par client (priorité absolue)
+    if "total des paiements par client" in q_raw:
+        
+        print("✅ Captured: paiements_par_client")
+
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q_raw)
+        if match_dates:
+            return "paiements_par_client", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2),
+                "limit": 100
+            }
+        return "paiements_par_client", {"limit": 100}
+    
+    # ✅ Total des paiements (sans "par client")
+    if "total des paiements" in q_raw and "par client" not in q_raw:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q_raw)
+        if match_dates:
+            return "get_total_paiements", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2)
+            }
+        return "get_total_paiements", {}
+    
+    # ✅ Liste des clients
+    if "liste tous les clients" in q_raw or "liste des clients" in q_raw:
+        return "liste_clients_simple", {}
+    
+    # ✅ Clients avec plus de 2 commandes
+    if "clients avec plus de 2 commandes" in q_raw:
+        return "get_clients_multiple_commandes", {"min_commandes": 2}
+    
+    # ✅ Factures entre dates
+    if "factures entre" in q_raw:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q_raw)
+        if match_dates:
+            return "get_factures_between", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2)
+            }
+    
+    # ✅ Factures non payées entre dates
+    if "factures non payées entre" in q_raw:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q_raw)
+        if match_dates:
+            return "get_factures_non_payees", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2)
+            }
+    
+    # ✅ Factures partiellement payées entre dates
+    if "factures partiellement payées entre" in q_raw:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q_raw)
+        if match_dates:
+            return "get_factures_partiellement_payees", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2),
+                "limit": 200
+            }
+
     q = normalize(question)
 
+    # ═══════════════════════════════════════════════════════════════════
+    # PRIORITÉ ABSOLUE : Questions de l'assistant guidé (Paiements)
+    # ═══════════════════════════════════════════════════════════════════
+    
+    # Total des paiements par client
+    if "total des paiements par client" in q:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+        if match_dates:
+            return "paiements_par_client", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2),
+                "limit": 100
+            }
+        return "paiements_par_client", {"limit": 100}
+    
+    # Total des paiements (sans "par client")
+    if "total des paiements" in q and "par client" not in q:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+        if match_dates:
+            return "get_total_paiements", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2)
+            }
+        return "get_total_paiements", {}
+
+    # Liste tous les clients
+    if "liste tous les clients" in q or "liste des clients" in q:
+        return "liste_clients_simple", {}
+
+    # Clients avec plus de 2 commandes
+    if "clients avec plus de 2 commandes" in q:
+        return "get_clients_multiple_commandes", {"min_commandes": 2}
+    
+    # Factures entre deux dates (assistant)
+    if "factures entre" in q:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+        if match_dates:
+            return "get_factures_between", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2)
+            }
+    
+    # Factures non payées (assistant)
+    if "factures non payées entre" in q:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+        if match_dates:
+            return "get_factures_non_payees", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2)
+            }
+    
+    # Factures partiellement payées (assistant)
+    if "factures partiellement payées entre" in q:
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+        if match_dates:
+            return "get_factures_partiellement_payees", {
+                "start_date": match_dates.group(1),
+                "end_date": match_dates.group(2),
+                "limit": 200
+            }
+
+    # ═══════════════════════════════════════════════════════════════════
+    # PRIORITÉ 2 : autres règles métier
+    # ═══════════════════════════════════════════════════════════════════
+    
     # ── CA par trimestre ──────────────────────────────────────
-    if "trimestre" in q and any(
-        w in q for w in [
-            "ca",
-            "chiffre",
-            "vente",
-            "depense",
-            "total"]):
+    if "trimestre" in q and any(w in q for w in ["ca", "chiffre", "vente", "depense", "total"]):
         match_year = re.search(r'\b(20\d{2})\b', q)
         annee = match_year.group(1) if match_year else "2026"
         return "get_ca_par_trimestre", {"annee": annee}
 
     # ── EXCLUSION PRIORITAIRE : questions complexes → LLM ──
-
     if any(kw in q for kw in COMPLEX_KEYWORDS):
-        return None, None  # → force passage au LLM
-
-    # ══════════════════════════════════════════════════════════════════
-    # PRIORITÉ HAUTE — patterns spécifiques avant les patterns généraux
-    # ══════════════════════════════════════════════════════════════════
+        return None, None
 
     # ── Top clients par CA ─────────────────────────────────────────
     if (
-        any(w in q for w in [
-            "top", "meilleur", "eleve", "plus grand", "plus important",
-            "plus haut", "chiffre affaires le plus", "plus eleve",
-            "les plus eleve", "le plus eleve"
-        ])
-        and
-        any(w in q for w in ["client", "societe"])
+        any(w in q for w in ["top", "meilleur", "eleve", "plus grand", "plus important",
+                             "plus haut", "chiffre affaires le plus", "plus eleve",
+                             "les plus eleve", "le plus eleve"])
+        and any(w in q for w in ["client", "societe"])
     ):
         match_n = re.search(r'\b(\d+)\b', q)
         limit = int(match_n.group(1)) if match_n else 5
         return "get_top_clients_ca", {"limit": limit}
 
-    # ── Commandes par mois — PRIORITÉ HAUTE ───────────────────────
+    # ── Commandes par mois ───────────────────────────────────────
     if (
         "commande" in q
         and any(w in q for w in ["combien", "nombre", "total"])
         and not any(w in q for w in ["facture", "vente", "ca", "chiffre"])
-        # ← AJOUT
         and not any(w in q for w in ["ligne", "distinct", "grand", "plus grand", "jamais"])
     ):
         for month_key, month_num in MONTHS.items():
             if month_key in q:
                 match_year = re.search(r'\b(20\d{2})\b', q)
                 year = match_year.group(1) if match_year else "2026"
-                return "get_commandes_par_mois", {
-                    "annee": year, "mois": month_num}
+                return "get_commandes_par_mois", {"annee": year, "mois": month_num}
         match_ym = re.search(r'(\d{4})-(\d{2})', q)
         if match_ym:
-            return "get_commandes_par_mois", {
-                "annee": match_ym.group(1),
-                "mois": match_ym.group(2)
-            }
-        if any(
-            w in q for w in [
-                "combien",
-                "nombre",
-                "total",
-                "liste",
-                "affiche"]):
+            return "get_commandes_par_mois", {"annee": match_ym.group(1), "mois": match_ym.group(2)}
+        if any(w in q for w in ["combien", "nombre", "total", "liste", "affiche"]):
             from datetime import datetime
             now = datetime.today()
-            return "get_commandes_par_mois", {
-                "annee": str(now.year),
-                "mois": str(now.month).zfill(2)
-            }
+            return "get_commandes_par_mois", {"annee": str(now.year), "mois": str(now.month).zfill(2)}
 
-    # ── Liste clients simple ───────────────────────────────────────
+    # ── Liste clients simple (hors assistant) ───────────────────────
     if (
         "client" in q
         and any(w in q for w in ["liste", "tous", "affiche", "donne"])
@@ -162,56 +263,20 @@ def match_question(question: str):
         return "liste_clients_simple", {}
 
     # ══════════════════════════════════════════════════════════════════
-    # PATTERNS EXISTANTS
+    # PATTERNS SPÉCIFIQUES AUX FACTURES
     # ══════════════════════════════════════════════════════════════════
 
-    match_ym = re.search(r'(\d{4})-(\d{2})(?!-\d{2})', q)
-    if match_ym and any(w in q for w in ["total", "ventes", "chiffre", "ca"]):
-        return "get_total_ventes_mois", {
-            "year": match_ym.group(1), "month": match_ym.group(2)}
-
-    match = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
-    if match:
-        # Ne pas retourner get_factures_between si la question concerne les
-        # achats fournisseurs
-        if not any(
-            term in q for term in [
-                "achat",
-                "fournisseur",
-                "entrepot",
-                "magasin",
-                "reception"]):
-            return "get_factures_between", {
-                "start_date": match.group(1), "end_date": match.group(2)}
-
-    if "partiellement pay" in q or "partiel" in q:
-        return "get_factures_partiellement_payees", {}
-
-    # ── Factures non payées depuis N jours — PRIORITÉ ABSOLUE ─────────
+    # ── Factures non payées depuis N jours ─────────────────────────
     match_jours = re.search(r'(\d+)\s*jours?', q)
-    if match_jours and any(
-        w in q for w in [
-            "non pay",
-            "impaye",
-            "non regle",
-            "retard"]):
+    if match_jours and any(w in q for w in ["non pay", "impaye", "non regle", "retard"]):
         return "get_factures_non_payees_30j", {}
 
-    if any(w in q for w in [
-        "30 jours", "trente jours",
-        "depuis plus", "depuis plus de",
-        "un mois", "plus d un mois", "plus d'un mois"
-    ]):
-        if any(
-            w in q for w in [
-                "non pay",
-                "impaye",
-                "non regle",
-                "retard",
-                "facture"]):
+    if any(w in q for w in ["30 jours", "trente jours", "depuis plus", "depuis plus de",
+                            "un mois", "plus d un mois", "plus d'un mois"]):
+        if any(w in q for w in ["non pay", "impaye", "non regle", "retard", "facture"]):
             return "get_factures_non_payees_30j", {}
 
-    # ── Factures non payées AVEC dates ────────────────────────────────
+    # ── Factures non payées AVEC dates ──────────────────────────────
     match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
     if match_dates and any(w in q for w in ["non pay", "impaye", "non regle"]):
         return "get_factures_non_payees", {
@@ -219,10 +284,9 @@ def match_question(question: str):
             "end_date": match_dates.group(2)
         }
 
-    # ── Factures non payées SANS dates (toutes) ───────────────────────
+    # ── Factures non payées SANS dates ──────────────────────────────
     if ("non pay" in q or "impaye" in q or "non regle" in q
             or "pas regle" in q or "montant restant" in q):
-
         from datetime import date as _date
         today = _date.today()
         return "get_factures_non_payees", {
@@ -230,10 +294,19 @@ def match_question(question: str):
             "end_date": str(today)
         }
 
-    if "paiement partiel" in q or "cours de paiement" in q:
-        return "get_factures_partiellement_payees", {}
+    # ── Factures partiellement payées ──────────────────────────────
+    if "partiellement pay" in q or "partiel" in q or "paiement partiel" in q or "cours de paiement" in q:
+        params = {"limit": 200}
+        match_dates = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+        if match_dates:
+            params["start_date"] = match_dates.group(1)
+            params["end_date"] = match_dates.group(2)
+        else:
+            params["start_date"] = "1970-01-01"
+            params["end_date"] = "2099-12-31"
+        return "get_factures_partiellement_payees", params
 
-    # Factures payées / totalement réglées / soldées
+    # ── Factures payées / totalement réglées / soldées ──────────────
     if any(w in q for w in [
         "totalement pay", "entierement pay", "completement pay",
         "totalement regle", "entierement regle",
@@ -241,84 +314,82 @@ def match_question(question: str):
     ]) and not any(w in q for w in ["non", "pas", "impay", "partiel"]):
         return "get_factures_payees", {}
 
+    # ── Factures négatives / avoirs ─────────────────────────────────
     if "negatif" in q or "negativ" in q:
         return "get_factures_negatives", {}
-
     if "avoir" in q or "avoirs" in q or "note de credit" in q or "note credit" in q:
         return "get_avoirs", {}
 
+    # ── Factures par client ─────────────────────────────────────────
     client_name = _extract_client_name(q)
     if client_name and "facture" in q:
         return "get_factures_par_client", {"client": client_name}
 
-    # Boucle MONTHS — uniquement pour le CA/ventes
+    # ══════════════════════════════════════════════════════════════════
+    # PATTERNS GÉNÉRIQUES (fallback)
+    # ══════════════════════════════════════════════════════════════════
+
+    # ── CA par mois ──────────────────────────────────────────────────
+    match_ym = re.search(r'(\d{4})-(\d{2})(?!-\d{2})', q)
+    if match_ym and any(w in q for w in ["total", "ventes", "chiffre", "ca"]):
+        return "get_total_ventes_mois", {"year": match_ym.group(1), "month": match_ym.group(2)}
+
+    # ── Factures entre deux dates (générique) ────────────────────────
+    match = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
+    if match:
+        if not any(term in q for term in ["achat", "fournisseur", "entrepot", "magasin", "reception"]):
+            return "get_factures_between", {
+                "start_date": match.group(1), "end_date": match.group(2)}
+
+    # ── Boucle MONTHS pour CA/ventes ─────────────────────────────────
     for month_name, month_num in MONTHS.items():
-        if month_name in q and any(
-            w in q for w in [
-                "ca",
-                "chiffre",
-                "vente",
-                "revenu"]):
+        if month_name in q and any(w in q for w in ["ca", "chiffre", "vente", "revenu"]):
             match_year = re.search(r'\b(20\d{2})\b', q)
             if match_year:
-                return "get_total_ventes_mois", {
-                    "year": match_year.group(1), "month": month_num}
+                return "get_total_ventes_mois", {"year": match_year.group(1), "month": month_num}
             return None, None
 
     match = re.search(r'(\d{4})-(\d{2})', q)
     if match and any(w in q for w in ["total", "ventes", "chiffre", "ca"]):
-        return "get_total_ventes_mois", {
-            "year": match.group(1), "month": match.group(2)}
+        return "get_total_ventes_mois", {"year": match.group(1), "month": match.group(2)}
 
+    # ── Clients avec multiples commandes ─────────────────────────────
     match = re.search(r'plus de (\d+) commandes', q)
     if match:
-        return "get_clients_multiple_commandes", {
-            "min_commandes": int(match.group(1))}
-
+        return "get_clients_multiple_commandes", {"min_commandes": int(match.group(1))}
     if ("plus de deux commandes" in q or "commandes multiples" in q
             or "plusieurs commandes" in q or "plus de commandes" in q
             or "clients fideles" in q):
         return "get_clients_multiple_commandes", {"min_commandes": 2}
 
+    # ── Produits en stock faible ────────────────────────────────────
     if "stock" in q or "rupture" in q:
         match = re.search(r'\d+', q)
         seuil = int(match.group()) if match else 5
         return "get_produits_stock_faible", {"stock_min": seuil}
 
+    # ── Total des paiements (autre formulation) ───────────────────────
     match = re.search(r'(\d{4}-\d{2}-\d{2}).*(\d{4}-\d{2}-\d{2})', q)
-    if match and any(
-        w in q for w in [
-            "paiement",
-            "regl",
-            "encaissement",
-            "verse"]):
-        return "get_total_paiements", {
-            "start_date": match.group(1), "end_date": match.group(2)}
-
+    if match and any(w in q for w in ["paiement", "regl", "encaissement", "verse"]):
+        return "get_total_paiements", {"start_date": match.group(1), "end_date": match.group(2)}
     if "3 derniers mois" in q and any(w in q for w in ["paiement", "regl"]):
         from datetime import datetime, timedelta
         end = datetime.today()
         start = end - timedelta(days=90)
-        return "get_total_paiements", {
-            "start_date": start.strftime("%Y-%m-%d"),
-            "end_date": end.strftime("%Y-%m-%d")
-        }
+        return "get_total_paiements", {"start_date": start.strftime("%Y-%m-%d"), "end_date": end.strftime("%Y-%m-%d")}
 
-    # ── Produits jamais commandés ─────────────────────────────────────
+    # ── Produits jamais commandés ────────────────────────────────────
     if any(w in q for w in [
-        "jamais commande", "jamais ete commande",
-        "n ont jamais", "n a jamais",
+        "jamais commande", "jamais ete commande", "n ont jamais", "n a jamais",
         "non commande", "sans commande", "pas commande",
     ]) and any(w in q for w in ["produit", "article", "reference"]):
         return "get_produits_non_commandes", {}
 
-    # ── Questions clients + jamais → LLM (pas de template) ───────────
-    if any(w in q for w in ["jamais commande", "n ont jamais", "n a jamais"]) \
-            and "client" in q:
-        return None, None   # → LLM
+    # ── Questions clients + jamais → LLM ────────────────────────────
+    if any(w in q for w in ["jamais commande", "n ont jamais", "n a jamais"]) and "client" in q:
+        return None, None
 
     return None, None
-
 
 def _convert_mapping_result(result: dict):
     intent = result.get("intent", "")
@@ -671,6 +742,50 @@ def get_response(question: str) -> dict:
         "quels sont les 5 produits avec le plus grand nombre de lignes de commande distinctes"]
     q_lower = question.lower().strip()
     start_time = time.time()
+
+    # ===== DÉTECTION DIRECTE POUR LES PAIEMENTS (priorité absolue) =====
+    if "total des paiements" in q_lower:
+        print(">>> DÉTECTION DIRECTE : questions sur les paiements")
+        dates = re.findall(r'\d{4}-\d{2}-\d{2}', question)
+        params = {"limit": 100}
+        if len(dates) >= 2:
+            params["start_date"] = dates[0]
+            params["end_date"] = dates[1]
+
+        if "par client" in q_lower:
+            from app.templates_sql import get_paiements_par_client
+            sql = get_paiements_par_client()
+            template_name = "paiements_par_client"
+            logs_id = "direct_paiements_par_client"
+        else:
+            from app.templates_sql import get_total_paiements
+            sql = get_total_paiements()
+            template_name = "get_total_paiements"
+            logs_id = "direct_total_paiements"
+
+        try:
+            columns, rows, _ = execute_query(sql, params)
+            duration = round((time.time() - start_time) * 1000, 2)
+            result_rows = [dict(zip(columns, row)) for row in rows]
+            return {
+                "table": result_rows,
+                "summary": f"{len(result_rows)} résultat(s) trouvé(s).",
+                "metadata": {
+                    "status": "success",
+                    "template": template_name,
+                    "duration_ms": duration,
+                    "row_count": len(result_rows),
+                    "params": params,
+                    "logs_id": logs_id,
+                    "sql_query": sql,
+                    "from_cache": False,
+                    "suggestions": []
+                }
+            }
+        except Exception as e:
+            print(f"ERREUR directe paiements : {e}")
+            # En cas d'erreur, on continue vers le reste de la fonction
+            # (ne pas return, laisser le code exécuter la suite)
 
     # ===== FORCAGE BRUTAL POUR LE RÉCAPITULATIF =====
     if "récapitulatif des ventes" in q_lower or "ventes et règlements" in q_lower:

@@ -135,11 +135,12 @@ def get_factures_partiellement_payees():
     LEFT JOIN m38h_societe s         ON f.fk_soc      = s.rowid
     LEFT JOIN m38h_paiement_facture pf ON pf.fk_facture = f.rowid
     WHERE f.entity = 1
+      AND f.datef BETWEEN :start_date AND :end_date
     GROUP BY f.rowid, f.ref, s.nom, f.total_ht, f.total_ttc, f.datef
     HAVING COALESCE(SUM(pf.amount), 0) > 0
        AND (f.total_ttc - COALESCE(SUM(pf.amount), 0)) > 0
     ORDER BY f.datef ASC
-    LIMIT 100
+    LIMIT :limit
     """
 
 def get_total_paiements():
@@ -157,6 +158,20 @@ def get_total_paiements():
     LIMIT 100
     """
 
+def get_paiements_par_client():
+    return """
+    SELECT
+        s.nom AS client,
+        SUM(p.amount) AS total_paiements
+    FROM m38h_paiement p
+    JOIN m38h_paiement_facture pf ON pf.fk_paiement = p.rowid
+    JOIN m38h_facture f ON f.rowid = pf.fk_facture
+    JOIN m38h_societe s ON s.rowid = f.fk_soc
+    WHERE p.datep BETWEEN :start_date AND :end_date
+    GROUP BY s.nom
+    ORDER BY total_paiements DESC
+    LIMIT :limit
+    """
 
 def get_commandes_par_mois():
     return """
@@ -340,4 +355,5 @@ TEMPLATE_MAPPING = {
     "get_produits_non_commandes": get_produits_non_commandes,
     "get_top_clients_ca": get_top_clients_ca,
     "get_avoirs": get_avoirs,
+    "get_paiements_par_client": get_paiements_par_client,
 }
