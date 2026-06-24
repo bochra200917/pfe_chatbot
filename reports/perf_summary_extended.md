@@ -1,6 +1,6 @@
 # Rapport de Performance Étendu — Chatbot NL2SQL V3
 
-**Date :** 2026-04-02
+**Date :** 2026-06-24
 **Auteur :** Bochra Ben Yedder
 
 ---
@@ -30,10 +30,10 @@
 
 | Catégorie | Latence moy. | P95 |
 |---|---|---|
-| template_v1v2 | 153.75 ms | 1103.33 ms |
-| template_date | 121.36 ms | 441.92 ms |
-| clarification | 0.01 ms | 0.03 ms |
-| security_reject | 0.0 ms | 0.02 ms |
+| template_v1v2 | 344.83 ms | 4403.64 ms |
+| template_date | 81.6 ms | 452.17 ms |
+| clarification | 11.93 ms | 176.78 ms |
+| security_reject | 0.01 ms | 0.03 ms |
 
 
 ---

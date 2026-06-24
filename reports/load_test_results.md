@@ -9,30 +9,29 @@
 
 | Métrique | Valeur |
 |---|---|
-| Débit réel | 9.27 RPS |
+| Débit réel | 9.24 RPS |
 | Requêtes envoyées | 300 |
 | Succès | 300 |
 | Erreurs | 0 |
-| Latence moyenne | 2061.88 ms |
-| P95 | 2084.13 ms |
-| P99 | 2287.21 ms |
-| Min / Max | 2019.24 ms / 2595.01 ms |
+| Latence moyenne | 2047.91 ms |
+| P95 | 2066.88 ms |
+| P99 | 2235.47 ms |
+| Min / Max | 2023.32 ms / 2267.96 ms |
 
 ## Test 2 — 50 RPS (30 secondes)
 
 | Métrique | Valeur |
 |---|---|
-| Débit réel | 43.73 RPS |
+| Débit réel | 43.48 RPS |
 | Requêtes envoyées | 1500 |
 | Succès | 1500 |
 | Erreurs | 0 |
-| Latence moyenne | 2058.75 ms |
-| P95 | 2073.9 ms |
-| P99 | 2341.64 ms |
-| Min / Max | 2021.18 ms / 2827.1 ms |
+| Latence moyenne | 2050.27 ms |
+| P95 | 2078.77 ms |
+| P99 | 2337.08 ms |
+| Min / Max | 2019.41 ms / 2560.4 ms |
 
 ## Conclusion
-- Le système supporte jusqu'à **43.73 RPS effectifs** (cible 50 RPS) sans erreur
-- 0 erreur sur 1 800 requêtes au total (300 + 1 500)
+- Le système supporte 9.24 RPS sans erreur
 - Le compte DB read-only est respecté sous charge
 - Aucune fuite de données ni timeout non géré observé

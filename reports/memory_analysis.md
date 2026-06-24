@@ -1,6 +1,6 @@
 # Analyse Mémoire — Chatbot NL2SQL V3
 
-**Date :** 2026-04-02
+**Date :** 2026-06-24
 **Auteur :** Bochra Ben Yedder
 
 ## Environnement système
@@ -8,8 +8,8 @@
 | Paramètre | Valeur |
 |---|---|
 | RAM totale | 23.75 GB |
-| RAM disponible | 10.21 GB |
-| Utilisation système | 57.0% |
+| RAM disponible | 9.14 GB |
+| Utilisation système | 61.5% |
 
 ---
 
@@ -17,13 +17,10 @@
 
 | Catégorie | Latence moy. | P95 | Δ Mémoire | Appels |
 |---|---|---|---|---|
-| template_v1v2 | 153.75 ms | 1103.33 ms | +1.23 MB | 15 |
-| template_date | 121.36 ms | 441.92 ms | +0.07 MB | 15 |
-| clarification | 0.01 ms | 0.03 ms | +0.00 MB | 15 |
-| security_reject | 0.0 ms | 0.02 ms | +0.00 MB | 15 |
-
-> Note : les latences du tableau "par catégorie" (153 ms, 121 ms) sont mesurées 
-> en local (DB localhost). Les 2 387 ms correspondent à la DB distante Infomaniak.
+| template_v1v2 | 344.83 ms | 4403.64 ms | +22.26 MB | 15 |
+| template_date | 81.6 ms | 452.17 ms | +0.00 MB | 15 |
+| clarification | 11.93 ms | 176.78 ms | +0.00 MB | 15 |
+| security_reject | 0.01 ms | 0.03 ms | +0.00 MB | 15 |
 
 ### Interprétation
 
@@ -38,9 +35,9 @@
 
 | Question | Sans cache (cold) | Avec cache (warm) | Gain |
 |---|---|---|---|
-| factures non payees | 435.73 ms | 0.07 ms | 100.0% |
-| produits en rupture de stock | 368.13 ms | 0.06 ms | 100.0% |
-| clients fideles avec plus de 3 commandes | 267.09 ms | 0.08 ms | 100.0% |
+| factures non payees | 183.48 ms | 1.26 ms | 99.3% |
+| produits en rupture de stock | 184.18 ms | 0.93 ms | 99.5% |
+| clients fideles avec plus de 3 commandes | 182.87 ms | 1.19 ms | 99.3% |
 
 ### Stratégie d'invalidation
 

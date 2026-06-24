@@ -1,10 +1,6 @@
 {"timestamp": "2026-04-10T15:38:40.352347", "logs_id": "473b91c5-e19e-4fa2-ab66-119fa841d6af", "question": "Factures non payées", "rating": "positive", "comment": "bon résultat"}
 {"timestamp": "2026-04-17T11:34:29.100219", "logs_id": "a054c3ec-c2e3-4c88-962b-84bf0ee3c192", "question": "factures entre 2026-01-01 et 2026-04-17", "rating": "negative", "comment": "résultat à vérifier"}
-{"timestamp": "2026-04-22T11:21:09.951771", "logs_id": "28854496-39c8-49e7-ab99-c16d6598cf5d", "question": "Factures entre 2026-01-01 et 2026-02-28", "rating": "negative", "comment": "fact"}
 {"timestamp": "2026-04-22T11:58:15.867732", "logs_id": "fdd3c465-6cd2-4d58-8fbe-3a623c5fb976", "question": "Clients avec plus de 2 commandes", "rating": "negative", "comment": "faux"}
 {"timestamp": "2026-05-12T09:28:51.662037", "logs_id": "3ed5b6c7-051b-4286-ac1a-da7515abc8d3", "question": "Factures non payées", "rating": "positive", "comment": "résulat correct"}
 {"timestamp": "2026-05-14T11:00:38.026547", "logs_id": "0dc97dea-37f1-48a8-8ef5-acd96cad3579", "question": "factures partiellement payées", "rating": "positive", "comment": "pas de liens cliquables"}
-{"timestamp": "2026-06-01T13:45:18.838722", "logs_id": "dca302f8-b507-4eb7-97a8-a88f5d881c74", "question": "Factures non payées", "rating": "positive", "comment": "réponse correcte"}
-{"timestamp": "2026-06-01T13:57:40.586518", "logs_id": "5d7bf8b6-e9fa-4809-a58c-c0332de61b11", "question": "Donne moi le top 5 des produits les plus commandés", "rating": "positive", "comment": "réponse correcte "}
 {"timestamp": "2026-06-01T14:18:44.388877", "logs_id": "1c7a35d3-4c44-41b3-9e3b-28976fb0487b", "question": "Donne moi le top 5 des produits les plus commandés", "rating": "positive", "comment": "réponse correcte"}
-{"timestamp": "2026-06-01T14:22:20.463182", "logs_id": "010c6e57-8207-4882-9df9-641540dd1fb8", "question": "Donne moi le top 5 des produits les plus commandés", "rating": "positive", "comment": "réponse correcte"}

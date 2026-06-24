@@ -1,6 +1,6 @@
 # Benchmark comparatif — Chatbot ZAI Informatique V3
 
-**Généré le** : 06/04/2026 à 09:02:47
+**Généré le** : 24/06/2026 à 09:12:13
 
 ## Méthodologie
 
@@ -12,15 +12,12 @@
 
 | Solution | Exactitude (%) | SQL valide (%) | Sécurité — rejet (%) | Latence moy. (ms) | Coût / 1000 req ($) | Schéma requis | Hors-ligne |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Notre système (ZAI V3) | 100.0% | 100.0% | 100.0% | 2183 ms | 0.03$ | Oui | Oui |
+| Notre système (ZAI V3) | 100.0% | 100.0% | 100.0% | 2295 ms | 0.03$ | Oui | Oui |
 | Dolibarr natif (interface manuelle) | N/A | N/A | 100.0% | 30000 ms | 0.00$ | Non | Oui |
 | GPT-4 générique (sans connexion DB) | N/A | 72.0% | 40.0% | 2800 ms | 30.00$ | Oui | Non |
 | DAIL-SQL (GPT-4, Spider) | 86.6% | 96.3% | N/A | 3500 ms | 25.00$ | Oui | Non |
 | DIN-SQL (GPT-4, Spider) | 82.8% | 94.1% | N/A | 4200 ms | 28.00$ | Oui | Non |
 | C3 (ChatGPT, Spider) | 81.8% | 93.5% | N/A | 3100 ms | 12.00$ | Oui | Non |
-
-> Note : 2 183 ms = latence mesurée sous charge réseau (DB distante Infomaniak).  
-> 116 ms = latence mesurée en local (golden set, DB locale).
 
 ## Sources des données de référence
 
@@ -57,4 +54,4 @@
 - Comparer sur le benchmark BIRD (plus proche des DBs réelles) dès que les ressources le permettent.
 
 ---
-*Chatbot ZAI Informatique — NL2SQL V3 — 06/04/2026*
+*Chatbot ZAI Informatique — NL2SQL V3 — 24/06/2026*

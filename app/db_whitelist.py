@@ -1,4 +1,4 @@
-WHITELIST_VERSION = "v1.1"
+WHITELIST_VERSION = "v1.2"
 
 ALLOWED_TABLES = {
     "m38h_facture", "m38h_facturedet", "m38h_facture_fourn",
@@ -7,6 +7,15 @@ ALLOWED_TABLES = {
     "m38h_commande_fournisseur_det",
     "m38h_societe", "m38h_socpeople",
     "m38h_product", "m38h_product_stock", "m38h_product_price",
+    "m38h_product_extrafields",          # ← AJOUT
+    "m38h_product_attribute",            # ← AJOUT
+    "m38h_product_attribute_value",      # ← AJOUT
+    "m38h_product_attribute_combination", # ← AJOUT
+    "m38h_product_attribute_combination2val", # ← AJOUT
+    "m38h_c_product_nature",             # ← AJOUT
+    "m38h_reception",                    # ← AJOUT
+    "m38h_receptiondet_batch",           # ← AJOUT
+    "m38h_c_paiement",                   # ← AJOUT
     "m38h_stock_mouvement", "m38h_entrepot",
     "m38h_paiement", "m38h_paiement_facture",
     "m38h_projet", "m38h_projet_task",
@@ -80,6 +89,35 @@ ALLOWED_COLUMNS = {
         "rowid", "fk_projet", "label", "dateo"
     },
 
+    # --- AJOUTS (tables manquantes) ---
+    "m38h_product_extrafields": {
+        "fk_object", "rayon", "marque", "matiere", "saison"
+    },
+    "m38h_c_product_nature": {
+        "id", "label"
+    },
+    "m38h_product_attribute": {
+        "rowid", "label"
+    },
+    "m38h_product_attribute_value": {
+        "rowid", "fk_product_attribute", "value"
+    },
+    "m38h_product_attribute_combination": {
+        "rowid", "fk_product_parent", "fk_product_child"
+    },
+    "m38h_product_attribute_combination2val": {
+        "fk_prod_combination", "fk_prod_attr_val"
+    },
+    "m38h_reception": {
+        "rowid", "ref", "fk_soc", "tms", "fk_statut"
+    },
+    "m38h_receptiondet_batch": {
+        "rowid", "fk_reception", "fk_product", "qty", "cost_price"
+    },
+    "m38h_c_paiement": {
+        "id", "code", "libelle"
+    },
+
     # Fournisseurs
     "m38h_facture_fourn": {
         "rowid", "ref", "fk_soc", "datef", "total_ht", "total_ttc", "entity"
@@ -88,8 +126,7 @@ ALLOWED_COLUMNS = {
         "rowid", "fk_facture_fourn", "fk_product", "qty",
         "total_ht", "total_ttc", "entity"
     },
-    "m38h_commande_fournisseur":
-    {
+    "m38h_commande_fournisseur": {
         "rowid",
         "ref",
         "fk_soc",
@@ -98,8 +135,7 @@ ALLOWED_COLUMNS = {
         "total_ttc",
         "entity"
     },
-    "m38h_commande_fournisseur_det":
-    {
+    "m38h_commande_fournisseur_det": {
         "rowid",
         "fk_commande_fournisseur",
         "fk_product",
@@ -164,17 +200,32 @@ ALLOWED_COLUMNS = {
 }
 
 ALLOWED_JOINS = {
+    # Jointures existantes
     ("m38h_cashdaily", "m38h_bank"),
     ("m38h_facture_fourn", "m38h_societe"),
     ("m38h_societe", "m38h_facture_fourn"),
-    ("m38h_facture",    "m38h_societe"),
-    ("m38h_societe",    "m38h_commande"),
-    ("m38h_facture",    "m38h_paiement_facture"),
-    ("m38h_product",    "m38h_commandedet"),
-    ("m38h_commande",   "m38h_commandedet"),
-    ("m38h_facture",    "m38h_facturedet"),
-    ("m38h_product",    "m38h_facturedet"),
+    ("m38h_facture", "m38h_societe"),
+    ("m38h_societe", "m38h_commande"),
+    ("m38h_facture", "m38h_paiement_facture"),
+    ("m38h_product", "m38h_commandedet"),
+    ("m38h_commande", "m38h_commandedet"),
+    ("m38h_facture", "m38h_facturedet"),
+    ("m38h_product", "m38h_facturedet"),
     ("m38h_commandedet", "m38h_product"),
-    ("m38h_product",    "m38h_categorie_product"),
+    ("m38h_product", "m38h_categorie_product"),
     ("m38h_categorie_product", "m38h_categorie"),
+
+    # --- AJOUTS (jointures pour les nouvelles tables) ---
+    ("m38h_product", "m38h_product_extrafields"),
+    ("m38h_product_extrafields", "m38h_product"),
+    ("m38h_product", "m38h_c_product_nature"),
+    ("m38h_c_product_nature", "m38h_product"),
+    ("m38h_reception", "m38h_receptiondet_batch"),
+    ("m38h_receptiondet_batch", "m38h_reception"),
+    ("m38h_paiement", "m38h_c_paiement"),
+    ("m38h_c_paiement", "m38h_paiement"),
+    ("m38h_product_attribute", "m38h_product_attribute_value"),
+    ("m38h_product_attribute_value", "m38h_product_attribute"),
+    ("m38h_product_attribute_combination", "m38h_product_attribute_combination2val"),
+    ("m38h_product_attribute_combination2val", "m38h_product_attribute_combination"),
 }

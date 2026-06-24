@@ -71,6 +71,15 @@ ALLOWED_TABLES = {
     "m38h_commande_fournisseur_det",
     "m38h_societe", "m38h_socpeople",
     "m38h_product", "m38h_product_stock", "m38h_product_price",
+    "m38h_product_extrafields",          # ← AJOUT
+    "m38h_product_attribute",            # ← AJOUT
+    "m38h_product_attribute_value",      # ← AJOUT
+    "m38h_product_attribute_combination", # ← AJOUT
+    "m38h_product_attribute_combination2val", # ← AJOUT
+    "m38h_c_product_nature",             # ← AJOUT
+    "m38h_reception",                    # ← AJOUT
+    "m38h_receptiondet_batch",           # ← AJOUT
+    "m38h_c_paiement",                   # ← AJOUT
     "m38h_stock_mouvement", "m38h_entrepot",
     "m38h_paiement", "m38h_paiement_facture",
     "m38h_projet", "m38h_projet_task",
